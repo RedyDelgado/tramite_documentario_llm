@@ -1,0 +1,130 @@
+name: tramite
+
+# Laravel lee su propio .env del volumen; no se usa env_file para que phpunit.xml pueda fijar el entorno de tests.
+x-php: &php
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+  image: tramite-php
+  volumes:
+    - ./:/var/www/html
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    meilisearch:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  nginx:
+    image: nginx:1.29-alpine
+    ports:
+      - "127.0.0.1:${APP_PORT:-8100}:80"
+    volumes:
+      - ./public:/var/www/html/public:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  app:
+    <<: *php
+
+  # Como www-data, igual que php-fpm: si corren como root crean carpetas de caché en storage/
+  # que php-fpm ya no puede escribir (caída real en academico_web, 2026-09-08).
+  horizon:
+    <<: *php
+    user: www-data
+    command: php artisan horizon
+
+  scheduler:
+    <<: *php
+    user: www-data
+    command: php artisan schedule:work
+
+  # Solo desarrollo: recarga en caliente de React. node_modules vive en un volumen propio (binarios de Linux).
+  vite:
+    image: node:24-alpine
+    working_dir: /var/www/html
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
+    environment:
+      VITE_PORT: ${VITE_PORT:-5174}
+      VITE_POLLING: "true"
+    ports:
+      - "127.0.0.1:${VITE_PORT:-5174}:${VITE_PORT:-5174}"
+    volumes:
+      - ./:/var/www/html
+      - node_modules:/var/www/html/node_modules
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 12
+    restart: unless-stopped
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.16
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY}
+      MEILI_ENV: ${MEILI_ENV:-development}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meili_data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:7700/health || exit 1"]
+      interval: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Sin puerto publicado: solo app y horizon lo alcanzan por la red interna.
+  ai:
+    build:
+      context: ./ai-service
+      dockerfile: ../docker/ai/Dockerfile
+    environment:
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      retries: 6
+    restart: unless-stopped
+
+  # Usa ~1,5 GB de RAM: se activa con `--profile clamav` cuando la fase 1 analice adjuntos.
+  clamav:
+    image: clamav/clamav:stable
+    profiles: ["clamav"]
+    volumes:
+      - clamav_data:/var/lib/clamav
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  meili_data:
+  clamav_data:
+  node_modules:

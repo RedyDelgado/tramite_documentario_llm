@@ -1,0 +1,40 @@
+/* Única fuente de color, tipografía y forma (PLAN 5.3). Ningún otro archivo escribe HEX. */
+:root {
+    --primary-50: #F0F1FA;
+    --primary-100: #DFE1F4;
+    --primary-200: #C0C4E8;
+    --primary-300: #9EA3DA;
+    --primary-400: #7479C8;
+    --primary-500: #5A5FBF;
+    --primary-600: #4A4FB5;
+    --primary-700: #3C4094;
+    --primary-800: #2F3274;
+    --primary-900: #232656;
+    --primary-950: #171939;
+
+    --bg-app: #F5F5F5;
+    --surface: #FFFFFF;
+    --surface-subtle: #FAFAFA;
+    --border: #E0E0E0;
+    --border-strong: #C8C8C8;
+    --text-primary: #242424;
+    --text-secondary: #616161;
+    --text-disabled: #A0A0A0;
+
+    --status-ok: #107C10;
+    --status-ok-bg: #DFF6DD;
+    --status-warn: #F2B600;
+    --status-warn-bg: #FFF4CE;
+    --status-danger: #C50F1F;
+    --status-danger-bg: #FDE7E9;
+    --status-neutral: #8A8A8A;
+    --status-neutral-bg: #F0F0F0;
+
+    /* Velo de diálogos: text-primary al 40 %, no es un color nuevo. */
+    --overlay: rgb(36 36 36 / 0.4);
+
+    --fuente-base: "Segoe UI", "Segoe UI Variable", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --radio-control: 4px;
+    --radio-tarjeta: 8px;
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
