@@ -29,4 +29,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Áreas de las que hoy es titular o suplente.
+     *
+     * @return list<int>
+     */
+    public function areasVigentes(): array
+    {
+        return AreaResponsable::where('user_id', $this->id)->vigentes()->pluck('area_id')->unique()->values()->all();
+    }
 }

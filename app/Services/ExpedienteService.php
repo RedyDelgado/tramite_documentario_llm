@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\EstadoExpediente;
+use App\Exceptions\ReglaDeNegocio;
+use App\Models\Expediente;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+/** Transiciones del registro de un expediente; toda escritura queda auditada. */
+class ExpedienteService
+{
+    public function __construct(
+        private readonly SecuenciaService $secuencias,
+        private readonly AuditoriaService $auditoria,
+    ) {}
+
+    /**
+     * Confirma como trámite y asigna el número de registro del año en curso (6.2).
+     *
+     * @throws ReglaDeNegocio si el estado no admite confirmación.
+     */
+    public function confirmar(Expediente $expediente): Expediente
+    {
+        return DB::transaction(function () use ($expediente) {
+            // Bloqueo de la fila: dos confirmaciones simultáneas no pueden numerar dos veces.
+            $expediente = Expediente::lockForUpdate()->findOrFail($expediente->id);
+
+            if (! $expediente->estado->puedeConfirmarse()) {
+                throw new ReglaDeNegocio("Un expediente {$expediente->estado->etiqueta()} no puede confirmarse como trámite.");
+            }
+
+            $estadoPrevio = $expediente->estado;
+            $anio = now()->year;
+            $expediente->forceFill([
+                'anio' => $anio,
+                'secuencia' => $this->secuencias->siguiente('registro', $anio),
+                'estado' => EstadoExpediente::Registrado,
+                'registrado_at' => now(),
+                'registrado_por' => Auth::id(),
+            ])->save();
+
+            $this->auditoria->registrar('registro.asignado', $expediente,
+                antes: ['estado' => $estadoPrevio->value],
+                despues: ['estado' => EstadoExpediente::Registrado->value, 'numero' => $expediente->numero_registro, 'codigo' => $expediente->codigo],
+            );
+
+            return $expediente;
+        });
+    }
+
+    /**
+     * Archiva como no trámite: sin número, sin semáforo, recuperable (7.3.2).
+     *
+     * @throws ReglaDeNegocio si ya fue registrado.
+     */
+    public function marcarNoTramite(Expediente $expediente): Expediente
+    {
+        return DB::transaction(function () use ($expediente) {
+            $expediente = Expediente::lockForUpdate()->findOrFail($expediente->id);
+
+            if (! in_array($expediente->estado, [EstadoExpediente::PorRevisar, EstadoExpediente::Historico], true)) {
+                throw new ReglaDeNegocio('Solo un expediente por revisar o histórico puede marcarse como no trámite; uno registrado se anula.');
+            }
+
+            $estadoPrevio = $expediente->estado;
+            $expediente->update(['estado' => EstadoExpediente::NoTramite]);
+            $this->auditoria->registrar('expediente.no_tramite', $expediente,
+                antes: ['estado' => $estadoPrevio->value], despues: ['estado' => EstadoExpediente::NoTramite->value]);
+
+            return $expediente;
+        });
+    }
+
+    /** Devuelve a revisión un correo que se archivó como no trámite por error. */
+    public function devolverARevision(Expediente $expediente): Expediente
+    {
+        return DB::transaction(function () use ($expediente) {
+            $expediente = Expediente::lockForUpdate()->findOrFail($expediente->id);
+
+            if ($expediente->estado !== EstadoExpediente::NoTramite) {
+                throw new ReglaDeNegocio('Solo un expediente archivado como no trámite puede volver a revisión.');
+            }
+
+            $expediente->update(['estado' => EstadoExpediente::PorRevisar]);
+            $this->auditoria->registrar('expediente.devuelto_a_revision', $expediente,
+                antes: ['estado' => EstadoExpediente::NoTramite->value], despues: ['estado' => EstadoExpediente::PorRevisar->value]);
+
+            return $expediente;
+        });
+    }
+
+    /**
+     * Anula un registro erróneo: conserva su número, que nunca se reutiliza (6.2).
+     *
+     * @throws ReglaDeNegocio si no tiene número o ya está anulado.
+     */
+    public function anular(Expediente $expediente, string $motivo): Expediente
+    {
+        return DB::transaction(function () use ($expediente, $motivo) {
+            $expediente = Expediente::lockForUpdate()->findOrFail($expediente->id);
+
+            if ($expediente->secuencia === null) {
+                throw new ReglaDeNegocio('Solo se anula un expediente con número de registro; si no es trámite, márcalo como tal.');
+            }
+            if ($expediente->estado === EstadoExpediente::Anulado) {
+                throw new ReglaDeNegocio("El expediente {$expediente->numero_registro} ya está anulado.");
+            }
+
+            $estadoPrevio = $expediente->estado;
+            $expediente->forceFill(['estado' => EstadoExpediente::Anulado, 'motivo_anulacion' => $motivo])->save();
+            $this->auditoria->registrar('registro.anulado', $expediente,
+                antes: ['estado' => $estadoPrevio->value],
+                despues: ['estado' => EstadoExpediente::Anulado->value, 'numero' => $expediente->numero_registro, 'motivo' => $motivo],
+            );
+
+            return $expediente;
+        });
+    }
+}

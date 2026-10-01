@@ -8,10 +8,19 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
-/** Roles de la sección 5 y el superadmin inicial; idempotente. */
+/** Roles y permisos de la sección 5 y el superadmin inicial; idempotente. */
 class RolesSeeder extends Seeder
 {
     public const ROLES = ['superadmin', 'director', 'administrativo', 'coordinador', 'otros'];
+
+    /** Permiso => roles que lo tienen. El superadmin no ve contenido de trámites (5). */
+    public const PERMISOS = [
+        // Delegable a otro rol sin dar el resto de privilegios del superadmin (5.1).
+        'configuracion.gestionar' => ['superadmin'],
+        'expedientes.ver_todos' => ['director', 'administrativo'],
+        'expedientes.ver_areas' => ['coordinador'],
+        'expedientes.registrar' => ['administrativo'],
+    ];
 
     public function run(): void
     {
@@ -21,9 +30,12 @@ class RolesSeeder extends Seeder
             Role::findOrCreate($rol);
         }
 
-        // Delegable a otro rol sin dar el resto de privilegios del superadmin (5.1).
-        Permission::findOrCreate('configuracion.gestionar');
-        Role::findByName('superadmin')->givePermissionTo('configuracion.gestionar');
+        foreach (self::PERMISOS as $permiso => $roles) {
+            Permission::findOrCreate($permiso);
+            foreach ($roles as $rol) {
+                Role::findByName($rol)->givePermissionTo($permiso);
+            }
+        }
 
         $email = config('tramite.superadmin.email');
 
