@@ -30,6 +30,13 @@ return [
 
     'disks' => [
 
+        // Originales intocables (2): fuera de public, se escriben una vez y se nombran por su SHA-256.
+        'originales' => [
+            'driver' => 'local',
+            'root' => storage_path('app/originales'),
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

@@ -1,0 +1,37 @@
+From: Municipalidad Distrital de Ejemplo <mesadepartes@munidemo.example>
+To: Mesa de partes <tramite@universidad.example>
+Subject: OFICIO =?utf-8?q?N=C2=B0_123-2026-MDE=3A_Invitaci=C3=B3n?= a
+ ceremonia de aniversario
+Date: Fri, 02 Oct 2026 09:15:00 -0500
+Message-ID: <oficio-con-pdf@pruebas.example>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============1123521204336843788=="
+
+--===============1123521204336843788==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+Señores:
+Adjuntamos el oficio de invitación a la ceremonia de aniversario.
+Atentamente.
+
+--===============1123521204336843788==
+Content-Type: application/pdf
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Oficio 123-2026-MDE.pdf"
+MIME-Version: 1.0
+
+JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2Jq
+CjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2Jq
+CjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA0MDAg
+MTQ0XSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4g
+Pj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA4NSA+PgpzdHJlYW0KQlQgL0YxIDEyIFRm
+IDIwIDEwMCBUZCAoSW52aXRhY2lvbiBhIGxhIGNlcmVtb25pYSBkZSBhbml2ZXJzYXJpbyBpbnN0
+aXR1Y2lvbmFsKSBUaiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQg
+L1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgow
+MDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBu
+IAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDM3NiAwMDAw
+MCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQ0NgolJUVP
+Rgo=
+
+--===============1123521204336843788==--
