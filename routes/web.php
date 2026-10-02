@@ -16,7 +16,9 @@ use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\TipoTramiteController;
 use App\Http\Controllers\UmbralController;
 use App\Http\Controllers\UsuarioController;
+use App\Models\Expediente;
 use App\Models\User;
+use App\Services\PanelService;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +49,10 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', fn () => Inertia::render('Inicio'))->name('inicio');
+    // Panel de KPIs (8): solo quien ve expedientes; el superadmin no ve contenido de trámites (5).
+    Route::get('/', fn (Request $request, PanelService $panel) => Inertia::render('Inicio', [
+        'indicadores' => $request->user()->can('viewAny', Expediente::class) ? $panel->indicadores($request->user()) : null,
+    ]))->name('inicio');
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();

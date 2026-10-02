@@ -30,6 +30,9 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 - **«Para conocimiento» sin plazo**: tomarlo registra la toma de conocimiento y lo deja `atendido` (8). El `atendido` por respuesta vinculada llega con los documentos salientes (fase 5).
 - **El coordinador de escuela ve las áreas dependientes** de las que coordina (`User::areasVigentes` recorre la jerarquía); vale para la base y para el índice de búsqueda.
 - **Movimientos**: tabla propia que solo se inserta, además de la auditoría; la línea de tiempo muestra destino, instrucción, plazo y nota de cada uno.
+- **Panel sin Recharts.** Los KPIs de hoy son conteos y promedios: cifras, semáforos con su badge (icono y texto) y barras de un solo tono con el valor escrito, más tablas. Recharts llega con la primera serie de tiempo (tendencias).
+- **Los indicadores salen de `visiblesPara`**: cada rol ve los de lo que puede ver; el superadmin no recibe indicadores de trámites. «Atendidos en plazo» cuenta los atendidos o cerrados del año con fecha límite, comparando el día en Lima de `atendido_at` con la fecha límite. El tiempo de atención va del registro a la atención.
+- **Resumen diario** (`resumen:diario`, días laborables a las 07:30, sin feriados institucionales): solo a coordinadores activos con pendientes (derivados o en atención), lo urgente primero; sin pendientes no se envía. Se encola (Horizon) y queda auditado con destinatario y expedientes. El estado de entrega y los rebotes (`notificaciones_enviadas`) esperan al envío por Gmail de la fase 5.
 - **Pantalla de roles y permisos**: no se hizo. Los roles son los de la sección 5; delegar `configuracion.gestionar` a otro rol espera el pendiente 8.
 
 ## 2026-10-02 — Fase 1
