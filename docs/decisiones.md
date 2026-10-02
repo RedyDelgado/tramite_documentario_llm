@@ -2,6 +2,15 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-03 — Fase 2
+
+- **Ingreso con Google: tres barreras.** La cuenta debe traer `hd` igual a `GOOGLE_DOMINIO` (Google lo firma solo para cuentas administradas por ese Workspace; el sufijo del correo no basta), el correo verificado, y existir como usuario activo. Sin `GOOGLE_DOMINIO` el ingreso con Google queda apagado (404), no abierto. Cada intento fallido se audita con su motivo (`fuera_del_dominio`, `no_registrado`, `inactivo`).
+- **Un rol por usuario.** Separación de funciones (sección 5): quien registra no cierra. Si un caso real necesita dos roles, se cambia el `Select` por casillas.
+- **`usuarios.gestionar` aparte de `configuracion.gestionar`.** Quien asigna roles podría darse cualquier privilegio; delegar la configuración (5.1) no debe incluirlo.
+- **Nadie cambia su propio rol ni se desactiva.** Así siempre queda al menos un superadmin activo (el que hace el cambio) sin tener que contarlos.
+- **Desactivar corta la sesión abierta** (middleware `UsuarioActivo`): las sesiones viven en Redis y no se pueden buscar por usuario para borrarlas.
+- **Pantalla de roles y permisos**: no se hizo. Los roles son los de la sección 5; delegar `configuracion.gestionar` a otro rol espera el pendiente 8.
+
 ## 2026-10-02 — Fase 1
 
 - **Un solo campo `estado`** (incluye `por_revisar`, `no_tramite`, `historico`); no se creó `clasificacion_tramite` aparte porque duplicaba la misma información.

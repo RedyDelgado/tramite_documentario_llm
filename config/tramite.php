@@ -8,6 +8,9 @@ return [
         'email' => env('SUPERADMIN_EMAIL'),
     ],
 
+    // Dominio de Google Workspace que puede iniciar sesión; vacío deshabilita el ingreso con Google.
+    'google_dominio' => env('GOOGLE_DOMINIO'),
+
     'registro' => [
         // Formato visible (6.2); el código de enlace siempre es REG-AAAA-NNNNN.
         'formato' => env('REGISTRO_FORMATO', 'N°%05d'),

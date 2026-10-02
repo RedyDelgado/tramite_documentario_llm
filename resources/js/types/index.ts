@@ -2,7 +2,10 @@
 
 export type Usuario = { id: number; name: string; email: string };
 
-export type Toast = { tipo: 'ok' | 'error' | 'info'; mensaje: string };
+/** UsuarioResource. */
+export type UsuarioFila = Usuario & { rol: string | null; rol_etiqueta: string | null; activo: boolean; actualizado: string | null };
+
+export type Toast ={ tipo: 'ok' | 'error' | 'info'; mensaje: string };
 
 export type SharedProps = {
     app: { nombre: string; local: boolean };

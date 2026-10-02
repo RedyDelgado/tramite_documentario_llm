@@ -1,4 +1,4 @@
-import { Apps20Regular, DocumentBulletList20Regular, Gauge20Regular, Home20Regular, Organization20Regular } from '@fluentui/react-icons';
+import { Apps20Regular, DocumentBulletList20Regular, Gauge20Regular, Home20Regular, Organization20Regular, People20Regular } from '@fluentui/react-icons';
 import type { ReactElement } from 'react';
 import type { SharedProps } from '@/types';
 
@@ -27,7 +27,10 @@ const NAVEGACION: GrupoNav[] = [
     },
     {
         titulo: 'Configuración',
-        items: [{ etiqueta: 'Áreas', href: '/areas', icono: <Organization20Regular />, permisos: ['configuracion.gestionar'] }],
+        items: [
+            { etiqueta: 'Áreas', href: '/areas', icono: <Organization20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Usuarios', href: '/usuarios', icono: <People20Regular />, permisos: ['usuarios.gestionar'] },
+        ],
     },
     {
         titulo: 'Sistema',

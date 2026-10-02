@@ -9,7 +9,7 @@ export function Switch({ etiqueta, className, id, ...props }: Props) {
         <S.Root
             id={id}
             className={cn(
-                'relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full border border-fg-muted bg-surface transition-colors data-[state=checked]:border-primary-600 data-[state=checked]:bg-primary-600 disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-subtle',
+                'relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full border border-fg-muted bg-surface transition-colors data-[state=checked]:border-primary-600 data-[state=checked]:bg-primary-600 disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-subtle disabled:data-[state=checked]:border-fg-disabled disabled:data-[state=checked]:bg-fg-disabled',
                 !etiqueta && className,
             )}
             {...props}

@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\ExpedienteController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\OriginalController;
+use App\Http\Controllers\UsuarioController;
 use App\Models\User;
+use Database\Seeders\RolesSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -11,14 +14,20 @@ use Inertia\Inertia;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => Inertia::render('auth/Login', [
-        'rolesDesarrollo' => app()->isLocal() ? ['superadmin', 'director', 'administrativo', 'coordinador'] : [],
+        'google' => GoogleController::habilitado(),
+        'rolesDesarrollo' => app()->isLocal()
+            ? collect(RolesSeeder::ROLES)->except('otros')->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()
+            : [],
     ]))->name('login');
 
-    // Solo local: el inicio de sesión con Google llega en la fase 2; nunca se registra fuera de local.
+    Route::get('/auth/google', [GoogleController::class, 'redirigir'])->name('google.redirigir');
+    Route::get('/auth/google/callback', [GoogleController::class, 'volver'])->middleware('throttle:10,1')->name('google.callback');
+
+    // Atajo sin Google para desarrollo; nunca se registra fuera de local.
     if (app()->isLocal()) {
         Route::post('/dev/entrar', function (Request $request) {
             $rol = $request->validate(['rol' => ['required', 'in:superadmin,director,administrativo,coordinador']])['rol'];
-            Auth::login(User::role($rol)->orderBy('id')->firstOrFail());
+            Auth::login(User::role($rol)->where('activo', true)->orderBy('id')->firstOrFail());
             $request->session()->regenerate();
 
             return to_route('inicio');
@@ -39,6 +48,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('areas', AreaController::class)->except(['show', 'destroy']);
     Route::patch('areas/{area}/estado', [AreaController::class, 'cambiarEstado'])->name('areas.estado');
+
+    Route::resource('usuarios', UsuarioController::class)->except(['show', 'destroy']);
+    Route::patch('usuarios/{usuario}/estado', [UsuarioController::class, 'cambiarEstado'])->name('usuarios.estado');
 
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');
     Route::get('expedientes/{expediente}', [ExpedienteController::class, 'show'])->name('expedientes.show');

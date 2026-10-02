@@ -54,6 +54,6 @@ class AccesoTest extends TestCase
         $this->actingAs($superadmin)->get('/')->assertInertia(fn (AssertableInertia $p) => $p
             ->component('Inicio')
             ->where('auth.roles', ['superadmin'])
-            ->where('auth.can', ['configuracion.gestionar']));
+            ->where('auth.can', ['configuracion.gestionar', 'usuarios.gestionar']));
     }
 }
