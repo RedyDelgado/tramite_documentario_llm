@@ -37,6 +37,15 @@ return [
         ],
     ],
 
+    // Documentos salientes (7.3.4): `gmail` envía desde la cuenta del buzón central; `mailer` usa MAIL_MAILER (log en desarrollo).
+    'salientes' => [
+        'driver' => env('SALIENTES_DRIVER', 'mailer'),
+        // Ritmo para no chocar con los límites de envío de Google.
+        'por_minuto' => (int) env('SALIENTES_POR_MINUTO', 20),
+        // Remitente y copia oculta: el buzón central, para enlazar las respuestas (7.2).
+        'buzon_central' => env('SALIENTES_BUZON_CENTRAL', env('MAIL_FROM_ADDRESS')),
+    ],
+
     // Servicio de IA local (sección 10); si está caído, el sistema sigue ingresando (principio 2).
     'ai' => [
         'url' => env('AI_SERVICE_URL', 'http://ai:8000'),

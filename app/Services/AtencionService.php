@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\EstadoExpediente;
 use App\Exceptions\ReglaDeNegocio;
+use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
 use App\Models\Movimiento;
 use App\Models\TipoTramite;
@@ -90,6 +91,16 @@ class AtencionService
                 : ['estado' => EstadoExpediente::EnAtencion]);
 
             return ['accion' => 'expediente.'.($soloConocimiento ? 'conocimiento_tomado' : 'en_atencion'), 'movimiento' => ['tipo' => $soloConocimiento ? 'toma_conocimiento' : 'en_atencion']];
+        });
+    }
+
+    /** Enviada la respuesta vinculada, el expediente queda atendido sin que nadie lo marque (7.3.5, punto 7). */
+    public function atenderConRespuesta(Expediente $expediente, DocumentoSaliente $respuesta): Expediente
+    {
+        return $this->paso($expediente, [EstadoExpediente::Registrado, ...self::ABIERTOS], 'atender', function (Expediente $e) use ($respuesta) {
+            $e->forceFill(['estado' => EstadoExpediente::Atendido, 'atendido_at' => now(), 'cierre_solicitado_at' => null]);
+
+            return ['accion' => 'expediente.respondido', 'movimiento' => ['tipo' => 'respuesta', 'nota' => "Respuesta enviada: {$respuesta->numero}"]];
         });
     }
 

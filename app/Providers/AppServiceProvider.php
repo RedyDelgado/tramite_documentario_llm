@@ -4,7 +4,12 @@ namespace App\Providers;
 
 use App\Correo\DirectorioMailboxDriver;
 use App\Correo\GmailMailboxDriver;
+use App\Correo\GmailSalidaCorreo;
 use App\Correo\MailboxDriver;
+use App\Correo\MailerSalidaCorreo;
+use App\Correo\SalidaCorreo;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 
@@ -18,10 +23,16 @@ class AppServiceProvider extends ServiceProvider
             'gmail' => new GmailMailboxDriver(config('tramite.correo.gmail')),
             default => throw new InvalidArgumentException('CORREO_DRIVER desconocido: '.config('tramite.correo.driver')),
         });
+        $this->app->bind(SalidaCorreo::class, fn () => match (config('tramite.salientes.driver')) {
+            'mailer' => new MailerSalidaCorreo,
+            'gmail' => new GmailSalidaCorreo(new GmailMailboxDriver(config('tramite.correo.gmail'))),
+            default => throw new InvalidArgumentException('SALIENTES_DRIVER desconocido: '.config('tramite.salientes.driver')),
+        });
     }
 
     public function boot(): void
     {
-        //
+        // Un correo por destinatario, a ritmo controlado (7.3.4).
+        RateLimiter::for('envios', fn () => Limit::perMinute(config('tramite.salientes.por_minuto')));
     }
 }

@@ -115,6 +115,7 @@ Route::middleware('auth')->group(function () {
     Route::post('salientes/{saliente}/revision', [SalienteController::class, 'revision'])->name('salientes.revision');
     Route::post('salientes/{saliente}/devolver', [SalienteController::class, 'devolver'])->name('salientes.devolver');
     Route::post('salientes/{saliente}/aprobar', [SalienteController::class, 'aprobar'])->name('salientes.aprobar');
+    Route::post('salientes/{saliente}/firmado', [SalienteController::class, 'firmado'])->name('salientes.firmado');
     Route::get('salientes/{saliente}/descargar/{formato}', [SalienteController::class, 'descargar'])->name('salientes.descargar');
     Route::resource('salientes', SalienteController::class)->parameters(['salientes' => 'saliente'])->except(['destroy']);
 

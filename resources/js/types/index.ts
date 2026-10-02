@@ -245,5 +245,5 @@ export type SalienteDetalle = Saliente & {
     firmado: boolean;
     sha256_pdf: string | null;
     envios: { id: number; email: string; nombre: string | null; estado: 'pendiente' | 'enviado' | 'rebotado' | 'fallido'; enviado_at: string | null; detalle: string | null }[];
-    permisos: { editar: boolean; revision: boolean; aprobar: boolean };
+    permisos: { editar: boolean; revision: boolean; aprobar: boolean; firmar: boolean };
 };

@@ -42,6 +42,12 @@ class SalientePolicy
             };
     }
 
+    /** Adjuntar el PDF firmado fuera del sistema: el autor, quien aprobó o registro. */
+    public function firmar(User $user, DocumentoSaliente $s): bool
+    {
+        return $s->estado === 'aprobado' && ($s->creado_por === $user->id || $s->aprobado_por === $user->id || $user->can('expedientes.registrar'));
+    }
+
     /** Áreas desde las que el usuario puede emitir: todas para registro y dirección; las suyas para la coordinación. */
     public static function areasEmisoras(User $user): ?array
     {

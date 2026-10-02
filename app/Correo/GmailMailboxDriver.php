@@ -80,6 +80,20 @@ class GmailMailboxDriver implements MailboxDriver
         } while ($pagina);
     }
 
+    /** Envía un mensaje RFC 822 completo; devuelve el id de Gmail. */
+    public function enviarCrudo(string $mensaje): string
+    {
+        return $this->api()->post('messages/send', ['raw' => rtrim(strtr(base64_encode($mensaje), '+/', '-_'), '=')])->throw()->json('id');
+    }
+
+    public function messageId(string $id): ?string
+    {
+        $cabeceras = $this->api()->get("messages/{$id}", ['format' => 'metadata', 'metadataHeaders' => 'Message-ID'])->throw()->json('payload.headers', []);
+        $valor = collect($cabeceras)->first(fn ($c) => strcasecmp($c['name'], 'Message-ID') === 0)['value'] ?? null;
+
+        return $valor ? trim($valor, '<> ') : null;
+    }
+
     private function idEtiqueta(): string
     {
         $nombre = $this->config['etiqueta'];

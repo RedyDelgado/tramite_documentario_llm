@@ -18,6 +18,7 @@ class SalienteService
         private readonly SecuenciaService $secuencias,
         private readonly GeneradorDocumentoService $generador,
         private readonly AuditoriaService $auditoria,
+        private readonly EnvioService $envios,
     ) {}
 
     /** Asunto y cuerpo de la plantilla con los datos del expediente de origen («un dato se escribe una sola vez», 7.3.5). */
@@ -83,7 +84,7 @@ class SalienteService
      */
     public function aprobar(DocumentoSaliente $saliente, User $aprobador): DocumentoSaliente
     {
-        return DB::transaction(function () use ($saliente, $aprobador) {
+        $saliente = DB::transaction(function () use ($saliente, $aprobador) {
             $saliente = DocumentoSaliente::lockForUpdate()->with(['tipoDocumento', 'area'])->findOrFail($saliente->id);
             $this->exigirEstado($saliente, ['en_revision'], 'aprobar');
 
@@ -107,6 +108,13 @@ class SalienteService
 
             return $saliente;
         });
+
+        // Envío automático: aprobado, sale sin intervención manual, salvo que espere el PDF firmado (7.3.4).
+        if (! $saliente->esperar_firma) {
+            $this->envios->despachar($saliente);
+        }
+
+        return $saliente;
     }
 
     /** «OFICIO N.º 012-2026-DGA»: formato del tipo de documento (5.1, 7.3.4). */

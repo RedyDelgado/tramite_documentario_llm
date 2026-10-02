@@ -21,6 +21,7 @@ class Movimiento extends Model
         'cierre_rechazado' => 'Rechazó el cierre',
         'cierre_aprobado' => 'Cerró el expediente',
         'original_movido' => 'Movió el original',
+        'respuesta' => 'Envió la respuesta',
     ];
 
     protected function casts(): array

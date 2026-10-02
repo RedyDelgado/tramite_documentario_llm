@@ -10,6 +10,7 @@ use App\Models\PlantillaDocumento;
 use App\Models\TipoDocumento;
 use App\Policies\SalientePolicy;
 use App\Services\AuditoriaService;
+use App\Services\EnvioService;
 use App\Services\GeneradorDocumentoService;
 use App\Services\SalienteService;
 use Illuminate\Http\RedirectResponse;
@@ -123,6 +124,7 @@ class SalienteController extends Controller
                     'editar' => $user->can('update', $saliente),
                     'revision' => $saliente->estado === 'borrador' && $user->can('update', $saliente),
                     'aprobar' => $user->can('aprobar', $saliente),
+                    'firmar' => $user->can('firmar', $saliente),
                 ],
             ],
         ]);
@@ -177,6 +179,15 @@ class SalienteController extends Controller
         $saliente = $this->salientes->aprobar($saliente, $request->user());
 
         return $this->listo("Aprobado como {$saliente->numero}.");
+    }
+
+    public function firmado(Request $request, DocumentoSaliente $saliente, EnvioService $envios): RedirectResponse
+    {
+        Gate::authorize('firmar', $saliente);
+        $archivo = $request->validate(['archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf']], attributes: ['archivo' => 'PDF firmado'])['archivo'];
+        $envios->subirFirmado($saliente, $archivo->getContent());
+
+        return $this->listo($saliente->esperar_firma ? 'PDF firmado adjuntado: el documento se está enviando.' : 'PDF firmado adjuntado como versión final.');
     }
 
     /** PDF (el aprobado con hash, o la vista previa del borrador) o Word; cada descarga queda auditada (9). */

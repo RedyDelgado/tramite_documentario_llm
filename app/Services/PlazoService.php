@@ -26,6 +26,17 @@ class PlazoService
             return ['plazo_dias' => null, 'fecha_limite' => null];
         }
 
+        return ['plazo_dias' => $plazo, 'fecha_limite' => $this->sumar($desde, $plazo, $areaId, $tipo->tipo_dias === 'habiles')];
+    }
+
+    /** Fecha límite a N días hábiles (p. ej. la respuesta que exige un documento emitido, 7.3.4). */
+    public function sumarDiasHabiles(CarbonInterface $desde, int $dias, ?int $areaId): CarbonImmutable
+    {
+        return $this->sumar($desde, $dias, $areaId, true);
+    }
+
+    private function sumar(CarbonInterface $desde, int $dias, ?int $areaId, bool $habiles): CarbonImmutable
+    {
         $dia = CarbonImmutable::instance($desde)->setTimezone(config('app.timezone'))->startOfDay();
         $feriados = Feriado::where('fecha', '>', $dia->toDateString())
             ->where(fn ($q) => $q->whereNull('area_id')->when($areaId, fn ($q) => $q->orWhere('area_id', $areaId)))
@@ -33,11 +44,11 @@ class PlazoService
             ->mapWithKeys(fn ($fecha) => [substr((string) $fecha, 0, 10) => true]);
         $habil = fn (CarbonImmutable $d) => ! $d->isWeekend() && ! $feriados->has($d->toDateString());
 
-        if ($tipo->tipo_dias === 'calendario') {
-            $dia = $dia->addDays($plazo);
+        if (! $habiles) {
+            $dia = $dia->addDays($dias);
         } else {
-            // El día de ingreso no cuenta: el plazo corre desde el día hábil siguiente.
-            for ($contados = 0; $contados < $plazo;) {
+            // El día de inicio no cuenta: el plazo corre desde el día hábil siguiente.
+            for ($contados = 0; $contados < $dias;) {
                 $dia = $dia->addDay();
                 $contados += $habil($dia) ? 1 : 0;
             }
@@ -48,6 +59,6 @@ class PlazoService
             $dia = $dia->addDay();
         }
 
-        return ['plazo_dias' => $plazo, 'fecha_limite' => $dia];
+        return $dia;
     }
 }

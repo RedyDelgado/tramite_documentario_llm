@@ -73,7 +73,8 @@ class SalientesTest extends TestCase
         $this->actingAs($this->director)->post("/salientes/{$s->id}/aprobar")->assertSessionHasNoErrors();
 
         $s->refresh();
-        $this->assertSame(['aprobado', 'OFICIO N.º 001-2026-DGA', $this->director->id], [$s->estado, $s->numero, $s->aprobado_por]);
+        // Aprobado sale solo (envío automático, 7.3.4); en el test la cola es síncrona.
+        $this->assertSame(['enviado', 'OFICIO N.º 001-2026-DGA', $this->director->id], [$s->estado, $s->numero, $s->aprobado_por]);
         $this->assertStringStartsWith('%PDF', Storage::disk('originales')->get($s->ruta_pdf));
         $this->assertSame($s->sha256_pdf, hash('sha256', Storage::disk('originales')->get($s->ruta_pdf)));
         $this->assertDatabaseHas('auditoria', ['accion' => 'saliente.aprobado', 'usuario_id' => $this->director->id]);

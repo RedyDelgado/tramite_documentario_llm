@@ -36,6 +36,15 @@ Requisito previo: autorización por escrito del administrador de Google Workspac
 5. Revisar en el panel que los 5 expedientes estén bien y que en Gmail tengan la etiqueta `tramite/procesado`.
 6. Activar el job programado: `CORREO_ACTIVO=true` → `docker compose exec app php artisan config:clear`.
 
+## 3b. Enviar los documentos aprobados
+
+El scope `gmail.modify` ya permite enviar (`users.messages.send`): no hace falta otra autorización.
+
+1. En `.env`: `SALIENTES_DRIVER=gmail` y `SALIENTES_BUZON_CENTRAL=<correo del buzón central>` (remitente y copia oculta).
+2. `SALIENTES_POR_MINUTO` (20 por defecto) limita el ritmo para no chocar con los límites de envío de Google.
+3. `docker compose exec app php artisan config:clear`. Horizon debe estar corriendo: cada correo sale en cola.
+4. Probar con un documento a una sola dirección propia y revisar en Gmail (*Enviados*) el asunto `[REG-…]` y la copia oculta.
+
 ## 4. Revocar el acceso
 
 1. <https://myaccount.google.com/permissions> con la cuenta del buzón → quitar el acceso del cliente, o eliminar el ID de cliente en Google Cloud.

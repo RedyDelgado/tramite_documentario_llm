@@ -1,4 +1,4 @@
-import { ArrowDownload20Regular, CheckmarkCircle20Regular, Edit20Regular, Send20Regular } from '@fluentui/react-icons';
+import { ArrowDownload20Regular, CheckmarkCircle20Regular, DocumentArrowUp20Regular, Edit20Regular, Send20Regular } from '@fluentui/react-icons';
 import { Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
@@ -54,6 +54,27 @@ export default function SalienteShow({ saliente: s }: { saliente: SalienteDetall
                                 </Button>
                             </>
                         )}
+                        {s.permisos.firmar && (
+                            <label className={botonClases({ variante: s.esperar_firma && !s.firmado ? 'primario' : 'secundario' })}>
+                                <DocumentArrowUp20Regular />
+                                {s.firmado ? 'Reemplazar firmado' : 'Adjuntar PDF firmado'}
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="sr-only"
+                                    onChange={(e) =>
+                                        e.target.files?.[0] &&
+                                        router.post(`/salientes/${s.id}/firmado`, { archivo: e.target.files[0] }, { forceFormData: true, preserveScroll: true })
+                                    }
+                                />
+                            </label>
+                        )}
+                        {s.firmado && (
+                            <a href={`/salientes/${s.id}/descargar/firmado`} className={botonClases()}>
+                                <ArrowDownload20Regular />
+                                Firmado
+                            </a>
+                        )}
                         <a href={`/salientes/${s.id}/descargar/pdf`} className={botonClases()}>
                             <ArrowDownload20Regular />
                             PDF
@@ -75,6 +96,7 @@ export default function SalienteShow({ saliente: s }: { saliente: SalienteDetall
                         <DetalleLista
                             items={[
                                 { etiqueta: 'Estado', valor: <Badge tono={s.estado.valor === 'enviado' ? 'ok' : 'neutro'}>{s.estado.etiqueta}</Badge> },
+                                ...(s.estado.valor === 'aprobado' && s.esperar_firma && !s.firmado ? [{ etiqueta: 'Envío', valor: 'Espera el PDF firmado' }] : []),
                                 { etiqueta: 'Tipo', valor: s.tipo },
                                 { etiqueta: 'Área que emite', valor: s.area },
                                 ...(s.expediente
