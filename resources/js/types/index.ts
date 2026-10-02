@@ -115,3 +115,18 @@ export type PlazoArea = {
 
 /** FeriadoResource. */
 export type Feriado = { id: number; fecha: string; descripcion: string; area_id: number | null; area?: string | null; actualizado: string | null };
+
+/** ResponsableResource. */
+export type Responsable = {
+    id: number;
+    area_id: number;
+    area: string;
+    user_id: number;
+    usuario: string;
+    email: string;
+    tipo: 'titular' | 'suplente';
+    vigente_desde: string;
+    vigente_hasta: string | null;
+    vigente: boolean;
+    actualizado: string | null;
+};

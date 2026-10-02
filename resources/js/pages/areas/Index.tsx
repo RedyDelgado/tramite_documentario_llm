@@ -1,20 +1,22 @@
-import { Add20Regular, Edit20Regular, Organization20Regular, Search20Regular } from '@fluentui/react-icons';
+import { Add20Regular, Edit20Regular, Merge20Regular, Organization20Regular, Search20Regular } from '@fluentui/react-icons';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { ListaEtiquetas } from '@/components/data/ListaEtiquetas';
 import { ActivoBadge } from '@/components/domain/ActivoBadge';
+import { FormField } from '@/components/forms/FormField';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Button, botonClases } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Dialog } from '@/components/ui/Dialog';
 import { Drawer } from '@/components/ui/Drawer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
-import type { Area, Paginado } from '@/types';
+import type { Area, Opcion, Paginado } from '@/types';
 
 type Filtros = { q?: string; estado?: string; orden?: string; dir?: 'asc' | 'desc' };
 
@@ -36,11 +38,14 @@ const columnas: Columna<Area>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (a) => <ActivoBadge activo={a.activa} femenino /> },
 ];
 
-export default function AreasIndex({ areas, filtros: iniciales }: { areas: Paginado<Area>; filtros: Filtros }) {
+type Props = { areas: Paginado<Area>; filtros: Filtros; opcionesArea: Opcion<number>[] };
+
+export default function AreasIndex({ areas, filtros: iniciales, opcionesArea }: Props) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
     const [elegidaId, setElegidaId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [procesando, setProcesando] = useState(false);
+    const [destino, setDestino] = useState<string | null>(null);
     const elegida = areas.data.find((a) => a.id === elegidaId) ?? null;
     const hayFiltros = Boolean(filtros.q || filtros.estado);
 
@@ -58,6 +63,21 @@ export default function AreasIndex({ areas, filtros: iniciales }: { areas: Pagin
                 onFinish: () => {
                     setProcesando(false);
                     setConfirmando(false);
+                },
+            },
+        );
+
+    const fusionar = (area: Area) =>
+        router.post(
+            `/areas/${area.id}/fusionar`,
+            { destino_id: Number(destino) },
+            {
+                preserveScroll: true,
+                onStart: () => setProcesando(true),
+                onFinish: () => setProcesando(false),
+                onSuccess: () => {
+                    setDestino(null);
+                    setElegidaId(null);
                 },
             },
         );
@@ -128,6 +148,11 @@ export default function AreasIndex({ areas, filtros: iniciales }: { areas: Pagin
                                     <Edit20Regular />
                                     Editar
                                 </Link>
+                                {elegida.activa && (
+                                    <Button icono={<Merge20Regular />} onClick={() => setDestino('')}>
+                                        Fusionar
+                                    </Button>
+                                )}
                                 {elegida.activa ? (
                                     <Button onClick={() => setConfirmando(true)}>Desactivar</Button>
                                 ) : (
@@ -157,6 +182,32 @@ export default function AreasIndex({ areas, filtros: iniciales }: { areas: Pagin
                             cargando={procesando}
                             onConfirmar={() => cambiarEstado(elegida)}
                         />
+                        <Dialog
+                            abierto={destino !== null}
+                            onCambiar={(abierto) => !abierto && setDestino(null)}
+                            titulo={`Fusionar «${elegida.nombre}»`}
+                            descripcion="Sus expedientes y áreas dependientes pasan al área elegida y esta queda inactiva. Sus responsables no se trasladan. Queda en la auditoría."
+                            pie={
+                                <>
+                                    <Button onClick={() => setDestino(null)}>Cancelar</Button>
+                                    <Button variante="peligro" disabled={!destino} cargando={procesando} onClick={() => fusionar(elegida)}>
+                                        Fusionar
+                                    </Button>
+                                </>
+                            }
+                        >
+                            <FormField etiqueta="Fusionar en" requerido>
+                                {(c) => (
+                                    <Select
+                                        {...c}
+                                        vacia="Elige el área que la absorbe"
+                                        opciones={opcionesArea.filter((o) => o.value !== elegida.id)}
+                                        value={destino ?? ''}
+                                        onChange={(e) => setDestino(e.target.value)}
+                                    />
+                                )}
+                            </FormField>
+                        </Dialog>
                     </Drawer>
                 )
             }

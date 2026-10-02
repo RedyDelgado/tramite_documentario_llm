@@ -42,6 +42,7 @@ class AreaController extends Controller
         return Inertia::render('areas/Index', [
             'areas' => AreaResource::collection($areas),
             'filtros' => (object) $filtros,
+            'opcionesArea' => Area::opciones(),
         ]);
     }
 
@@ -95,6 +96,18 @@ class AreaController extends Controller
             'tipo' => 'ok',
             'mensaje' => $activa ? "Área «{$area->nombre}» activada." : "Área «{$area->nombre}» desactivada.",
         ]);
+
+        return back();
+    }
+
+    public function fusionar(Request $request, Area $area): RedirectResponse
+    {
+        Gate::authorize('update', $area);
+
+        $destino = Area::findOrFail($request->validate(['destino_id' => ['required', 'integer']])['destino_id']);
+        $movidos = $this->areas->fusionar($area, $destino);
+
+        Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => "«{$area->nombre}» se fusionó en «{$destino->nombre}»: {$movidos} expedientes reasignados."]);
 
         return back();
     }

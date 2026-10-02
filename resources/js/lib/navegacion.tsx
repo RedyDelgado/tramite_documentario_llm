@@ -7,6 +7,7 @@ import {
     Home20Regular,
     Organization20Regular,
     People20Regular,
+    PersonAccounts20Regular,
     Timer20Regular,
 } from '@fluentui/react-icons';
 import type { ReactElement } from 'react';
@@ -39,6 +40,7 @@ const NAVEGACION: GrupoNav[] = [
         titulo: 'Configuración',
         items: [
             { etiqueta: 'Áreas', href: '/areas', icono: <Organization20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Responsables', href: '/responsables', icono: <PersonAccounts20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Tipos de trámite', href: '/tipos-tramite', icono: <DocumentText20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Plazos por área', href: '/plazos', icono: <Timer20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Feriados', href: '/feriados', icono: <CalendarCancel20Regular />, permisos: ['configuracion.gestionar'] },

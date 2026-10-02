@@ -14,6 +14,8 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 - **Plazos por área sin vigencia desde/hasta**: la copia en el expediente ya protege lo ingresado; la vigencia solo serviría para programar cambios futuros.
 - **Quitar un plazo por área o un feriado es borrado lógico**, con índice único parcial para poder volver a crearlo.
 - **Una sola `ConfiguracionPolicy`** (`#[UsePolicy]`) y un `CatalogoService` para todos los catálogos de configuración; reemplazan a `AreaPolicy`.
+- **Un titular por área a la vez; suplentes sin límite** (cubren vacaciones solapadas). Quitar a un responsable es cerrar su vigencia, no borrarlo: el historial dice quién veía qué y cuándo.
+- **Fusionar un área** pasa sus expedientes y áreas dependientes al destino y la desactiva; sus responsables no se trasladan (el destino conserva los suyos). No se fusiona en una dependiente (ciclo) ni en un área inactiva. Los expedientes movidos se reindexan porque `visible_para` cambia.
 - **Pantalla de roles y permisos**: no se hizo. Los roles son los de la sección 5; delegar `configuracion.gestionar` a otro rol espera el pendiente 8.
 
 ## 2026-10-02 — Fase 1

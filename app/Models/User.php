@@ -35,6 +35,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Usuarios activos para un Select.
+     *
+     * @return list<array{value: int, label: string}>
+     */
+    public static function opciones(): array
+    {
+        return self::where('activo', true)->orderBy('name')->get(['id', 'name', 'email'])
+            ->map(fn (User $u) => ['value' => $u->id, 'label' => "{$u->name} ({$u->email})"])
+            ->all();
+    }
+
+    /**
      * Áreas de las que hoy es titular o suplente.
      *
      * @return list<int>

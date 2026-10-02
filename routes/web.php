@@ -6,6 +6,7 @@ use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\PlazoAreaController;
+use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\TipoTramiteController;
 use App\Http\Controllers\UsuarioController;
 use App\Models\User;
@@ -51,6 +52,8 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('areas', AreaController::class)->except(['show', 'destroy']);
     Route::patch('areas/{area}/estado', [AreaController::class, 'cambiarEstado'])->name('areas.estado');
+    Route::post('areas/{area}/fusionar', [AreaController::class, 'fusionar'])->name('areas.fusionar');
+    Route::resource('responsables', ResponsableController::class)->except(['show', 'destroy']);
 
     Route::resource('tipos-tramite', TipoTramiteController::class)->parameters(['tipos-tramite' => 'tipo'])->except(['show', 'destroy']);
     Route::patch('tipos-tramite/{tipo}/estado', [TipoTramiteController::class, 'cambiarEstado'])->name('tipos-tramite.estado');
