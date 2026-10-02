@@ -4,6 +4,10 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 ## 2026-10-04 — Fase 3
 
+- **QR con `bacon/bacon-qr-code`** (PHP puro, SVG): codifica el enlace `/qr/REG-AAAA-NNNNN`. La cámara de un teléfono lo abre como enlace y un lector USB lo escribe en la búsqueda de expedientes, que abre directo el expediente. No hace falta un lector QR propio en la página; los permisos los sigue aplicando la vista del expediente.
+- **Constancia, etiqueta y cargo son vistas Blade imprimibles** con los mismos tokens de Tailwind (tinta sobre blanco), fuera del AppShell; cada impresión queda auditada (9).
+- **El original no tiene acción de descarte**: solo ubicación y custodio, y moverlo es un movimiento auditado. Quien registra el papel queda como su primer custodio.
+- **El cargo firmado es un documento del expediente ligado a su derivación** (`documentos.movimiento_id`). Custodian e imprimen quien registra o quien deriva.
 - **Registro de papel en dos pasos**: subir el escaneo (se guarda por hash, se extrae el texto y, si no tiene, se hace OCR síncrono para prellenar) y confirmar el formulario. El escaneo pendiente vive un día en caché con su ruta, tipo, páginas y texto; el registro solo acepta un hash que esté ahí. Un escaneo abandonado queda en el almacén de originales (por hash, sin duplicar).
 - **Extracción por reglas** (`ExtraccionService`): encabezado «TIPO N° número» de la primera página, fecha «12 de agosto de 2026» o dd/mm/aaaa, línea «ASUNTO:» y emisor vigente cuyo nombre aparece en el texto (el más largo). Solo propone; sin IA.
 - **En papel, emisor, tipo, N° y fecha del documento son obligatorios**: sin ellos no hay clave anti-duplicados. El N° se guarda normalizado (mayúsculas, sin tildes, «N°», guiones sin espacios) y tal como venía.

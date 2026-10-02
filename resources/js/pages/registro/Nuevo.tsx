@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Textarea } from '@/components/ui/Textarea';
 import type { Opcion } from '@/types';
 
-type Props = { opcionesEmisor: Opcion<number>[]; opcionesTipoDocumento: Opcion<number>[] };
+type Props = { opcionesEmisor: Opcion<number>[]; opcionesTipoDocumento: Opcion<number>[]; opcionesUbicacion: Opcion<number>[] };
 
 /** RegistroFisicoService::prellenar. */
 type Prellenado = {
@@ -29,7 +29,7 @@ type Prellenado = {
     mismo_archivo: { id: number; numero: string | null } | null;
 };
 
-export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento }: Props) {
+export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, opcionesUbicacion }: Props) {
     const [escaneo, setEscaneo] = useState<Prellenado | null>(null);
     const [errorEmisor, setErrorEmisor] = useState<string>();
     const subida = useHttp<{ archivo: File | null }, Prellenado>('post', '/registro/prellenar', { archivo: null });
@@ -43,6 +43,7 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento }:
         folios: '',
         motivo_folios: '',
         requiere_respuesta: true,
+        ubicacion_fisica_id: '',
         confirmar_duplicado: false,
     });
     const { data, setData, errors } = form;
@@ -74,7 +75,7 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento }:
     };
 
     const enviar = () => {
-        form.transform((d) => ({ ...d, tipo_documento_id: Number(d.tipo_documento_id) || null, folios: Number(d.folios) || null, motivo_folios: d.motivo_folios || null }));
+        form.transform((d) => ({ ...d, tipo_documento_id: Number(d.tipo_documento_id) || null, folios: Number(d.folios) || null, motivo_folios: d.motivo_folios || null, ubicacion_fisica_id: Number(d.ubicacion_fisica_id) || null }));
         form.post('/registro');
     };
 
@@ -171,6 +172,20 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento }:
                     checked={data.requiere_respuesta}
                     onChange={(e) => setData('requiere_respuesta', e.target.checked)}
                 />
+            </FormSection>
+
+            <FormSection titulo="Original en papel" descripcion="Se conserva siempre; tú quedas como su custodio al registrarlo.">
+                <FormField etiqueta="Ubicación" ayuda="Archivador, caja o estante." error={errors.ubicacion_fisica_id}>
+                    {(c) => (
+                        <Select
+                            {...c}
+                            vacia="Sin asignar todavía"
+                            opciones={opcionesUbicacion}
+                            value={data.ubicacion_fisica_id}
+                            onChange={(e) => setData('ubicacion_fisica_id', e.target.value)}
+                        />
+                    )}
+                </FormField>
             </FormSection>
 
             {extra.duplicado && (

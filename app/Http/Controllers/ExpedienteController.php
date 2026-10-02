@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoExpediente;
+use App\Enums\OrigenExpediente;
 use App\Enums\Semaforo;
 use App\Http\Resources\ExpedienteResource;
 use App\Models\Area;
@@ -16,6 +17,7 @@ use App\Models\Movimiento;
 use App\Models\ReglaDerivacion;
 use App\Models\TipoDocumento;
 use App\Models\TipoTramite;
+use App\Models\UbicacionFisica;
 use App\Models\User;
 use App\Services\AuditoriaService;
 use App\Services\ExpedienteService;
@@ -31,7 +33,7 @@ class ExpedienteController extends Controller
 {
     public function __construct(private readonly ExpedienteService $expedientes) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         Gate::authorize('viewAny', Expediente::class);
 
@@ -43,7 +45,12 @@ class ExpedienteController extends Controller
         ]);
         $user = $request->user();
 
-        if ($texto = $filtros['q'] ?? null) {
+        // Un lector de QR o de código escribe «REG-2026-00038» (o su enlace): se abre directo el expediente.
+        if (($texto = $filtros['q'] ?? null) && ($porCodigo = Expediente::porCodigoEn($texto)) && $user->can('view', $porCodigo)) {
+            return to_route('expedientes.show', $porCodigo);
+        }
+
+        if ($texto) {
             // Meilisearch filtra por permisos (visible_para); el scope en la base es la segunda barrera.
             $busqueda = Expediente::search($texto)
                 ->query(fn ($q) => $q->visiblesPara($user)->with('area:id,nombre')->withCount('documentos'));
@@ -84,9 +91,10 @@ class ExpedienteController extends Controller
         $auditoria->registrar('expediente.consultado', $expediente);
         $user = $request->user();
         $registrable = $expediente->estado->puedeConfirmarse() && $user->can('registrar', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite']);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre']);
         $abierto = in_array($expediente->estado, [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion], true);
         $derivable = ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('derivar', $expediente);
+        $custodia = $expediente->codigo !== null && $user->can('custodiar', $expediente);
 
         return Inertia::render('expedientes/Show', [
             'expediente' => [
@@ -116,7 +124,21 @@ class ExpedienteController extends Controller
                     'comentar' => ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('comentar', $expediente),
                     'solicitar_cierre' => $abierto && ! $expediente->cierre_solicitado_at && $user->can('atender', $expediente),
                     'resolver_cierre' => $abierto && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),
+                    'custodiar' => $custodia,
                 ],
+                // El papel nunca se descarta: solo se registra dónde está y quién lo tiene (7.3.1).
+                'original' => $expediente->origen === OrigenExpediente::Fisico ? [
+                    'ubicacion_fisica_id' => $expediente->ubicacion_fisica_id,
+                    'ubicacion' => $expediente->ubicacionFisica?->nombre,
+                    'custodio_id' => $expediente->custodio_id,
+                    'custodio' => $expediente->custodio?->name,
+                ] : null,
+                'cargos' => $expediente->movimientos->where('tipo', 'derivacion')->map(fn (Movimiento $m) => [
+                    'id' => $m->id,
+                    'fecha' => $m->created_at->toIso8601String(),
+                    'area' => $m->aArea?->nombre,
+                    'firmado' => $expediente->documentos->firstWhere('movimiento_id', $m->id)?->id,
+                ])->values(),
                 'correos' => $expediente->correos->map(fn (Correo $c) => [
                     'id' => $c->id,
                     'de_nombre' => $c->de_nombre,
@@ -141,6 +163,7 @@ class ExpedienteController extends Controller
             // Solo para el diálogo de registro (6.1).
             ...($registrable ? ['opcionesEmisor' => Emisor::opciones(), 'opcionesTipoDocumento' => TipoDocumento::opciones()] : []),
             ...($derivable ? ['derivacion' => $this->opcionesDerivacion($expediente)] : []),
+            ...($custodia && $expediente->origen === OrigenExpediente::Fisico ? ['custodia' => ['ubicaciones' => UbicacionFisica::opciones(), 'usuarios' => User::opciones()]] : []),
         ]);
     }
 

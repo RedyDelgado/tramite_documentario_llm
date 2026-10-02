@@ -31,6 +31,12 @@ class ExpedientePolicy
         return $user->can('expedientes.registrar') && $this->view($user, $expediente);
     }
 
+    /** Custodia del papel: mover el original, imprimir constancia, etiqueta y cargo (7.3.1). */
+    public function custodiar(User $user, Expediente $expediente): bool
+    {
+        return $this->registrar($user, $expediente) || $this->derivar($user, $expediente);
+    }
+
     /** Derivar y reasignar: director y administrativo (5). */
     public function derivar(User $user, Expediente $expediente): bool
     {

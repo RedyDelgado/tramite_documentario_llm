@@ -20,11 +20,18 @@ class Movimiento extends Model
         'cierre_solicitado' => 'Solicitó el cierre',
         'cierre_rechazado' => 'Rechazó el cierre',
         'cierre_aprobado' => 'Cerró el expediente',
+        'original_movido' => 'Movió el original',
     ];
 
     protected function casts(): array
     {
         return ['fecha_limite' => 'date:Y-m-d', 'created_at' => 'datetime'];
+    }
+
+    /** @return BelongsTo<Expediente, $this> */
+    public function expediente(): BelongsTo
+    {
+        return $this->belongsTo(Expediente::class);
     }
 
     /** @return BelongsTo<User, $this> */

@@ -104,6 +104,9 @@ class RegistroFisicoService
                     'folios' => $datos['folios'],
                     'motivo_folios' => $datos['motivo_folios'] ?? null,
                     'requiere_respuesta' => $datos['requiere_respuesta'],
+                    'ubicacion_fisica_id' => $datos['ubicacion_fisica_id'] ?? null,
+                    // Quien recibe el papel es su primer custodio (7.3.1).
+                    'custodio_id' => auth()->id(),
                 ]);
                 Documento::create([
                     'expediente_id' => $expediente->id,

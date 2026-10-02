@@ -8,6 +8,7 @@ use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\InstruccionFrecuenteController;
 use App\Http\Controllers\OriginalController;
+use App\Http\Controllers\OriginalFisicoController;
 use App\Http\Controllers\PlazoAreaController;
 use App\Http\Controllers\RegistroFisicoController;
 use App\Http\Controllers\ReglaDerivacionController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\ReglaNoTramiteController;
 use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\TipoTramiteController;
+use App\Http\Controllers\UbicacionFisicaController;
 use App\Http\Controllers\UmbralController;
 use App\Http\Controllers\UsuarioController;
 use App\Models\Expediente;
@@ -79,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('emisores', EmisorController::class)->parameters(['emisores' => 'emisor'])->except(['show', 'destroy']);
     Route::resource('tipos-documento', TipoDocumentoController::class)->parameters(['tipos-documento' => 'tipo'])->except(['show', 'destroy']);
     Route::resource('instrucciones', InstruccionFrecuenteController::class)->parameters(['instrucciones' => 'instruccion'])->except(['show', 'destroy']);
+    Route::resource('ubicaciones', UbicacionFisicaController::class)->parameters(['ubicaciones' => 'ubicacion'])->except(['show', 'destroy']);
     Route::resource('reglas-no-tramite', ReglaNoTramiteController::class)->parameters(['reglas-no-tramite' => 'regla'])->except(['show', 'destroy']);
     Route::get('umbrales', [UmbralController::class, 'edit'])->name('umbrales.edit');
     Route::put('umbrales', [UmbralController::class, 'update'])->name('umbrales.update');
@@ -89,6 +92,14 @@ Route::middleware('auth')->group(function () {
     Route::get('registro/nuevo', [RegistroFisicoController::class, 'create'])->name('registro.create');
     Route::post('registro/prellenar', [RegistroFisicoController::class, 'prellenar'])->name('registro.prellenar');
     Route::post('registro', [RegistroFisicoController::class, 'store'])->name('registro.store');
+
+    // Destino del QR impreso (7.3): abre el expediente; los permisos los aplica su vista.
+    Route::get('qr/{codigo}', fn (string $codigo) => to_route('expedientes.show', Expediente::porCodigoEn($codigo) ?? abort(404)))->name('qr');
+    Route::post('expedientes/{expediente}/original', [OriginalFisicoController::class, 'mover'])->name('expedientes.original');
+    Route::get('expedientes/{expediente}/constancia', [OriginalFisicoController::class, 'constancia'])->name('expedientes.constancia');
+    Route::get('expedientes/{expediente}/etiqueta', [OriginalFisicoController::class, 'etiqueta'])->name('expedientes.etiqueta');
+    Route::get('movimientos/{movimiento}/cargo', [OriginalFisicoController::class, 'cargo'])->name('movimientos.cargo');
+    Route::post('movimientos/{movimiento}/cargo', [OriginalFisicoController::class, 'adjuntarCargo'])->name('movimientos.cargo.adjuntar');
 
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');
     Route::get('expedientes/{expediente}', [ExpedienteController::class, 'show'])->name('expedientes.show');

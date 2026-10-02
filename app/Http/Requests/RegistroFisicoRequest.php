@@ -28,6 +28,7 @@ class RegistroFisicoRequest extends FormRequest
             'folios' => ['required', 'integer', 'min:1', 'max:5000'],
             'motivo_folios' => ['nullable', 'string', 'max:300'],
             'requiere_respuesta' => ['required', 'boolean'],
+            'ubicacion_fisica_id' => ['nullable', 'integer', Rule::exists('ubicaciones_fisicas', 'id')->where('activa', true)],
             'confirmar_duplicado' => ['sometimes', 'boolean'],
         ];
     }
@@ -36,7 +37,7 @@ class RegistroFisicoRequest extends FormRequest
     {
         return [
             'emisor_id' => 'emisor', 'tipo_documento_id' => 'tipo de documento', 'numero_documento' => 'N° de documento',
-            'fecha_documento' => 'fecha del documento', 'motivo_folios' => 'motivo', 'requiere_respuesta' => 'requiere respuesta',
+            'fecha_documento' => 'fecha del documento', 'motivo_folios' => 'motivo', 'requiere_respuesta' => 'requiere respuesta', 'ubicacion_fisica_id' => 'ubicación',
         ];
     }
 

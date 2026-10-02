@@ -4,6 +4,7 @@ import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
 import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { LineaTiempo } from '@/components/domain/LineaTiempo';
+import { OriginalPapel } from '@/components/domain/OriginalPapel';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
@@ -73,9 +74,10 @@ type Props = {
     opcionesEmisor?: Opcion<number>[];
     opcionesTipoDocumento?: Opcion<number>[];
     derivacion?: OpcionesDerivacion;
+    custodia?: { ubicaciones: Opcion<number>[]; usuarios: Opcion<number>[] };
 };
 
-export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion }: Props) {
+export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion, custodia }: Props) {
     return (
         <AppShell>
             <PageHeader
@@ -141,7 +143,9 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         />
                     </Card>
 
-                    <Card titulo={`Documentos (${e.documentos.length})`}>
+                    <OriginalPapel expediente={e} custodia={custodia} />
+
+                    <Card titulo={`${e.origen === 'fisico' ? 'Copia digital' : 'Documentos'} (${e.documentos.length})`}>
                         {e.documentos.length === 0 ? (
                             <p className="text-base text-fg-muted">Sin documentos adjuntos.</p>
                         ) : (

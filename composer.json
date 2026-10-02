@@ -7,6 +7,7 @@
     "license": "proprietary",
     "require": {
         "php": "^8.3",
+        "bacon/bacon-qr-code": "^3.0",
         "inertiajs/inertia-laravel": "^3.5",
         "laravel/framework": "^13.17",
         "laravel/horizon": "^5.50",

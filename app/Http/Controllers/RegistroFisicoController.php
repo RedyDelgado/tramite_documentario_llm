@@ -6,6 +6,7 @@ use App\Http\Requests\RegistroFisicoRequest;
 use App\Models\Emisor;
 use App\Models\Expediente;
 use App\Models\TipoDocumento;
+use App\Models\UbicacionFisica;
 use App\Services\RegistroFisicoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class RegistroFisicoController extends Controller
         return Inertia::render('registro/Nuevo', [
             'opcionesEmisor' => Emisor::opciones(),
             'opcionesTipoDocumento' => TipoDocumento::opciones(),
+            'opcionesUbicacion' => UbicacionFisica::opciones(),
         ]);
     }
 

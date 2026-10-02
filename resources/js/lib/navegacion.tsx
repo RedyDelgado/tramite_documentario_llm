@@ -1,5 +1,6 @@
 import {
     Apps20Regular,
+    Archive20Regular,
     ArrowRouting20Regular,
     BuildingGovernment20Regular,
     CalendarCancel20Regular,
@@ -63,6 +64,7 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Emisores', href: '/emisores', icono: <BuildingGovernment20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Tipos de documento', href: '/tipos-documento', icono: <DocumentCopy20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Instrucciones', href: '/instrucciones', icono: <TaskListLtr20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Ubicaciones físicas', href: '/ubicaciones', icono: <Archive20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Correo no trámite', href: '/reglas-no-tramite', icono: <MailProhibited20Regular />, permisos: ['configuracion.gestionar'] },
         ],
     },

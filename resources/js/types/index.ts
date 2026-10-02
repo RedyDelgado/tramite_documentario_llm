@@ -85,7 +85,9 @@ export type ExpedienteDetalle = ExpedienteFila & {
     requiere_respuesta: boolean;
     cierre_solicitado_at: string | null;
     atendido_at: string | null;
-    permisos: { derivar: boolean; tomar: boolean; comentar: boolean; solicitar_cierre: boolean; resolver_cierre: boolean };
+    permisos: { derivar: boolean; tomar: boolean; comentar: boolean; solicitar_cierre: boolean; resolver_cierre: boolean; custodiar: boolean };
+    original: { ubicacion_fisica_id: number | null; ubicacion: string | null; custodio_id: number | null; custodio: string | null } | null;
+    cargos: { id: number; fecha: string; area: string | null; firmado: number | null }[];
     correos: CorreoDetalle[];
     documentos: DocumentoDetalle[];
 };
@@ -196,3 +198,6 @@ export type ReglaNoTramite = {
     activa: boolean;
     actualizado: string | null;
 };
+
+/** UbicacionFisicaController@fila. */
+export type UbicacionFisica = { id: number; nombre: string; descripcion: string | null; activa: boolean; actualizado: string | null };
