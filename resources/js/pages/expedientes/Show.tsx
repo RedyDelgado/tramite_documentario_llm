@@ -1,4 +1,5 @@
-import { ArrowDownload16Regular, Attach16Regular, Mail20Regular } from '@fluentui/react-icons';
+import { ArrowDownload16Regular, Attach16Regular, Mail20Regular, Send20Regular } from '@fluentui/react-icons';
+import { Link } from '@inertiajs/react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
 import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
@@ -10,6 +11,7 @@ import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Badge } from '@/components/ui/Badge';
+import { botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
@@ -88,6 +90,12 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                 acciones={
                     <>
                         <AccionesAtencion expediente={e} derivacion={derivacion} />
+                        {e.permisos.redactar && (
+                            <Link href={`/salientes/create?expediente=${e.id}`} className={botonClases()}>
+                                <Send20Regular />
+                                Redactar respuesta
+                            </Link>
+                        )}
                         <AccionesRegistro
                             expediente={e}
                             opciones={opcionesEmisor && opcionesTipoDocumento && { emisor: opcionesEmisor, tipoDocumento: opcionesTipoDocumento }}

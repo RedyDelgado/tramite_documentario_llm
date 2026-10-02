@@ -103,7 +103,8 @@ class CatalogosRegistroTest extends TestCase
 
     public function test_tipos_de_documento_e_instrucciones_se_crean_y_quedan_auditados(): void
     {
-        $this->actingAs($this->admin)->post('/tipos-documento', ['nombre' => 'Oficio circular', 'activo' => true])->assertRedirect('/tipos-documento');
+        $this->actingAs($this->admin)->post('/tipos-documento', ['nombre' => 'Oficio circular', 'formato_numero' => '{TIPO} N.º {NUMERO}-{ANIO}-{AREA}', 'aprueba_salida' => 'director', 'activo' => true])->assertRedirect('/tipos-documento');
+        $this->actingAs($this->admin)->post('/tipos-documento', ['nombre' => 'Carta', 'formato_numero' => 'CARTA-{ANIO}', 'aprueba_salida' => 'director', 'activo' => true])->assertSessionHasErrors('formato_numero');
         $this->actingAs($this->admin)->post('/tipos-documento', ['nombre' => 'Oficio circular', 'activo' => true])->assertSessionHasErrors('nombre');
         $this->actingAs($this->admin)->post('/instrucciones', ['texto' => 'Para conocimiento', 'orden' => 1, 'activa' => true])->assertRedirect('/instrucciones');
 

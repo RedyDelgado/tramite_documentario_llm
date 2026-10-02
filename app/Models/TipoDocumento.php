@@ -11,10 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 /** Forma del documento (oficio, carta, informe…); distinto del tipo de trámite, que lleva el plazo (6.1). */
 #[UsePolicy(ConfiguracionPolicy::class)]
 #[Table('tipos_documento')]
-#[Fillable(['nombre', 'activo'])]
+#[Fillable(['nombre', 'formato_numero', 'aprueba_salida', 'activo'])]
 class TipoDocumento extends Model
 {
-    protected $attributes = ['activo' => true];
+    public const APRUEBA_SALIDA = ['director' => 'Director', 'coordinador' => 'Coordinador del área que emite'];
+
+    protected $attributes = ['activo' => true, 'formato_numero' => '{TIPO} N.º {NUMERO}-{ANIO}-{AREA}', 'aprueba_salida' => 'director'];
 
     protected function casts(): array
     {

@@ -25,6 +25,7 @@ class AreaRequest extends FormRequest
                 'required', 'string', 'max:150',
                 Rule::unique('areas', 'nombre')->ignore($this->route('area'))->whereNull('deleted_at'),
             ],
+            'siglas' => ['nullable', 'string', 'max:20'],
             'descripcion' => ['nullable', 'string', 'max:2000'],
             'palabras_clave' => ['present', 'array', 'max:30'],
             'palabras_clave.*' => ['string', 'distinct', 'max:50'],

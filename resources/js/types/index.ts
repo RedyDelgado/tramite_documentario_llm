@@ -85,7 +85,7 @@ export type ExpedienteDetalle = ExpedienteFila & {
     requiere_respuesta: boolean;
     cierre_solicitado_at: string | null;
     atendido_at: string | null;
-    permisos: { derivar: boolean; tomar: boolean; comentar: boolean; solicitar_cierre: boolean; resolver_cierre: boolean; custodiar: boolean; agrupar: boolean };
+    permisos: { derivar: boolean; tomar: boolean; comentar: boolean; solicitar_cierre: boolean; resolver_cierre: boolean; custodiar: boolean; agrupar: boolean; redactar: boolean };
     serie: { id: number; nombre: string; expedientes: ResumenExpediente[] } | null;
     original: { ubicacion_fisica_id: number | null; ubicacion: string | null; custodio_id: number | null; custodio: string | null } | null;
     cargos: { id: number; fecha: string; area: string | null; firmado: number | null }[];
@@ -115,6 +115,7 @@ export type OpcionesDerivacion = {
 export type Area = {
     id: number;
     nombre: string;
+    siglas: string | null;
     descripcion: string | null;
     palabras_clave: string[];
     parent_id: number | null;
@@ -191,7 +192,7 @@ export type Emisor = { id: number; nombre: string; tipo: 'interno' | 'externo'; 
 export type ParDuplicado = { a: { id: number; nombre: string }; b: { id: number; nombre: string } };
 
 /** TipoDocumentoController@fila. */
-export type TipoDocumento = { id: number; nombre: string; activo: boolean; actualizado: string | null };
+export type TipoDocumento = { id: number; nombre: string; formato_numero: string; aprueba_salida: 'director' | 'coordinador'; activo: boolean; actualizado: string | null };
 
 /** InstruccionFrecuenteController@fila. */
 export type InstruccionFrecuente = { id: number; texto: string; orden: number; activa: boolean; actualizado: string | null };
@@ -209,3 +210,40 @@ export type ReglaNoTramite = {
 
 /** UbicacionFisicaController@fila. */
 export type UbicacionFisica = { id: number; nombre: string; descripcion: string | null; activa: boolean; actualizado: string | null };
+
+/** PlantillaController@fila. */
+export type Plantilla = { id: number; nombre: string; tipo_documento_id: number; tipo: string | null; activa: boolean; actualizado: string | null };
+
+/** SalienteController@fila. */
+export type Saliente = {
+    id: number;
+    numero: string | null;
+    asunto: string;
+    tipo: string;
+    area: string;
+    estado: { valor: 'borrador' | 'en_revision' | 'aprobado' | 'enviado'; etiqueta: string };
+    expediente: { id: number; numero_registro: string | null } | null;
+    semaforo: Semaforo | null;
+    fecha_limite_respuesta: string | null;
+    respondido_at: string | null;
+    enviado_at: string | null;
+    actualizado: string | null;
+};
+
+/** SalienteController@show. */
+export type SalienteDetalle = Saliente & {
+    cuerpo: string;
+    destinatarios: { email: string; nombre: string | null }[];
+    autor: string;
+    aprobador: string | null;
+    aprobado_at: string | null;
+    observacion: string | null;
+    es_respuesta: boolean;
+    requiere_respuesta: boolean;
+    plazo_respuesta_dias: number | null;
+    esperar_firma: boolean;
+    firmado: boolean;
+    sha256_pdf: string | null;
+    envios: { id: number; email: string; nombre: string | null; estado: 'pendiente' | 'enviado' | 'rebotado' | 'fallido'; enviado_at: string | null; detalle: string | null }[];
+    permisos: { editar: boolean; revision: boolean; aprobar: boolean };
+};

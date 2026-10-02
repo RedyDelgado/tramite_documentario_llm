@@ -19,6 +19,9 @@ class TipoDocumentoRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:100', Rule::unique('tipos_documento', 'nombre')->ignore($this->route('tipo'))],
+            // Numeración de lo emitido (7.3.4): {NUMERO} es obligatorio para que el correlativo se vea.
+            'formato_numero' => ['required', 'string', 'max:100', 'regex:/\{NUMERO\}/'],
+            'aprueba_salida' => ['required', Rule::in(array_keys(TipoDocumento::APRUEBA_SALIDA))],
             'activo' => ['required', 'boolean'],
         ];
     }

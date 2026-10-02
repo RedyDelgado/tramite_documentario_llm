@@ -14,6 +14,7 @@ type Props = { area: Area | null; opcionesPadre: Opcion<number>[] };
 export default function AreaForm({ area, opcionesPadre }: Props) {
     const form = useForm({
         nombre: area?.nombre ?? '',
+        siglas: area?.siglas ?? '',
         descripcion: area?.descripcion ?? '',
         palabras_clave: area?.palabras_clave ?? [],
         parent_id: area?.parent_id ? String(area.parent_id) : '',
@@ -24,7 +25,7 @@ export default function AreaForm({ area, opcionesPadre }: Props) {
     const errorPalabras = errors.palabras_clave ?? Object.entries(errors).find(([k]) => k.startsWith('palabras_clave.'))?.[1];
 
     const enviar = () => {
-        form.transform((d) => ({ ...d, parent_id: d.parent_id ? Number(d.parent_id) : null, orden: Number(d.orden) }));
+        form.transform((d) => ({ ...d, parent_id: d.parent_id ? Number(d.parent_id) : null, siglas: d.siglas || null, orden: Number(d.orden) }));
         if (area) {
             form.put(`/areas/${area.id}`);
         } else {
@@ -41,8 +42,11 @@ export default function AreaForm({ area, opcionesPadre }: Props) {
             procesando={form.processing}
         >
             <FormSection titulo="Datos del área">
-                <FormField etiqueta="Nombre" requerido error={errors.nombre} className="md:col-span-2">
+                <FormField etiqueta="Nombre" requerido error={errors.nombre}>
                     {(c) => <Input {...c} value={data.nombre} maxLength={150} autoFocus onChange={(e) => setData('nombre', e.target.value)} />}
+                </FormField>
+                <FormField etiqueta="Siglas" ayuda="Van en el número de lo que emite el área, p. ej. DGA." error={errors.siglas}>
+                    {(c) => <Input {...c} value={data.siglas} maxLength={20} onChange={(e) => setData('siglas', e.target.value)} />}
                 </FormField>
                 <FormField
                     etiqueta="Descripción"

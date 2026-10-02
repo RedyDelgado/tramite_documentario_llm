@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-06 — Fase 5
+
+- **Flujo de lo emitido**: borrador → en revisión → aprobado → enviado. La aprobación es la única que numera: en una transacción toma el correlativo (`secuencias`, clave `saliente:{tipo}:{área}`, por año), genera el PDF final y lo guarda por hash; desde ahí el documento no se edita. Devolver vuelve a borrador con la observación, sin consumir número.
+- **Aprueba el rol del tipo de documento** (`tipos_documento.aprueba_salida`): director, o coordinador del área que emite; nunca quien lo redactó. Redactan registro, dirección y coordinación (esta solo desde sus áreas).
+- **Formato de numeración por tipo de documento** (`{TIPO} N.º {NUMERO}-{ANIO}-{AREA}` por defecto) con las siglas del área (nuevo campo; sin siglas se usan las iniciales). El valor inicial de cada correlativo sigue en `config/tramite.php` (`secuencias_inicio`); no hizo falta editarlo desde el panel.
+- **PDF con dompdf y Word propio**: PHPWord exige la extensión `gd`, que la imagen no trae; un DOCX de texto es un ZIP con tres XML y se arma con `ZipArchive`. Ambos salen de la misma lista de párrafos (`GeneradorDocumentoService::parrafos`), así que no pueden decir cosas distintas.
+- **Plantillas** con variables `{{expediente.codigo}}`, `{{remitente}}`, `{{fecha}}`… que se llenan al redactar; cambiar una plantilla no toca lo ya redactado.
+
 ## 2026-10-05 — Fase 4
 
 - **Correcciones validadas por otra persona** (`ia.validar`: director y administrativo): cuando la derivación contradice a la IA queda una corrección; quien la hizo no puede validarla. El panel `/ia` muestra el % de acierto por área, por tipo y por versión, con solo el número de registro (el superadmin no ve contenido).

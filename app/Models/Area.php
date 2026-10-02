@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[UsePolicy(ConfiguracionPolicy::class)]
-#[Fillable(['nombre', 'descripcion', 'palabras_clave', 'parent_id', 'orden', 'activa'])]
+#[Fillable(['nombre', 'siglas', 'descripcion', 'palabras_clave', 'parent_id', 'orden', 'activa'])]
 class Area extends Model
 {
     /** @use HasFactory<AreaFactory> */

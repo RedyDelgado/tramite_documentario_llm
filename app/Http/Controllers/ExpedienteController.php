@@ -10,6 +10,7 @@ use App\Models\Area;
 use App\Models\Auditoria;
 use App\Models\Correo;
 use App\Models\Documento;
+use App\Models\DocumentoSaliente;
 use App\Models\Emisor;
 use App\Models\Expediente;
 use App\Models\Grupo;
@@ -130,6 +131,9 @@ class ExpedienteController extends Controller
                     'resolver_cierre' => $abierto && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),
                     'custodiar' => $custodia,
                     'agrupar' => $agrupable,
+                    // Responder desde el sistema (7.2): solo lo registrado y aún sin cerrar.
+                    'redactar' => $expediente->codigo !== null && ! in_array($expediente->estado, [EstadoExpediente::Anulado, EstadoExpediente::Cerrado], true)
+                        && $user->can('create', DocumentoSaliente::class),
                 ],
                 'serie' => $expediente->grupo ? [
                     'id' => $expediente->grupo->id,

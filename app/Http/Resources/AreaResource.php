@@ -15,6 +15,7 @@ class AreaResource extends JsonResource
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
+            'siglas' => $this->siglas,
             'descripcion' => $this->descripcion,
             'palabras_clave' => $this->palabras_clave ?? [],
             'parent_id' => $this->parent_id,

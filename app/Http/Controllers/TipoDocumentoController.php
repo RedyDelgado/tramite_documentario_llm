@@ -70,6 +70,6 @@ class TipoDocumentoController extends Controller
     /** Forma espejada en resources/js/types/index.ts (TipoDocumento). */
     private function fila(TipoDocumento $t): array
     {
-        return ['id' => $t->id, 'nombre' => $t->nombre, 'activo' => $t->activo, 'actualizado' => $t->updated_at?->toIso8601String()];
+        return ['id' => $t->id, 'nombre' => $t->nombre, 'formato_numero' => $t->formato_numero, 'aprueba_salida' => $t->aprueba_salida, 'activo' => $t->activo, 'actualizado' => $t->updated_at?->toIso8601String()];
     }
 }

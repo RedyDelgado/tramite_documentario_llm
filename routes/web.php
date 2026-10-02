@@ -10,11 +10,13 @@ use App\Http\Controllers\IaController;
 use App\Http\Controllers\InstruccionFrecuenteController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\OriginalFisicoController;
+use App\Http\Controllers\PlantillaController;
 use App\Http\Controllers\PlazoAreaController;
 use App\Http\Controllers\RegistroFisicoController;
 use App\Http\Controllers\ReglaDerivacionController;
 use App\Http\Controllers\ReglaNoTramiteController;
 use App\Http\Controllers\ResponsableController;
+use App\Http\Controllers\SalienteController;
 use App\Http\Controllers\SerieController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\TipoTramiteController;
@@ -85,6 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('instrucciones', InstruccionFrecuenteController::class)->parameters(['instrucciones' => 'instruccion'])->except(['show', 'destroy']);
     Route::resource('ubicaciones', UbicacionFisicaController::class)->parameters(['ubicaciones' => 'ubicacion'])->except(['show', 'destroy']);
     Route::resource('reglas-no-tramite', ReglaNoTramiteController::class)->parameters(['reglas-no-tramite' => 'regla'])->except(['show', 'destroy']);
+    Route::resource('plantillas', PlantillaController::class)->parameters(['plantillas' => 'plantilla'])->except(['show', 'destroy']);
     Route::get('ia', [IaController::class, 'index'])->name('ia.index');
     Route::post('ia/correcciones/{correccion}', [IaController::class, 'resolver'])->name('ia.correcciones.resolver');
     Route::get('umbrales', [UmbralController::class, 'edit'])->name('umbrales.edit');
@@ -107,6 +110,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('expedientes/{expediente}/serie', [SerieController::class, 'agrupar'])->name('expedientes.serie');
     Route::delete('expedientes/{expediente}/serie', [SerieController::class, 'quitar'])->name('expedientes.serie.quitar');
+
+    Route::get('salientes/plantilla/{plantilla}', [SalienteController::class, 'plantilla'])->name('salientes.plantilla');
+    Route::post('salientes/{saliente}/revision', [SalienteController::class, 'revision'])->name('salientes.revision');
+    Route::post('salientes/{saliente}/devolver', [SalienteController::class, 'devolver'])->name('salientes.devolver');
+    Route::post('salientes/{saliente}/aprobar', [SalienteController::class, 'aprobar'])->name('salientes.aprobar');
+    Route::get('salientes/{saliente}/descargar/{formato}', [SalienteController::class, 'descargar'])->name('salientes.descargar');
+    Route::resource('salientes', SalienteController::class)->parameters(['salientes' => 'saliente'])->except(['destroy']);
 
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');
     Route::get('expedientes/{expediente}', [ExpedienteController::class, 'show'])->name('expedientes.show');

@@ -15,6 +15,7 @@ import {
     Organization20Regular,
     People20Regular,
     PersonAccounts20Regular,
+    Send20Regular,
     TaskListLtr20Regular,
     Timer20Regular,
     TopSpeed20Regular,
@@ -44,6 +45,7 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Inicio', href: '/', icono: <Home20Regular /> },
             { etiqueta: 'Expedientes', href: '/expedientes', icono: <DocumentBulletList20Regular />, permisos: PERMISOS_EXPEDIENTES },
             { etiqueta: 'Registrar papel', href: '/registro/nuevo', icono: <DocumentAdd20Regular />, permisos: ['expedientes.registrar'] },
+            { etiqueta: 'Documentos emitidos', href: '/salientes', icono: <Send20Regular />, permisos: [...PERMISOS_EXPEDIENTES, 'expedientes.registrar'] },
         ],
     },
     {
@@ -68,6 +70,7 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Instrucciones', href: '/instrucciones', icono: <TaskListLtr20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Ubicaciones físicas', href: '/ubicaciones', icono: <Archive20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Correo no trámite', href: '/reglas-no-tramite', icono: <MailProhibited20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Plantillas', href: '/plantillas', icono: <DocumentText20Regular />, permisos: ['configuracion.gestionar'] },
         ],
     },
     {
