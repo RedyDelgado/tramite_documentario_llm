@@ -7,6 +7,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel
 
 import clasificador
+import entrenamiento
 import ocr
 
 @asynccontextmanager
@@ -98,3 +99,41 @@ def clasificar(peticion: PeticionClasificar) -> dict:
         [a.model_dump() for a in peticion.areas],
         [t.model_dump() for t in peticion.tipos],
     )
+
+
+class Ejemplo(BaseModel):
+    texto: str
+    area_id: int | None = None
+    tipo_id: int | None = None
+
+
+class PeticionEntrenar(BaseModel):
+    # Solo etiquetas confirmadas por personas: aciertos de la IA y correcciones validadas (sección 10).
+    ejemplos: list[Ejemplo]
+
+
+class PeticionActivar(BaseModel):
+    version: str | None
+
+
+@app.post("/train", dependencies=[Depends(verificar_token)])
+def entrenar(peticion: PeticionEntrenar) -> dict:
+    try:
+        return entrenamiento.entrenar([e.model_dump() for e in peticion.ejemplos])
+    except entrenamiento.SinDatos as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+@app.get("/models", dependencies=[Depends(verificar_token)])
+def modelos() -> dict:
+    return {"activa": clasificador.version_activa(), "versiones": entrenamiento.versiones()}
+
+
+@app.post("/models/activate", dependencies=[Depends(verificar_token)])
+def activar(peticion: PeticionActivar) -> dict:
+    """Vuelve a una versión anterior (o a la similitud con `null`) sin reentrenar."""
+    try:
+        entrenamiento.activar(peticion.version)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Versión inexistente")
+    return {"activa": clasificador.version_activa()}

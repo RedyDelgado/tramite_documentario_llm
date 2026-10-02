@@ -11,6 +11,7 @@ use App\Models\Expediente;
 use App\Models\TipoTramite;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -38,9 +39,7 @@ class ClasificacionService
         }
 
         // Catálogo vigente en cada petición: un área nueva cuenta de inmediato y una inactiva nunca vuelve (10).
-        $respuesta = Http::baseUrl(config('tramite.ai.url'))
-            ->withHeaders(['X-AI-Token' => (string) config('tramite.ai.token')])
-            ->timeout(120)
+        $respuesta = self::ia()
             ->post('/classify', [
                 'texto' => $texto,
                 'areas' => Area::where('activa', true)->get(['id', 'nombre', 'descripcion', 'palabras_clave'])->toArray(),
@@ -101,6 +100,41 @@ class ClasificacionService
         }
 
         return $clasificacion;
+    }
+
+    /**
+     * Ejemplos para reentrenar: solo etiquetas confirmadas por personas (10). Un campo cuenta si la IA acertó
+     * (la derivación lo confirmó) o si su corrección fue validada; una corrección pendiente o rechazada no cuenta.
+     *
+     * @return list<array{texto: string, area_id: ?int, tipo_id: ?int}>
+     */
+    public function ejemplosValidados(): array
+    {
+        $validadas = CorreccionPendiente::where('estado', 'validada')->get()->groupBy('clasificacion_id');
+
+        return ClasificacionIa::whereNotNull('decidido_at')->with('expediente')->orderByDesc('id')->get()
+            // Un ejemplo por expediente: la decisión más reciente.
+            ->unique('expediente_id')
+            ->map(function (ClasificacionIa $c) use ($validadas) {
+                $corregido = fn (string $campo) => $validadas->get($c->id)?->firstWhere('campo', $campo);
+                $area = $c->acierto_area ? $c->area_final_id : $corregido('area')?->valor_humano;
+                $tipo = $c->acierto_tipo ? $c->tipo_final_id : $corregido('tipo')?->valor_humano;
+
+                return $area || $tipo ? [
+                    'texto' => trim($c->expediente->asunto."\n".$c->expediente->textoCompleto(self::MAX_TEXTO)),
+                    'area_id' => $area,
+                    'tipo_id' => $tipo,
+                ] : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /** Cliente del servicio de IA con el token compartido. */
+    public static function ia(int $timeout = 120): PendingRequest
+    {
+        return Http::baseUrl(config('tramite.ai.url'))->withHeaders(['X-AI-Token' => (string) config('tramite.ai.token')])->timeout($timeout);
     }
 
     /** Valida o rechaza una corrección; nunca la valida quien la hizo (5). */

@@ -11,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -63,8 +62,7 @@ class IaController extends Controller
     private function modeloActivo(): ?array
     {
         try {
-            return Http::baseUrl(config('tramite.ai.url'))->withHeaders(['X-AI-Token' => (string) config('tramite.ai.token')])
-                ->timeout(5)->get('/model-info')->throw()->json();
+            return ClasificacionService::ia(5)->get('/model-info')->throw()->json();
         } catch (Throwable) {
             return null;
         }

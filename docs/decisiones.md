@@ -4,6 +4,11 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 ## 2026-10-05 — Fase 4
 
+- **Correcciones validadas por otra persona** (`ia.validar`: director y administrativo): cuando la derivación contradice a la IA queda una corrección; quien la hizo no puede validarla. El panel `/ia` muestra el % de acierto por área, por tipo y por versión, con solo el número de registro (el superadmin no ve contenido).
+- **Reentrenamiento** (`php artisan ia:reentrenar`): regresión logística sobre embeddings con las etiquetas confirmadas por personas (aciertos de la IA que la derivación confirmó y correcciones validadas; nunca pendientes ni rechazadas), un ejemplo por expediente. Hace falta que al menos dos categorías tengan 3 ejemplos; el plan sugiere 30-50 por categoría antes de confiar en el modelo, cosa que el panel por versión permite comprobar.
+- **Versionado**: cada entrenamiento crea `models/vAAAAMMDDHHMMSS/` (modelo y `meta.json`) en el volumen `modelos_ia` y queda activo; `php artisan ia:modelo` lista las versiones y `php artisan ia:modelo <versión>` o `--similitud` revierte sin reentrenar.
+- **Categoría nueva o desactivada sin reentrenar**: si el catálogo trae un área o tipo que el modelo no conoce, ese campo vuelve a la similitud hasta el siguiente reentrenamiento; las inactivas nunca vuelven porque no viajan en el catálogo.
+- **Imagen de IA de ~3 GB** (torch CPU, e5-small, Tesseract): el modelo se descarga al construir (`HF_HUB_OFFLINE=1` en ejecución) y se precarga al arrancar; la primera clasificación ya no espera ~25 s.
 - **La IA clasifica en cola** (`ClasificarExpediente`) al registrar un trámite y al terminar el OCR de un escaneo; si su texto no cambió, no vuelve a clasificar. Si la IA está caída, el job reintenta durante ~6 h; el ingreso y el registro nunca la esperan (principio 2).
 - **El catálogo viaja en cada petición** (áreas y tipos activos con descripción y palabras clave): no hace falta `POST /catalog/reload` y un área inactiva no puede volver como propuesta.
 - **Modo sombra** (`ia.modo` en `configuraciones`, por defecto `sombra`): se registra la propuesta y se compara con la primera derivación, pero no se muestra para no sesgar la decisión que la mide.
