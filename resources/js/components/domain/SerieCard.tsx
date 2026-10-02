@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import type { ExpedienteDetalle, OpcionesAgrupacion, ResumenExpediente } from '@/types';
 
 type Props = { expediente: ExpedienteDetalle; agrupacion?: OpcionesAgrupacion };
@@ -41,9 +42,15 @@ export function SerieCard({ expediente: e, agrupacion }: Props) {
                 titulo={`Serie: ${e.serie.nombre}`}
                 acciones={
                     e.permisos.agrupar && (
-                        <Button tamano="sm" onClick={() => router.delete(`/expedientes/${e.id}/serie`, { preserveScroll: true })}>
+                        <BotonConfirmado
+                            tamano="sm"
+                            titulo="¿Quitar de la serie?"
+                            descripcion="El expediente se atenderá por separado; la serie y su historial siguen."
+                            confirmar="Quitar"
+                            onConfirmar={(cerrar) => router.delete(`/expedientes/${e.id}/serie`, { preserveScroll: true, onFinish: cerrar })}
+                        >
                             Quitar de la serie
-                        </Button>
+                        </BotonConfirmado>
                     )
                 }
             >

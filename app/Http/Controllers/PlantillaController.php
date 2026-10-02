@@ -18,7 +18,7 @@ class PlantillaController extends Controller
 {
     public function __construct(private readonly CatalogoService $catalogo) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', PlantillaDocumento::class);
 
@@ -29,11 +29,11 @@ class PlantillaController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', PlantillaDocumento::class);
 
-        return Inertia::render('plantillas/Form', ['plantilla' => null, ...$this->opciones()]);
+        return $this->index($request)->with('formulario', ['plantilla' => null, ...$this->opciones()]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -46,11 +46,11 @@ class PlantillaController extends Controller
         return to_route('plantillas.index');
     }
 
-    public function edit(PlantillaDocumento $plantilla): Response
+    public function edit(Request $request, PlantillaDocumento $plantilla): Response
     {
         Gate::authorize('update', $plantilla);
 
-        return Inertia::render('plantillas/Form', ['plantilla' => [...$this->fila($plantilla), 'asunto' => $plantilla->asunto, 'cuerpo' => $plantilla->cuerpo], ...$this->opciones()]);
+        return $this->index($request)->with('formulario', ['plantilla' => [...$this->fila($plantilla), 'asunto' => $plantilla->asunto, 'cuerpo' => $plantilla->cuerpo], ...$this->opciones()]);
     }
 
     public function update(Request $request, PlantillaDocumento $plantilla): RedirectResponse

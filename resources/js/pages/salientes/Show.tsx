@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { FormField } from '@/components/forms/FormField';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
-import { AppShell } from '@/components/layouts/AppShell';
-import { PageHeader } from '@/components/layouts/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button, botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
 import { Textarea } from '@/components/ui/Textarea';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 import type { SalienteDetalle } from '@/types';
 
@@ -21,19 +21,30 @@ const ESTADO_ENVIO: Record<string, { tono: 'neutro' | 'ok' | 'peligro' | 'aviso'
     fallido: { tono: 'peligro', texto: 'Falló' },
 };
 
-export default function SalienteShow({ saliente: s }: { saliente: SalienteDetalle }) {
+export type DetalleSalienteProps = { saliente: SalienteDetalle };
+
+export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteProps & { onCerrar: () => void }) {
     const [devolviendo, setDevolviendo] = useState(false);
     const [procesando, setProcesando] = useState(false);
     const devolucion = useForm({ observacion: '' });
-    const accion = (ruta: string) =>
-        router.post(`/salientes/${s.id}/${ruta}`, {}, { preserveScroll: true, onStart: () => setProcesando(true), onFinish: () => setProcesando(false) });
+    const [firmado, setFirmado] = useState<File | null>(null);
+    const subirFirmado = (archivo: File) =>
+        router.post(
+            `/salientes/${s.id}/firmado`,
+            { archivo },
+            { forceFormData: true, preserveScroll: true, onStart: () => setProcesando(true), onFinish: () => (setProcesando(false), setFirmado(null)) },
+        );
+    const accion = (ruta: string, cerrar: () => void) =>
+        router.post(`/salientes/${s.id}/${ruta}`, {}, { preserveScroll: true, onStart: () => setProcesando(true), onFinish: () => (setProcesando(false), cerrar()) });
 
     return (
-        <AppShell>
-            <PageHeader
-                titulo={s.numero ?? 'Borrador'}
-                descripcion={s.asunto}
-                acciones={
+        <Dialog
+            abierto
+            onCambiar={(abierto) => !abierto && onCerrar()}
+            tamano="xl"
+            titulo={s.numero ?? 'Borrador'}
+            descripcion={s.asunto}
+            acciones={
                     <>
                         {s.permisos.editar && (
                             <Link href={`/salientes/${s.id}/edit`} className={botonClases()}>
@@ -42,16 +53,36 @@ export default function SalienteShow({ saliente: s }: { saliente: SalienteDetall
                             </Link>
                         )}
                         {s.permisos.revision && (
-                            <Button variante="primario" icono={<Send20Regular />} cargando={procesando} onClick={() => accion('revision')}>
+                            <BotonConfirmado
+                                variante="primario"
+                                icono={<Send20Regular />}
+                                titulo="¿Enviar a revisión?"
+                                descripcion="Ya no se podrá editar salvo que quien revisa lo devuelva."
+                                confirmar="Enviar a revisión"
+                                cargando={procesando}
+                                onConfirmar={(cerrar) => accion('revision', cerrar)}
+                            >
                                 Enviar a revisión
-                            </Button>
+                            </BotonConfirmado>
                         )}
                         {s.permisos.aprobar && (
                             <>
                                 <Button onClick={() => setDevolviendo(true)}>Devolver</Button>
-                                <Button variante="primario" icono={<CheckmarkCircle20Regular />} cargando={procesando} onClick={() => accion('aprobar')}>
+                                <BotonConfirmado
+                                    variante="primario"
+                                    icono={<CheckmarkCircle20Regular />}
+                                    titulo="¿Aprobar y numerar?"
+                                    descripcion={
+                                        s.esperar_firma
+                                            ? 'Recibe su número y su PDF final; se enviará cuando se adjunte el PDF firmado. No se puede deshacer.'
+                                            : 'Recibe su número y su PDF final y se envía de inmediato a los destinatarios. No se puede deshacer.'
+                                    }
+                                    confirmar="Aprobar"
+                                    cargando={procesando}
+                                    onConfirmar={(cerrar) => accion('aprobar', cerrar)}
+                                >
                                     Aprobar y numerar
-                                </Button>
+                                </BotonConfirmado>
                             </>
                         )}
                         {s.permisos.firmar && (
@@ -62,10 +93,7 @@ export default function SalienteShow({ saliente: s }: { saliente: SalienteDetall
                                     type="file"
                                     accept="application/pdf"
                                     className="sr-only"
-                                    onChange={(e) =>
-                                        e.target.files?.[0] &&
-                                        router.post(`/salientes/${s.id}/firmado`, { archivo: e.target.files[0] }, { forceFormData: true, preserveScroll: true })
-                                    }
+                                    onChange={(e) => e.target.files?.[0] && setFirmado(e.target.files[0])}
                                 />
                             </label>
                         )}
@@ -85,7 +113,7 @@ export default function SalienteShow({ saliente: s }: { saliente: SalienteDetall
                         </a>
                     </>
                 }
-            />
+        >
             <div className="grid items-start gap-4 lg:grid-cols-3">
                 <Card titulo="Texto" className="lg:col-span-2">
                     {s.observacion && <p className="mb-3 text-base text-danger">Observación de la revisión: {s.observacion}</p>}
@@ -142,6 +170,20 @@ export default function SalienteShow({ saliente: s }: { saliente: SalienteDetall
                 </div>
             </div>
 
+            <ConfirmDialog
+                abierto={firmado !== null}
+                onCambiar={(abierto) => !abierto && setFirmado(null)}
+                titulo="¿Adjuntar el PDF firmado?"
+                descripcion={
+                    s.esperar_firma && s.estado.valor === 'aprobado'
+                        ? `«${firmado?.name ?? ''}» será la versión final y el documento se enviará de inmediato a sus destinatarios.`
+                        : `«${firmado?.name ?? ''}» será la versión final del documento.`
+                }
+                confirmar="Adjuntar"
+                cargando={procesando}
+                onConfirmar={() => firmado && subirFirmado(firmado)}
+            />
+
             <Dialog
                 abierto={devolviendo}
                 onCambiar={setDevolviendo}
@@ -164,6 +206,6 @@ export default function SalienteShow({ saliente: s }: { saliente: SalienteDetall
                     {(c) => <Textarea {...c} value={devolucion.data.observacion} maxLength={2000} onChange={(e) => devolucion.setData('observacion', e.target.value)} />}
                 </FormField>
             </Dialog>
-        </AppShell>
+        </Dialog>
     );
 }

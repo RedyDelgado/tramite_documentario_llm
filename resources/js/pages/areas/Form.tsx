@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -11,7 +11,7 @@ import type { Area, Opcion } from '@/types';
 
 type Props = { area: Area | null; opcionesPadre: Opcion<number>[] };
 
-export default function AreaForm({ area, opcionesPadre }: Props) {
+export default function AreaForm({ area, opcionesPadre, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({
         nombre: area?.nombre ?? '',
         siglas: area?.siglas ?? '',
@@ -34,10 +34,10 @@ export default function AreaForm({ area, opcionesPadre }: Props) {
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={area ? `Editar «${area.nombre}»` : 'Nueva área'}
             descripcion="Los cambios surten efecto de inmediato y no alteran los expedientes ya ingresados."
-            volverA="/areas"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -87,6 +87,6 @@ export default function AreaForm({ area, opcionesPadre }: Props) {
                     )}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

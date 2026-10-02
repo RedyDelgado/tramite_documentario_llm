@@ -8,6 +8,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import type { ExpedienteDetalle, OpcionesDerivacion } from '@/types';
 
 type Props = { expediente: ExpedienteDetalle; derivacion?: OpcionesDerivacion };
@@ -71,16 +72,23 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                 </Button>
             )}
             {e.permisos.tomar && (
-                <Button
+                <BotonConfirmado
                     variante="primario"
                     icono={<PersonArrowRight20Regular />}
+                    titulo={soloConocimiento ? '¿Tomar conocimiento?' : '¿Tomar en atención?'}
+                    descripcion={
+                        soloConocimiento
+                            ? 'Queda registrado que lo leíste y el expediente pasa a atendido.'
+                            : 'Pasas a atenderlo; queda en el historial y corre el seguimiento.'
+                    }
+                    confirmar={soloConocimiento ? 'Tomar conocimiento' : 'Tomar en atención'}
                     cargando={tomando}
-                    onClick={() =>
-                        router.post(url('tomar'), {}, { preserveScroll: true, onStart: () => setTomando(true), onFinish: () => setTomando(false) })
+                    onConfirmar={(cerrar) =>
+                        router.post(url('tomar'), {}, { preserveScroll: true, onStart: () => setTomando(true), onFinish: () => (setTomando(false), cerrar()) })
                     }
                 >
                     {soloConocimiento ? 'Tomar conocimiento' : 'Tomar en atención'}
-                </Button>
+                </BotonConfirmado>
             )}
             {e.permisos.solicitar_cierre && (
                 <Button icono={<LockClosed20Regular />} onClick={() => setAbierto('cierre')}>

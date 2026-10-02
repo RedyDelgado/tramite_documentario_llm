@@ -7,9 +7,9 @@ import { Pagination } from '@/components/data/Pagination';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import type { Paginado } from '@/types';
 
 type Categoria = { nombre: string; total: number; aciertos: number };
@@ -59,8 +59,8 @@ function Precision({ titulo, filas }: { titulo: string; filas: Categoria[] }) {
 
 export default function IaIndex({ precision, correcciones, modo, modelo }: Props) {
     const [resolviendo, setResolviendo] = useState<number | null>(null);
-    const resolver = (id: number, validar: boolean) =>
-        router.post(`/ia/correcciones/${id}`, { validar }, { preserveScroll: true, onStart: () => setResolviendo(id), onFinish: () => setResolviendo(null) });
+    const resolver = (id: number, validar: boolean, cerrar: () => void) =>
+        router.post(`/ia/correcciones/${id}`, { validar }, { preserveScroll: true, onStart: () => setResolviendo(id), onFinish: () => (setResolviendo(null), cerrar()) });
 
     const columnasCorreccion = [
         {
@@ -83,12 +83,27 @@ export default function IaIndex({ precision, correcciones, modo, modelo }: Props
             celda: (c: Correccion) =>
                 c.puede_resolver ? (
                     <span className="flex gap-2">
-                        <Button tamano="sm" cargando={resolviendo === c.id} onClick={() => resolver(c.id, true)}>
+                        <BotonConfirmado
+                            tamano="sm"
+                            titulo="¿Validar la corrección?"
+                            descripcion={`Servirá para reentrenar a la IA: ${c.campo.toLowerCase()} «${c.valor_humano ?? '—'}» en lugar de «${c.valor_ia ?? '—'}».`}
+                            confirmar="Validar"
+                            cargando={resolviendo === c.id}
+                            onConfirmar={(cerrar) => resolver(c.id, true, cerrar)}
+                        >
                             Validar
-                        </Button>
-                        <Button tamano="sm" onClick={() => resolver(c.id, false)}>
+                        </BotonConfirmado>
+                        <BotonConfirmado
+                            tamano="sm"
+                            titulo="¿Rechazar la corrección?"
+                            descripcion="No servirá para reentrenar a la IA."
+                            confirmar="Rechazar"
+                            peligro
+                            cargando={resolviendo === c.id}
+                            onConfirmar={(cerrar) => resolver(c.id, false, cerrar)}
+                        >
                             Rechazar
-                        </Button>
+                        </BotonConfirmado>
                     </span>
                 ) : (
                     <span className="text-sm text-fg-muted">La valida otra persona</span>

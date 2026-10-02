@@ -45,11 +45,11 @@ class PlazoAreaController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', PlazoArea::class);
 
-        return Inertia::render('plazos/Form', ['plazo' => null, ...$this->opciones()]);
+        return $this->index($request)->with('formulario', ['plazo' => null, ...$this->opciones()]);
     }
 
     public function store(PlazoAreaRequest $request): RedirectResponse
@@ -61,11 +61,11 @@ class PlazoAreaController extends Controller
         return to_route('plazos.index');
     }
 
-    public function edit(PlazoArea $plazo): Response
+    public function edit(Request $request, PlazoArea $plazo): Response
     {
         Gate::authorize('update', $plazo);
 
-        return Inertia::render('plazos/Form', [
+        return $this->index($request)->with('formulario', [
             'plazo' => PlazoAreaResource::make($plazo->load(['tipoTramite', 'area']))->resolve(),
             ...$this->opciones(),
         ]);

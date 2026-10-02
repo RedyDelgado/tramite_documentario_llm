@@ -46,11 +46,11 @@ class EmisorController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', Emisor::class);
 
-        return Inertia::render('emisores/Form', ['emisor' => null, 'opcionesTipo' => $this->opcionesTipo()]);
+        return $this->index($request)->with('formulario', ['emisor' => null, 'opcionesTipo' => $this->opcionesTipo()]);
     }
 
     public function store(EmisorRequest $request): RedirectResponse
@@ -70,11 +70,11 @@ class EmisorController extends Controller
         return response()->json(['value' => $emisor->id, 'label' => $emisor->nombre], 201);
     }
 
-    public function edit(Emisor $emisor): Response
+    public function edit(Request $request, Emisor $emisor): Response
     {
         Gate::authorize('update', $emisor);
 
-        return Inertia::render('emisores/Form', ['emisor' => $this->fila($emisor), 'opcionesTipo' => $this->opcionesTipo()]);
+        return $this->index($request)->with('formulario', ['emisor' => $this->fila($emisor), 'opcionesTipo' => $this->opcionesTipo()]);
     }
 
     public function update(EmisorRequest $request, Emisor $emisor): RedirectResponse

@@ -46,11 +46,11 @@ class AreaController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', Area::class);
 
-        return Inertia::render('areas/Form', [
+        return $this->index($request)->with('formulario', [
             'area' => null,
             'opcionesPadre' => Area::opciones(),
         ]);
@@ -65,11 +65,11 @@ class AreaController extends Controller
         return to_route('areas.index');
     }
 
-    public function edit(Area $area): Response
+    public function edit(Request $request, Area $area): Response
     {
         Gate::authorize('update', $area);
 
-        return Inertia::render('areas/Form', [
+        return $this->index($request)->with('formulario', [
             // resolve(): el recurso suelto va sin el envoltorio `data`.
             'area' => AreaResource::make($area)->resolve(),
             'opcionesPadre' => Area::opciones($area->id),

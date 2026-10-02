@@ -61,7 +61,7 @@ class SalienteController extends Controller
             Gate::authorize('view', $expediente);
         }
 
-        return Inertia::render('salientes/Form', [
+        return $this->index($request)->with('formulario', [
             'saliente' => null,
             'expediente' => $expediente ? [
                 'id' => $expediente->id, 'codigo' => $expediente->codigo, 'asunto' => $expediente->asunto,
@@ -102,31 +102,29 @@ class SalienteController extends Controller
         $saliente->load(['tipoDocumento', 'area', 'expediente', 'autor:id,name', 'aprobador:id,name', 'envios']);
         $user = $request->user();
 
-        return Inertia::render('salientes/Show', [
-            'saliente' => [
-                ...$this->fila($saliente),
-                'cuerpo' => $saliente->cuerpo,
-                'destinatarios' => $saliente->destinatarios,
-                'autor' => $saliente->autor->name,
-                'aprobador' => $saliente->aprobador?->name,
-                'aprobado_at' => $saliente->aprobado_at?->toIso8601String(),
-                'observacion' => $saliente->observacion,
-                'es_respuesta' => $saliente->es_respuesta,
-                'requiere_respuesta' => $saliente->requiere_respuesta,
-                'plazo_respuesta_dias' => $saliente->plazo_respuesta_dias,
-                'esperar_firma' => $saliente->esperar_firma,
-                'firmado' => $saliente->ruta_firmado !== null,
-                'sha256_pdf' => $saliente->sha256_pdf,
-                'envios' => $saliente->envios->map(fn ($e) => [
-                    'id' => $e->id, 'email' => $e->email, 'nombre' => $e->nombre, 'estado' => $e->estado,
-                    'enviado_at' => $e->enviado_at?->toIso8601String(), 'detalle' => $e->detalle,
-                ]),
-                'permisos' => [
-                    'editar' => $user->can('update', $saliente),
-                    'revision' => $saliente->estado === 'borrador' && $user->can('update', $saliente),
-                    'aprobar' => $user->can('aprobar', $saliente),
-                    'firmar' => $user->can('firmar', $saliente),
-                ],
+        return $this->index($request)->with('detalle', [
+            ...$this->fila($saliente),
+            'cuerpo' => $saliente->cuerpo,
+            'destinatarios' => $saliente->destinatarios,
+            'autor' => $saliente->autor->name,
+            'aprobador' => $saliente->aprobador?->name,
+            'aprobado_at' => $saliente->aprobado_at?->toIso8601String(),
+            'observacion' => $saliente->observacion,
+            'es_respuesta' => $saliente->es_respuesta,
+            'requiere_respuesta' => $saliente->requiere_respuesta,
+            'plazo_respuesta_dias' => $saliente->plazo_respuesta_dias,
+            'esperar_firma' => $saliente->esperar_firma,
+            'firmado' => $saliente->ruta_firmado !== null,
+            'sha256_pdf' => $saliente->sha256_pdf,
+            'envios' => $saliente->envios->map(fn ($e) => [
+                'id' => $e->id, 'email' => $e->email, 'nombre' => $e->nombre, 'estado' => $e->estado,
+                'enviado_at' => $e->enviado_at?->toIso8601String(), 'detalle' => $e->detalle,
+            ]),
+            'permisos' => [
+                'editar' => $user->can('update', $saliente),
+                'revision' => $saliente->estado === 'borrador' && $user->can('update', $saliente),
+                'aprobar' => $user->can('aprobar', $saliente),
+                'firmar' => $user->can('firmar', $saliente),
             ],
         ]);
     }
@@ -135,7 +133,7 @@ class SalienteController extends Controller
     {
         Gate::authorize('update', $saliente);
 
-        return Inertia::render('salientes/Form', [
+        return $this->index($request)->with('formulario', [
             'saliente' => [
                 'id' => $saliente->id, 'expediente_id' => $saliente->expediente_id, 'plantilla_id' => $saliente->plantilla_id,
                 'tipo_documento_id' => $saliente->tipo_documento_id, 'area_id' => $saliente->area_id, 'asunto' => $saliente->asunto,

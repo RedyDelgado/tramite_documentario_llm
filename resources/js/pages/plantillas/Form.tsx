@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -14,7 +14,7 @@ type Props = {
     variables: { variable: string; descripcion: string }[];
 };
 
-export default function PlantillaForm({ plantilla, opcionesTipo, variables }: Props) {
+export default function PlantillaForm({ plantilla, opcionesTipo, variables, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({
         nombre: plantilla?.nombre ?? '',
         tipo_documento_id: plantilla ? String(plantilla.tipo_documento_id) : '',
@@ -34,10 +34,10 @@ export default function PlantillaForm({ plantilla, opcionesTipo, variables }: Pr
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={plantilla ? `Editar «${plantilla.nombre}»` : 'Nueva plantilla'}
             descripcion="Cambiar una plantilla no altera los documentos ya redactados."
-            volverA="/plantillas"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -69,6 +69,6 @@ export default function PlantillaForm({ plantilla, opcionesTipo, variables }: Pr
                     {(c) => <Textarea {...c} rows={14} value={data.cuerpo} maxLength={20000} onChange={(e) => setData('cuerpo', e.target.value)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

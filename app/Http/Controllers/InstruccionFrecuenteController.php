@@ -36,11 +36,11 @@ class InstruccionFrecuenteController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', InstruccionFrecuente::class);
 
-        return Inertia::render('instrucciones/Form', ['instruccion' => null]);
+        return $this->index($request)->with('formulario', ['instruccion' => null]);
     }
 
     public function store(InstruccionFrecuenteRequest $request): RedirectResponse
@@ -52,11 +52,11 @@ class InstruccionFrecuenteController extends Controller
         return to_route('instrucciones.index');
     }
 
-    public function edit(InstruccionFrecuente $instruccion): Response
+    public function edit(Request $request, InstruccionFrecuente $instruccion): Response
     {
         Gate::authorize('update', $instruccion);
 
-        return Inertia::render('instrucciones/Form', ['instruccion' => $this->fila($instruccion)]);
+        return $this->index($request)->with('formulario', ['instruccion' => $this->fila($instruccion)]);
     }
 
     public function update(InstruccionFrecuenteRequest $request, InstruccionFrecuente $instruccion): RedirectResponse

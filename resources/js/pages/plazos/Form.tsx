@@ -1,14 +1,14 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import type { Opcion, PlazoArea } from '@/types';
 
 type Props = { plazo: PlazoArea | null; opcionesTipo: Opcion<number>[]; opcionesArea: Opcion<number>[] };
 
-export default function PlazoAreaForm({ plazo, opcionesTipo, opcionesArea }: Props) {
+export default function PlazoAreaForm({ plazo, opcionesTipo, opcionesArea, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({
         tipo_tramite_id: plazo ? String(plazo.tipo_tramite_id) : '',
         area_id: plazo ? String(plazo.area_id) : '',
@@ -26,10 +26,10 @@ export default function PlazoAreaForm({ plazo, opcionesTipo, opcionesArea }: Pro
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={plazo ? `Plazo de «${plazo.tipo}» en ${plazo.area}` : 'Nuevo plazo por área'}
             descripcion="Se cuenta igual que el tipo (hábiles o calendario). Los expedientes ya ingresados conservan su plazo."
-            volverA="/plazos"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -52,6 +52,6 @@ export default function PlazoAreaForm({ plazo, opcionesTipo, opcionesArea }: Pro
                     {(c) => <Input {...c} type="number" min={1} max={365} value={data.plazo_dias} onChange={(e) => setData('plazo_dias', e.target.value)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

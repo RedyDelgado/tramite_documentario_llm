@@ -70,7 +70,7 @@ class ExpedienteHttpTest extends TestCase
     public function test_el_detalle_muestra_correos_y_documentos_y_queda_auditado(): void
     {
         $this->actingAs($this->administrativo)->get("/expedientes/{$this->oficio->id}")->assertInertia(fn (AssertableInertia $p) => $p
-            ->component('expedientes/Show')
+            ->component('expedientes/Index')
             ->has('expediente.correos', 1)
             ->where('expediente.correos.0.de_email', 'mesadepartes@munidemo.example')
             ->has('expediente.documentos', 1)

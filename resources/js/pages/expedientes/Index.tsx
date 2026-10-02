@@ -1,21 +1,20 @@
-import { Attach16Regular, DocumentBulletList20Regular, Open20Regular, Search20Regular } from '@fluentui/react-icons';
-import { Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { Attach16Regular, DocumentBulletList20Regular, Search20Regular } from '@fluentui/react-icons';
+import { router } from '@inertiajs/react';
+import type { ComponentProps } from 'react';
 import type { Columna } from '@/components/data/DataTable';
-import { DetalleLista } from '@/components/data/DetalleLista';
-import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Badge } from '@/components/ui/Badge';
-import { botonClases } from '@/components/ui/Button';
-import { Drawer } from '@/components/ui/Drawer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
+import { cerrarModal, rutaModal } from '@/lib/modal';
 import type { ExpedienteFila, Opcion, Paginado } from '@/types';
+import RegistroNuevo from '../registro/Nuevo';
+import ExpedienteShow, { type DetalleExpedienteProps } from './Show';
 
 type Filtros = { q?: string; estado?: string; semaforo?: string; dir?: 'asc' | 'desc' };
 
@@ -68,97 +67,75 @@ const columnas: Columna<ExpedienteFila>[] = [
     { clave: 'semaforo', titulo: 'Semáforo', ancho: '9rem', celda: (e) => (e.semaforo ? <SemaforoBadge estado={e.semaforo} /> : <span className="text-fg-muted">—</span>) },
 ];
 
-type Props = { expedientes: Paginado<ExpedienteFila>; filtros: Filtros; estados: Opcion<string>[]; semaforos: Opcion<string>[] };
+type Props = {
+    expedientes: Paginado<ExpedienteFila>;
+    filtros: Filtros;
+    estados: Opcion<string>[];
+    semaforos: Opcion<string>[];
+    registro?: Omit<ComponentProps<typeof RegistroNuevo>, 'onCerrar'>;
+} & Partial<DetalleExpedienteProps>;
 
-export default function ExpedientesIndex({ expedientes, filtros: iniciales, estados, semaforos }: Props) {
+export default function ExpedientesIndex({ expedientes, filtros: iniciales, estados, semaforos, registro, expediente, historial, ...detalle }: Props) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
-    const [elegidoId, setElegidoId] = useState<number | null>(null);
-    const elegido = expedientes.data.find((e) => e.id === elegidoId) ?? null;
     const hayFiltros = Boolean(filtros.q || filtros.estado || filtros.semaforo);
 
     return (
-        <ListPage
-            titulo="Expedientes"
-            descripcion="Todo lo que ingresa por el buzón central: revisa, registra como trámite o archiva lo que no lo es."
-            filtros={
-                <>
-                    <Select
-                        aria-label="Estado"
-                        className="w-40"
-                        vacia="Todos los estados"
-                        opciones={estados}
-                        value={filtros.estado ?? ''}
-                        onChange={(e) => cambiar({ estado: e.target.value })}
-                    />
-                    <Select
-                        aria-label="Semáforo"
-                        className="w-48"
-                        vacia="Todos los semáforos"
-                        opciones={semaforos}
-                        value={filtros.semaforo ?? ''}
-                        onChange={(e) => cambiar({ semaforo: e.target.value })}
-                    />
-                    <Input
-                        type="search"
-                        aria-label="Filtrar la lista"
-                        placeholder="Asunto, remitente, código o texto"
-                        iconoInicio={<Search20Regular />}
-                        className="w-72"
-                        value={filtros.q ?? ''}
-                        onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
-                    />
-                </>
-            }
-            tabla={{
-                titulo: 'Expedientes',
-                columnas,
-                filas: expedientes.data,
-                claveFila: (e) => e.id,
-                // Con búsqueda manda la relevancia; sin ella, la fecha de ingreso.
-                orden: filtros.q ? undefined : { clave: 'fecha', dir: filtros.dir ?? 'desc' },
-                onOrdenar: filtros.q ? undefined : () => cambiar({ dir: filtros.dir === 'asc' ? 'desc' : 'asc' }),
-                seleccionada: elegidoId,
-                onElegirFila: (e) => setElegidoId(e.id),
-                cargando,
-                vacio: (
-                    <EmptyState
-                        icono={<DocumentBulletList20Regular />}
-                        titulo={hayFiltros ? 'Ningún expediente coincide' : 'Aún no hay expedientes'}
-                        descripcion={hayFiltros ? 'Prueba con otras palabras o quita el filtro de estado.' : 'Los correos del buzón central aparecerán aquí al ingresar.'}
-                    />
-                ),
-            }}
-            paginacion={expedientes}
-            detalle={
-                elegido && (
-                    <Drawer
-                        abierto
-                        onCambiar={(abierto) => !abierto && setElegidoId(null)}
-                        titulo={elegido.numero_registro ?? elegido.asunto}
-                        subtitulo={<EstadoBadge estado={elegido.estado} />}
-                        acciones={
-                            <div className="flex flex-wrap gap-2">
-                                <Link href={`/expedientes/${elegido.id}`} className={botonClases()}>
-                                    <Open20Regular />
-                                    Abrir
-                                </Link>
-                                <AccionesRegistro expediente={elegido} />
-                            </div>
-                        }
-                    >
-                        <DetalleLista
-                            items={[
-                                { etiqueta: 'Asunto', valor: elegido.asunto },
-                                { etiqueta: 'Remitente', valor: <Remitente e={elegido} /> },
-                                { etiqueta: 'Correo del remitente', valor: elegido.remitente_email ?? '—' },
-                                { etiqueta: 'Ingreso', valor: formatearFechaHora(elegido.fecha_ingreso) },
-                                { etiqueta: 'Código', valor: elegido.codigo ?? 'Se asigna al registrar como trámite' },
-                                { etiqueta: 'Área', valor: elegido.area ?? 'Sin asignar' },
-                            ]}
+        <>
+            {registro && <RegistroNuevo {...registro} onCerrar={() => cerrarModal('/expedientes')} />}
+            {expediente && historial && <ExpedienteShow expediente={expediente} historial={historial} {...detalle} onCerrar={() => cerrarModal('/expedientes')} />}
+            <ListPage
+                titulo="Expedientes"
+                descripcion="Todo lo que ingresa por el buzón central: revisa, registra como trámite o archiva lo que no lo es."
+                filtros={
+                    <>
+                        <Select
+                            aria-label="Estado"
+                            className="w-40"
+                            vacia="Todos los estados"
+                            opciones={estados}
+                            value={filtros.estado ?? ''}
+                            onChange={(e) => cambiar({ estado: e.target.value })}
                         />
-                    </Drawer>
-                )
-            }
-        />
+                        <Select
+                            aria-label="Semáforo"
+                            className="w-48"
+                            vacia="Todos los semáforos"
+                            opciones={semaforos}
+                            value={filtros.semaforo ?? ''}
+                            onChange={(e) => cambiar({ semaforo: e.target.value })}
+                        />
+                        <Input
+                            type="search"
+                            aria-label="Filtrar la lista"
+                            placeholder="Asunto, remitente, código o texto"
+                            iconoInicio={<Search20Regular />}
+                            className="w-72"
+                            value={filtros.q ?? ''}
+                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                        />
+                    </>
+                }
+                tabla={{
+                    titulo: 'Expedientes',
+                    columnas,
+                    filas: expedientes.data,
+                    claveFila: (e) => e.id,
+                    // Con búsqueda manda la relevancia; sin ella, la fecha de ingreso.
+                    orden: filtros.q ? undefined : { clave: 'fecha', dir: filtros.dir ?? 'desc' },
+                    onOrdenar: filtros.q ? undefined : () => cambiar({ dir: filtros.dir === 'asc' ? 'desc' : 'asc' }),
+                    seleccionada: expediente?.id ?? null,
+                    onElegirFila: (e) => router.visit(rutaModal(`/expedientes/${e.id}`), { preserveScroll: true }),
+                    cargando,
+                    vacio: (
+                        <EmptyState
+                            icono={<DocumentBulletList20Regular />}
+                            titulo={hayFiltros ? 'Ningún expediente coincide' : 'Aún no hay expedientes'}
+                            descripcion={hayFiltros ? 'Prueba con otras palabras o quita el filtro de estado.' : 'Los correos del buzón central aparecerán aquí al ingresar.'}
+                        />
+                    ),
+                }}
+                paginacion={expedientes}
+            />
+        </>
     );
 }

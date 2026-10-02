@@ -8,13 +8,17 @@ import { ActivoBadge } from '@/components/domain/ActivoBadge';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Button, botonClases } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Drawer } from '@/components/ui/Drawer';
+import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
 import type { Opcion, Paginado, ReglaDerivacion } from '@/types';
+import type { ComponentProps } from 'react';
+import { cerrarModal, rutaModal } from '@/lib/modal';
+import Formulario from './Form';
 
 type Filtros = { q?: string; area?: string; estado?: string };
 
@@ -48,7 +52,7 @@ const columnas: Columna<ReglaDerivacion>[] = [
 
 type Props = { reglas: Paginado<ReglaDerivacion>; filtros: Filtros; opcionesArea: Opcion<number>[] };
 
-export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opcionesArea }: Props) {
+export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
     const [elegidaId, setElegidaId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
@@ -72,114 +76,123 @@ export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opci
         );
 
     return (
-        <ListPage
-            titulo="Reglas de derivación"
-            descripcion="Sugieren a qué área derivar según tipo, palabras del asunto o remitente. Se aplica la primera activa, por prioridad."
-            acciones={
-                <Link href="/reglas-derivacion/create" className={botonClases({ variante: 'primario' })}>
-                    <Add20Regular />
-                    Nueva regla
-                </Link>
-            }
-            filtros={
-                <>
-                    <Select
-                        aria-label="Estado"
-                        className="w-36"
-                        vacia="Todas"
-                        opciones={[
-                            { value: 'activas', label: 'Activas' },
-                            { value: 'inactivas', label: 'Inactivas' },
-                        ]}
-                        value={filtros.estado ?? ''}
-                        onChange={(e) => cambiar({ estado: e.target.value })}
-                    />
-                    <Select
-                        aria-label="Área de destino"
-                        className="w-56"
-                        vacia="Todas las áreas"
-                        opciones={opcionesArea}
-                        value={filtros.area ?? ''}
-                        onChange={(e) => cambiar({ area: e.target.value })}
-                    />
-                    <Input
-                        type="search"
-                        aria-label="Buscar por nombre"
-                        placeholder="Buscar por nombre"
-                        iconoInicio={<Search20Regular />}
-                        className="w-64"
-                        value={filtros.q ?? ''}
-                        onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
-                    />
-                </>
-            }
-            tabla={{
-                titulo: 'Reglas de derivación',
-                columnas,
-                filas: reglas.data,
-                claveFila: (r) => r.id,
-                seleccionada: elegidaId,
-                onElegirFila: (r) => setElegidaId(r.id),
-                cargando,
-                vacio: (
-                    <EmptyState
-                        icono={<ArrowRouting20Regular />}
-                        titulo={hayFiltros ? 'No hay reglas que coincidan con los filtros' : 'Aún no hay reglas de derivación'}
-                        descripcion={hayFiltros ? 'Cambia la búsqueda, el área o el estado.' : 'Por ejemplo: los convenios van a Cooperación; lo que llega de la SUNEDU, a Dirección.'}
-                    />
-                ),
-            }}
-            paginacion={reglas}
-            detalle={
-                elegida && (
-                    <Drawer
-                        abierto
-                        onCambiar={(abierto) => !abierto && setElegidaId(null)}
-                        titulo={elegida.nombre}
-                        subtitulo={<ActivoBadge activo={elegida.activa} femenino />}
-                        acciones={
-                            <>
-                                <Link href={`/reglas-derivacion/${elegida.id}/edit`} className={botonClases()}>
-                                    <Edit20Regular />
-                                    Editar
-                                </Link>
-                                {elegida.activa ? (
-                                    <Button onClick={() => setConfirmando(true)}>Desactivar</Button>
-                                ) : (
-                                    <Button cargando={procesando} onClick={() => cambiarEstado(elegida)}>
-                                        Activar
-                                    </Button>
-                                )}
-                            </>
-                        }
-                    >
-                        <DetalleLista
-                            items={[
-                                { etiqueta: 'Prioridad', valor: elegida.prioridad },
-                                { etiqueta: 'Tipo de trámite', valor: elegida.tipo ?? 'Cualquiera' },
-                                {
-                                    etiqueta: 'Palabras clave',
-                                    valor: elegida.palabras_clave.length > 0 ? <ListaEtiquetas lista={elegida.palabras_clave} /> : 'Cualquiera',
-                                },
-                                { etiqueta: 'Remitentes', valor: elegida.remitentes.length > 0 ? <ListaEtiquetas lista={elegida.remitentes} /> : 'Cualquiera' },
-                                { etiqueta: 'Área de destino', valor: elegida.area_destino },
-                                { etiqueta: 'Responsable', valor: elegida.responsable ?? 'Lo asigna el área' },
-                                { etiqueta: 'Última actualización', valor: formatearFechaHora(elegida.actualizado) },
+        <>
+            {formulario && <Formulario {...formulario} onCerrar={() => cerrarModal('/reglas-derivacion')} />}
+            <ListPage
+                titulo="Reglas de derivación"
+                descripcion="Sugieren a qué área derivar según tipo, palabras del asunto o remitente. Se aplica la primera activa, por prioridad."
+                acciones={
+                    <Link href={rutaModal('/reglas-derivacion/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
+                        <Add20Regular />
+                        Nueva regla
+                    </Link>
+                }
+                filtros={
+                    <>
+                        <Select
+                            aria-label="Estado"
+                            className="w-36"
+                            vacia="Todas"
+                            opciones={[
+                                { value: 'activas', label: 'Activas' },
+                                { value: 'inactivas', label: 'Inactivas' },
                             ]}
+                            value={filtros.estado ?? ''}
+                            onChange={(e) => cambiar({ estado: e.target.value })}
                         />
-                        <ConfirmDialog
-                            abierto={confirmando}
-                            onCambiar={setConfirmando}
-                            titulo={`¿Desactivar «${elegida.nombre}»?`}
-                            descripcion="Dejará de sugerir derivaciones. Las derivaciones ya hechas no cambian."
-                            confirmar="Desactivar"
-                            peligro
-                            cargando={procesando}
-                            onConfirmar={() => cambiarEstado(elegida)}
+                        <Select
+                            aria-label="Área de destino"
+                            className="w-56"
+                            vacia="Todas las áreas"
+                            opciones={opcionesArea}
+                            value={filtros.area ?? ''}
+                            onChange={(e) => cambiar({ area: e.target.value })}
                         />
-                    </Drawer>
-                )
-            }
-        />
+                        <Input
+                            type="search"
+                            aria-label="Buscar por nombre"
+                            placeholder="Buscar por nombre"
+                            iconoInicio={<Search20Regular />}
+                            className="w-64"
+                            value={filtros.q ?? ''}
+                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                        />
+                    </>
+                }
+                tabla={{
+                    titulo: 'Reglas de derivación',
+                    columnas,
+                    filas: reglas.data,
+                    claveFila: (r) => r.id,
+                    seleccionada: elegidaId,
+                    onElegirFila: (r) => setElegidaId(r.id),
+                    cargando,
+                    vacio: (
+                        <EmptyState
+                            icono={<ArrowRouting20Regular />}
+                            titulo={hayFiltros ? 'No hay reglas que coincidan con los filtros' : 'Aún no hay reglas de derivación'}
+                            descripcion={hayFiltros ? 'Cambia la búsqueda, el área o el estado.' : 'Por ejemplo: los convenios van a Cooperación; lo que llega de la SUNEDU, a Dirección.'}
+                        />
+                    ),
+                }}
+                paginacion={reglas}
+                detalle={
+                    elegida && (
+                        <DetalleDialog
+                            abierto
+                            onCambiar={(abierto) => !abierto && setElegidaId(null)}
+                            titulo={elegida.nombre}
+                            subtitulo={<ActivoBadge activo={elegida.activa} femenino />}
+                            acciones={
+                                <>
+                                    <Link href={rutaModal(`/reglas-derivacion/${elegida.id}/edit`)} preserveScroll className={botonClases()}>
+                                        <Edit20Regular />
+                                        Editar
+                                    </Link>
+                                    {elegida.activa ? (
+                                        <Button onClick={() => setConfirmando(true)}>Desactivar</Button>
+                                    ) : (
+                                        <BotonConfirmado
+                                            titulo={`¿Activar «${elegida.nombre}»?`}
+                                            descripcion="Volverá a sugerir derivaciones."
+                                            confirmar="Activar"
+                                            cargando={procesando}
+                                            onConfirmar={() => cambiarEstado(elegida)}
+                                        >
+                                            Activar
+                                        </BotonConfirmado>
+                                    )}
+                                </>
+                            }
+                        >
+                            <DetalleLista
+                                items={[
+                                    { etiqueta: 'Prioridad', valor: elegida.prioridad },
+                                    { etiqueta: 'Tipo de trámite', valor: elegida.tipo ?? 'Cualquiera' },
+                                    {
+                                        etiqueta: 'Palabras clave',
+                                        valor: elegida.palabras_clave.length > 0 ? <ListaEtiquetas lista={elegida.palabras_clave} /> : 'Cualquiera',
+                                    },
+                                    { etiqueta: 'Remitentes', valor: elegida.remitentes.length > 0 ? <ListaEtiquetas lista={elegida.remitentes} /> : 'Cualquiera' },
+                                    { etiqueta: 'Área de destino', valor: elegida.area_destino },
+                                    { etiqueta: 'Responsable', valor: elegida.responsable ?? 'Lo asigna el área' },
+                                    { etiqueta: 'Última actualización', valor: formatearFechaHora(elegida.actualizado) },
+                                ]}
+                            />
+                            <ConfirmDialog
+                                abierto={confirmando}
+                                onCambiar={setConfirmando}
+                                titulo={`¿Desactivar «${elegida.nombre}»?`}
+                                descripcion="Dejará de sugerir derivaciones. Las derivaciones ya hechas no cambian."
+                                confirmar="Desactivar"
+                                peligro
+                                cargando={procesando}
+                                onConfirmar={() => cambiarEstado(elegida)}
+                            />
+                        </DetalleDialog>
+                    )
+                }
+            />
+        </>
     );
 }

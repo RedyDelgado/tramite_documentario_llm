@@ -36,11 +36,11 @@ class UbicacionFisicaController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', UbicacionFisica::class);
 
-        return Inertia::render('ubicaciones/Form', ['ubicacion' => null]);
+        return $this->index($request)->with('formulario', ['ubicacion' => null]);
     }
 
     public function store(UbicacionFisicaRequest $request): RedirectResponse
@@ -52,11 +52,11 @@ class UbicacionFisicaController extends Controller
         return to_route('ubicaciones.index');
     }
 
-    public function edit(UbicacionFisica $ubicacion): Response
+    public function edit(Request $request, UbicacionFisica $ubicacion): Response
     {
         Gate::authorize('update', $ubicacion);
 
-        return Inertia::render('ubicaciones/Form', ['ubicacion' => $this->fila($ubicacion)]);
+        return $this->index($request)->with('formulario', ['ubicacion' => $this->fila($ubicacion)]);
     }
 
     public function update(UbicacionFisicaRequest $request, UbicacionFisica $ubicacion): RedirectResponse

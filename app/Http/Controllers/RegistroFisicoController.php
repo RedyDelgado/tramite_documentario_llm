@@ -20,11 +20,16 @@ class RegistroFisicoController extends Controller
 {
     public function __construct(private readonly RegistroFisicoService $registro) {}
 
-    public function create(): Response
+    public function create(Request $request, ExpedienteController $bandeja): Response|RedirectResponse
     {
         Gate::authorize('create', Expediente::class);
 
-        return Inertia::render('registro/Nuevo', [
+        $lista = $bandeja->index($request);
+        if ($lista instanceof RedirectResponse) {
+            return $lista;
+        }
+
+        return $lista->with('registro', [
             'opcionesEmisor' => Emisor::opciones(),
             'opcionesTipoDocumento' => TipoDocumento::opciones(),
             'opcionesUbicacion' => UbicacionFisica::opciones(),

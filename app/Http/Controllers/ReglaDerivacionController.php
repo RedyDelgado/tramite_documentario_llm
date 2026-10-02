@@ -48,11 +48,11 @@ class ReglaDerivacionController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', ReglaDerivacion::class);
 
-        return Inertia::render('reglas-derivacion/Form', ['regla' => null, ...$this->opciones()]);
+        return $this->index($request)->with('formulario', ['regla' => null, ...$this->opciones()]);
     }
 
     public function store(ReglaDerivacionRequest $request): RedirectResponse
@@ -64,11 +64,11 @@ class ReglaDerivacionController extends Controller
         return to_route('reglas-derivacion.index');
     }
 
-    public function edit(ReglaDerivacion $regla): Response
+    public function edit(Request $request, ReglaDerivacion $regla): Response
     {
         Gate::authorize('update', $regla);
 
-        return Inertia::render('reglas-derivacion/Form', [
+        return $this->index($request)->with('formulario', [
             'regla' => ReglaDerivacionResource::make($regla->load(self::RELACIONES))->resolve(),
             ...$this->opciones(),
         ]);

@@ -1,7 +1,7 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -9,7 +9,7 @@ import type { Opcion, UsuarioFila } from '@/types';
 
 type Props = { usuario: UsuarioFila | null; opcionesRol: Opcion<string>[]; dominio: string | null };
 
-export default function UsuarioForm({ usuario, opcionesRol, dominio }: Props) {
+export default function UsuarioForm({ usuario, opcionesRol, dominio, onCerrar }: Props & { onCerrar: () => void }) {
     const { auth } = usePage().props;
     const esUnoMismo = usuario?.id === auth.user?.id;
     const form = useForm({
@@ -23,10 +23,10 @@ export default function UsuarioForm({ usuario, opcionesRol, dominio }: Props) {
     const enviar = () => (usuario ? form.put(`/usuarios/${usuario.id}`) : form.post('/usuarios'));
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={usuario ? `Editar «${usuario.name}»` : 'Nuevo usuario'}
             descripcion="El usuario ingresa con su cuenta de Google; no se crean contraseñas."
-            volverA="/usuarios"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -71,6 +71,6 @@ export default function UsuarioForm({ usuario, opcionesRol, dominio }: Props) {
                     )}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

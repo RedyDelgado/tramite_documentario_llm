@@ -9,7 +9,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
 import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
+import { cerrarModal, rutaModal } from '@/lib/modal';
 import type { Opcion, Paginado, Saliente } from '@/types';
+import type { ComponentProps } from 'react';
+import Formulario from './Form';
+import SalienteShow, { type DetalleSalienteProps } from './Show';
 
 type Filtros = { estado?: string };
 
@@ -55,47 +59,57 @@ const columnas: Columna<Saliente>[] = [
     { clave: 'actualizado', titulo: 'Actualizado', ancho: '11rem', celda: (s) => formatearFechaHora(s.actualizado) },
 ];
 
-type Props = { salientes: Paginado<Saliente>; filtros: Filtros; estados: Opcion<string>[] };
+type Props = {
+    salientes: Paginado<Saliente>;
+    filtros: Filtros;
+    estados: Opcion<string>[];
+    formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'>;
+    detalle?: DetalleSalienteProps['saliente'];
+};
 
-export default function SalientesIndex({ salientes, filtros: iniciales, estados }: Props) {
+export default function SalientesIndex({ salientes, filtros: iniciales, estados, formulario, detalle }: Props) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
 
     return (
-        <ListPage
-            titulo="Documentos emitidos"
-            descripcion="Oficios, cartas e informes que emite la institución. Ninguno sale sin aprobación; el número se asigna al aprobar."
-            acciones={
-                <Link href="/salientes/create" className={botonClases({ variante: 'primario' })}>
-                    <Add20Regular />
-                    Redactar documento
-                </Link>
-            }
-            filtros={
-                <Select
-                    aria-label="Estado"
-                    className="w-40"
-                    vacia="Todos los estados"
-                    opciones={estados}
-                    value={filtros.estado ?? ''}
-                    onChange={(e) => cambiar({ estado: e.target.value })}
-                />
-            }
-            tabla={{
-                titulo: 'Documentos emitidos',
-                columnas,
-                filas: salientes.data,
-                claveFila: (s) => s.id,
-                onElegirFila: (s) => router.visit(`/salientes/${s.id}`),
-                cargando,
-                vacio: (
-                    <EmptyState
-                        icono={<Send20Regular />}
-                        titulo="Aún no hay documentos"
-                        descripcion="Redacta uno desde aquí o desde un expediente, para responderlo."
+        <>
+            {formulario && <Formulario {...formulario} onCerrar={() => cerrarModal('/salientes')} />}
+            {detalle && <SalienteShow saliente={detalle} onCerrar={() => cerrarModal('/salientes')} />}
+            <ListPage
+                titulo="Documentos emitidos"
+                descripcion="Oficios, cartas e informes que emite la institución. Ninguno sale sin aprobación; el número se asigna al aprobar."
+                acciones={
+                    <Link href={rutaModal('/salientes/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
+                        <Add20Regular />
+                        Redactar documento
+                    </Link>
+                }
+                filtros={
+                    <Select
+                        aria-label="Estado"
+                        className="w-40"
+                        vacia="Todos los estados"
+                        opciones={estados}
+                        value={filtros.estado ?? ''}
+                        onChange={(e) => cambiar({ estado: e.target.value })}
                     />
-                ),
-            }}
-            paginacion={salientes}
-        />
+                }
+                tabla={{
+                    titulo: 'Documentos emitidos',
+                    columnas,
+                    filas: salientes.data,
+                    claveFila: (s) => s.id,
+                    onElegirFila: (s) => router.visit(rutaModal(`/salientes/${s.id}`), { preserveScroll: true }),
+                    cargando,
+                    vacio: (
+                        <EmptyState
+                            icono={<Send20Regular />}
+                            titulo="Aún no hay documentos"
+                            descripcion="Redacta uno desde aquí o desde un expediente, para responderlo."
+                        />
+                    ),
+                }}
+                paginacion={salientes}
+            />
+        </>
     );
 }

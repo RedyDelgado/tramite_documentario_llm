@@ -1,12 +1,12 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import type { UbicacionFisica } from '@/types';
 
-export default function UbicacionForm({ ubicacion }: { ubicacion: UbicacionFisica | null }) {
+export default function UbicacionForm({ ubicacion, onCerrar }: { ubicacion: UbicacionFisica | null; onCerrar: () => void }) {
     const form = useForm({ nombre: ubicacion?.nombre ?? '', descripcion: ubicacion?.descripcion ?? '', activa: ubicacion?.activa ?? true });
     const { data, setData, errors } = form;
 
@@ -20,7 +20,7 @@ export default function UbicacionForm({ ubicacion }: { ubicacion: UbicacionFisic
     };
 
     return (
-        <FormPage titulo={ubicacion ? `Editar «${ubicacion.nombre}»` : 'Nueva ubicación'} volverA="/ubicaciones" onEnviar={enviar} procesando={form.processing}>
+        <FormDialog onCerrar={onCerrar} titulo={ubicacion ? `Editar «${ubicacion.nombre}»` : 'Nueva ubicación'} onEnviar={enviar} procesando={form.processing}>
             <FormSection titulo="Ubicación">
                 <FormField etiqueta="Nombre" requerido error={errors.nombre}>
                     {(c) => <Input {...c} value={data.nombre} maxLength={150} autoFocus onChange={(e) => setData('nombre', e.target.value)} />}
@@ -32,6 +32,6 @@ export default function UbicacionForm({ ubicacion }: { ubicacion: UbicacionFisic
                     {(c) => <Input {...c} value={data.descripcion} maxLength={300} onChange={(e) => setData('descripcion', e.target.value)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

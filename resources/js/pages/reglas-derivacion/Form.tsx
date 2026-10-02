@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -15,7 +15,7 @@ type Props = {
     opcionesUsuario: Opcion<number>[];
 };
 
-export default function ReglaDerivacionForm({ regla, opcionesTipo, opcionesArea, opcionesUsuario }: Props) {
+export default function ReglaDerivacionForm({ regla, opcionesTipo, opcionesArea, opcionesUsuario, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({
         nombre: regla?.nombre ?? '',
         tipo_tramite_id: regla?.tipo_tramite_id ? String(regla.tipo_tramite_id) : '',
@@ -46,10 +46,10 @@ export default function ReglaDerivacionForm({ regla, opcionesTipo, opcionesArea,
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={regla ? `Editar «${regla.nombre}»` : 'Nueva regla de derivación'}
             descripcion="La regla sugiere el área (y el responsable) al derivar; quien deriva decide. Se aplica la primera regla activa que cumpla todas sus condiciones."
-            volverA="/reglas-derivacion"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -128,6 +128,6 @@ export default function ReglaDerivacionForm({ regla, opcionesTipo, opcionesArea,
                     )}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -10,7 +10,7 @@ import type { Opcion, TipoTramite } from '@/types';
 
 type Props = { tipo: TipoTramite | null; opcionesDias: Opcion<string>[]; opcionesCierre: Opcion<string>[] };
 
-export default function TipoTramiteForm({ tipo, opcionesDias, opcionesCierre }: Props) {
+export default function TipoTramiteForm({ tipo, opcionesDias, opcionesCierre, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({
         nombre: tipo?.nombre ?? '',
         descripcion: tipo?.descripcion ?? '',
@@ -31,10 +31,10 @@ export default function TipoTramiteForm({ tipo, opcionesDias, opcionesCierre }: 
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={tipo ? `Editar «${tipo.nombre}»` : 'Nuevo tipo de trámite'}
             descripcion="Los cambios surten efecto de inmediato; los expedientes ya ingresados conservan el plazo que se les aplicó."
-            volverA="/tipos-tramite"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -76,6 +76,6 @@ export default function TipoTramiteForm({ tipo, opcionesDias, opcionesCierre }: 
                     )}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

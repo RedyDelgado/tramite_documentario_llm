@@ -10,13 +10,14 @@ import { FormSection } from '@/components/forms/FormSection';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Badge } from '@/components/ui/Badge';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Combobox } from '@/components/ui/Combobox';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
-import { Drawer } from '@/components/ui/Drawer';
+import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
@@ -261,7 +262,10 @@ export default function Catalogo() {
                     <Fila etiqueta="Abrir">
                         <Button onClick={() => setDialogo(true)}>Diálogo</Button>
                         <Button onClick={() => setConfirmar(true)}>Confirmación</Button>
-                        <Button onClick={() => setDrawer(true)}>Panel lateral</Button>
+                        <Button onClick={() => setDrawer(true)}>Detalle en modal</Button>
+                        <BotonConfirmado titulo="¿Activar el área?" descripcion="Volverá a recibir derivaciones." confirmar="Activar" onConfirmar={(cerrar) => (avisar({ tipo: 'ok', mensaje: 'Confirmado' }), cerrar())}>
+                            Botón con confirmación
+                        </BotonConfirmado>
                         <Button onClick={() => avisar({ tipo: 'ok', mensaje: 'Expediente N°00038 derivado.' })}>Aviso ok</Button>
                         <Button onClick={() => avisar({ tipo: 'error', mensaje: 'No se pudo enviar el correo.' })}>Aviso error</Button>
                         <Button onClick={() => avisar({ tipo: 'info', mensaje: 'La clasificación está en cola.' })}>Aviso info</Button>
@@ -311,9 +315,9 @@ export default function Catalogo() {
                 onConfirmar={() => setConfirmar(false)}
             />
             {drawer && (
-                <Drawer abierto onCambiar={setDrawer} titulo="N°00039 · Requerimiento de información" subtitulo={<SemaforoBadge estado="amarillo" />}>
+                <DetalleDialog abierto onCambiar={setDrawer} titulo="N°00039 · Requerimiento de información" subtitulo={<SemaforoBadge estado="amarillo" />}>
                     <p className="text-base text-fg">Contenido del expediente con su línea de tiempo.</p>
-                </Drawer>
+                </DetalleDialog>
             )}
         </AppShell>
     );

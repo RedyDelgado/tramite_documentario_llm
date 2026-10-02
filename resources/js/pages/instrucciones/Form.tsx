@@ -1,12 +1,12 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import type { InstruccionFrecuente } from '@/types';
 
-export default function InstruccionForm({ instruccion }: { instruccion: InstruccionFrecuente | null }) {
+export default function InstruccionForm({ instruccion, onCerrar }: { instruccion: InstruccionFrecuente | null; onCerrar: () => void }) {
     const form = useForm({ texto: instruccion?.texto ?? '', orden: String(instruccion?.orden ?? 0), activa: instruccion?.activa ?? true });
     const { data, setData, errors } = form;
 
@@ -20,7 +20,7 @@ export default function InstruccionForm({ instruccion }: { instruccion: Instrucc
     };
 
     return (
-        <FormPage titulo={instruccion ? 'Editar instrucción' : 'Nueva instrucción'} volverA="/instrucciones" onEnviar={enviar} procesando={form.processing}>
+        <FormDialog onCerrar={onCerrar} titulo={instruccion ? 'Editar instrucción' : 'Nueva instrucción'} onEnviar={enviar} procesando={form.processing}>
             <FormSection titulo="Instrucción">
                 <FormField etiqueta="Texto" requerido error={errors.texto} className="md:col-span-2">
                     {(c) => <Input {...c} value={data.texto} maxLength={200} autoFocus onChange={(e) => setData('texto', e.target.value)} />}
@@ -32,6 +32,6 @@ export default function InstruccionForm({ instruccion }: { instruccion: Instrucc
                     {(c) => <Switch id={c.id} aria-describedby={c['aria-describedby']} checked={data.activa} onCheckedChange={(v) => setData('activa', v)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

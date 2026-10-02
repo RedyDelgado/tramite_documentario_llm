@@ -35,11 +35,11 @@ class TipoDocumentoController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', TipoDocumento::class);
 
-        return Inertia::render('tipos-documento/Form', ['tipo' => null]);
+        return $this->index($request)->with('formulario', ['tipo' => null]);
     }
 
     public function store(TipoDocumentoRequest $request): RedirectResponse
@@ -51,11 +51,11 @@ class TipoDocumentoController extends Controller
         return to_route('tipos-documento.index');
     }
 
-    public function edit(TipoDocumento $tipo): Response
+    public function edit(Request $request, TipoDocumento $tipo): Response
     {
         Gate::authorize('update', $tipo);
 
-        return Inertia::render('tipos-documento/Form', ['tipo' => $this->fila($tipo)]);
+        return $this->index($request)->with('formulario', ['tipo' => $this->fila($tipo)]);
     }
 
     public function update(TipoDocumentoRequest $request, TipoDocumento $tipo): RedirectResponse

@@ -1,11 +1,11 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 
-type Umbrales = {
+export type Umbrales = {
     porcentaje_amarillo: number;
     dias_sin_movimiento: number;
     ia_modo: 'sombra' | 'activo';
@@ -13,7 +13,7 @@ type Umbrales = {
     ia_umbral_alta: number;
 };
 
-export default function UmbralesForm({ umbrales }: { umbrales: Umbrales }) {
+export default function UmbralesForm({ umbrales, onCerrar }: { umbrales: Umbrales; onCerrar: () => void }) {
     const form = useForm({
         porcentaje_amarillo: String(umbrales.porcentaje_amarillo),
         dias_sin_movimiento: String(umbrales.dias_sin_movimiento),
@@ -31,11 +31,11 @@ export default function UmbralesForm({ umbrales }: { umbrales: Umbrales }) {
             ia_umbral_sugerencia: Number(d.ia_umbral_sugerencia),
             ia_umbral_alta: Number(d.ia_umbral_alta),
         }));
-        form.put('/umbrales', { preserveScroll: true });
+        form.put('/umbrales', { preserveScroll: true, onSuccess: onCerrar });
     };
 
     return (
-        <FormPage titulo="Umbrales" descripcion="Los cambios rigen desde el siguiente cálculo, sin desplegar." volverA="/" onEnviar={enviar} procesando={form.processing}>
+        <FormDialog onCerrar={onCerrar} titulo="Editar umbrales" descripcion="Los cambios rigen desde el siguiente cálculo, sin desplegar." onEnviar={enviar} procesando={form.processing}>
             <FormSection
                 titulo="Semáforo: pasa a amarillo"
                 descripcion="Verde: en plazo y con responsable. Rojo: plazo vencido o sin responsable. Amarillo: cuando se cumple cualquiera de estos umbrales."
@@ -115,6 +115,6 @@ export default function UmbralesForm({ umbrales }: { umbrales: Umbrales }) {
                     )}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

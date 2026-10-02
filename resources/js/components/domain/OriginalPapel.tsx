@@ -5,6 +5,7 @@ import { DetalleLista } from '@/components/data/DetalleLista';
 import { FormField } from '@/components/forms/FormField';
 import { Button, botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -17,6 +18,7 @@ type Props = { expediente: ExpedienteDetalle; custodia?: { ubicaciones: Opcion<n
 export function OriginalPapel({ expediente: e, custodia }: Props) {
     const [moviendo, setMoviendo] = useState(false);
     const [subiendo, setSubiendo] = useState<number | null>(null);
+    const [porSubir, setPorSubir] = useState<{ movimiento: number; archivo: File } | null>(null);
     const original = e.original;
     const mover = useForm({
         ubicacion_fisica_id: String(original?.ubicacion_fisica_id ?? ''),
@@ -26,12 +28,19 @@ export function OriginalPapel({ expediente: e, custodia }: Props) {
 
     if (!original && e.cargos.length === 0) return null;
 
-    const adjuntar = (movimientoId: number, archivo: File | undefined) =>
-        archivo &&
+    const adjuntar = ({ movimiento, archivo }: { movimiento: number; archivo: File }) =>
         router.post(
-            `/movimientos/${movimientoId}/cargo`,
+            `/movimientos/${movimiento}/cargo`,
             { archivo },
-            { forceFormData: true, preserveScroll: true, onStart: () => setSubiendo(movimientoId), onFinish: () => setSubiendo(null) },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onStart: () => setSubiendo(movimiento),
+                onFinish: () => {
+                    setSubiendo(null);
+                    setPorSubir(null);
+                },
+            },
         );
 
     return (
@@ -88,7 +97,7 @@ export function OriginalPapel({ expediente: e, custodia }: Props) {
                                                 type="file"
                                                 accept="application/pdf,image/png,image/jpeg"
                                                 className="sr-only"
-                                                onChange={(ev) => adjuntar(c.id, ev.target.files?.[0])}
+                                                onChange={(ev) => ev.target.files?.[0] && setPorSubir({ movimiento: c.id, archivo: ev.target.files[0] })}
                                             />
                                         </label>
                                     )}
@@ -98,6 +107,16 @@ export function OriginalPapel({ expediente: e, custodia }: Props) {
                     ))}
                 </ul>
             )}
+
+            <ConfirmDialog
+                abierto={porSubir !== null}
+                onCambiar={(abierto) => !abierto && setPorSubir(null)}
+                titulo="¿Adjuntar el cargo firmado?"
+                descripcion={`Se guarda «${porSubir?.archivo.name ?? ''}» como cargo de esta derivación, con su hash, y queda en la auditoría.`}
+                confirmar="Adjuntar"
+                cargando={subiendo !== null}
+                onConfirmar={() => porSubir && adjuntar(porSubir)}
+            />
 
             {custodia && (
                 <Dialog

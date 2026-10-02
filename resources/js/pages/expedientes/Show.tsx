@@ -8,11 +8,10 @@ import { LineaTiempo } from '@/components/domain/LineaTiempo';
 import { OriginalPapel } from '@/components/domain/OriginalPapel';
 import { SerieCard } from '@/components/domain/SerieCard';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
-import { AppShell } from '@/components/layouts/AppShell';
-import { PageHeader } from '@/components/layouts/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 import { formatearBytes } from '@/lib/formato';
@@ -71,7 +70,7 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
 const motivoRojo = (e: ExpedienteDetalle) =>
     e.semaforo === 'rojo' && (!e.fecha_limite || e.fecha_limite >= new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })) ? 'Sin responsable' : undefined;
 
-type Props = {
+export type DetalleExpedienteProps = {
     expediente: ExpedienteDetalle;
     historial: EventoHistorial[];
     opcionesEmisor?: Opcion<number>[];
@@ -81,13 +80,15 @@ type Props = {
     agrupacion?: OpcionesAgrupacion;
 };
 
-export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion, custodia, agrupacion }: Props) {
+export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion, custodia, agrupacion, onCerrar }: DetalleExpedienteProps & { onCerrar: () => void }) {
     return (
-        <AppShell>
-            <PageHeader
-                titulo={e.numero_registro ? `Expediente ${e.numero_registro}` : 'Expediente sin número'}
-                descripcion={e.asunto}
-                acciones={
+        <Dialog
+            abierto
+            onCambiar={(abierto) => !abierto && onCerrar()}
+            tamano="xl"
+            titulo={e.numero_registro ? `Expediente ${e.numero_registro}` : 'Expediente sin número'}
+            descripcion={e.asunto}
+            acciones={
                     <>
                         <AccionesAtencion expediente={e} derivacion={derivacion} />
                         {e.permisos.redactar && (
@@ -102,7 +103,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         />
                     </>
                 }
-            />
+        >
             <div className="grid items-start gap-4 lg:grid-cols-3">
                 <Card titulo={`Correos (${e.correos.length})`} sinRelleno className="lg:col-span-2">
                     {e.correos.length === 0 ? (
@@ -180,6 +181,6 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                     </Card>
                 </div>
             </div>
-        </AppShell>
+        </Dialog>
     );
 }

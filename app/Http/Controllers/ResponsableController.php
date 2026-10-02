@@ -46,11 +46,11 @@ class ResponsableController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', AreaResponsable::class);
 
-        return Inertia::render('responsables/Form', ['responsable' => null, ...$this->opciones()]);
+        return $this->index($request)->with('formulario', ['responsable' => null, ...$this->opciones()]);
     }
 
     public function store(ResponsableRequest $request): RedirectResponse
@@ -62,11 +62,11 @@ class ResponsableController extends Controller
         return to_route('responsables.index');
     }
 
-    public function edit(AreaResponsable $responsable): Response
+    public function edit(Request $request, AreaResponsable $responsable): Response
     {
         Gate::authorize('update', $responsable);
 
-        return Inertia::render('responsables/Form', [
+        return $this->index($request)->with('formulario', [
             'responsable' => ResponsableResource::make($responsable->load(['area', 'user']))->resolve(),
             ...$this->opciones(),
         ]);

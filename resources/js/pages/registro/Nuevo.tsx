@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { EmisorCombobox } from '@/components/domain/EmisorCombobox';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -29,7 +29,7 @@ type Prellenado = {
     mismo_archivo: { id: number; numero: string | null } | null;
 };
 
-export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, opcionesUbicacion }: Props) {
+export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, opcionesUbicacion, onCerrar }: Props & { onCerrar: () => void }) {
     const [escaneo, setEscaneo] = useState<Prellenado | null>(null);
     const [errorEmisor, setErrorEmisor] = useState<string>();
     const subida = useHttp<{ archivo: File | null }, Prellenado>('post', '/registro/prellenar', { archivo: null });
@@ -82,10 +82,11 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
     const foliosCambiados = escaneo?.paginas != null && data.folios !== '' && Number(data.folios) !== escaneo.paginas;
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
+            tamano="xl"
             titulo="Registrar documento en papel"
             descripcion="Sube el escaneo: el sistema propone los datos y tú los confirmas. El escaneo es una copia digital; el original en papel se conserva siempre."
-            volverA="/expedientes"
             onEnviar={enviar}
             procesando={form.processing}
             textoGuardar="Registrar"
@@ -198,6 +199,6 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
                     />
                 </FormSection>
             )}
-        </FormPage>
+        </FormDialog>
     );
 }

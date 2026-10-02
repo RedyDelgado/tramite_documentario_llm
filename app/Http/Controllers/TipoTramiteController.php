@@ -43,11 +43,11 @@ class TipoTramiteController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', TipoTramite::class);
 
-        return Inertia::render('tipos-tramite/Form', ['tipo' => null, ...$this->opciones()]);
+        return $this->index($request)->with('formulario', ['tipo' => null, ...$this->opciones()]);
     }
 
     public function store(TipoTramiteRequest $request): RedirectResponse
@@ -59,11 +59,11 @@ class TipoTramiteController extends Controller
         return to_route('tipos-tramite.index');
     }
 
-    public function edit(TipoTramite $tipo): Response
+    public function edit(Request $request, TipoTramite $tipo): Response
     {
         Gate::authorize('update', $tipo);
 
-        return Inertia::render('tipos-tramite/Form', ['tipo' => TipoTramiteResource::make($tipo)->resolve(), ...$this->opciones()]);
+        return $this->index($request)->with('formulario', ['tipo' => TipoTramiteResource::make($tipo)->resolve(), ...$this->opciones()]);
     }
 
     public function update(TipoTramiteRequest $request, TipoTramite $tipo): RedirectResponse

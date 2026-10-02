@@ -87,7 +87,7 @@ class ExpedienteController extends Controller
         ]);
     }
 
-    public function show(Request $request, Expediente $expediente, AuditoriaService $auditoria, SerieService $series): Response
+    public function show(Request $request, Expediente $expediente, AuditoriaService $auditoria, SerieService $series): Response|RedirectResponse
     {
         Gate::authorize('view', $expediente);
 
@@ -101,7 +101,13 @@ class ExpedienteController extends Controller
         $custodia = $expediente->codigo !== null && $user->can('custodiar', $expediente);
         $agrupable = $user->can('agrupar', $expediente);
 
-        return Inertia::render('expedientes/Show', [
+        // El detalle se abre en modal sobre la bandeja (CLAUDE.md: ver va en un modal).
+        $bandeja = $this->index($request);
+        if ($bandeja instanceof RedirectResponse) {
+            return $bandeja;
+        }
+
+        return $bandeja->with([
             'expediente' => [
                 ...ExpedienteResource::make($expediente)->resolve($request),
                 'origen' => $expediente->origen->value,

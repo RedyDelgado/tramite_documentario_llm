@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -9,17 +9,17 @@ import type { Emisor, Opcion } from '@/types';
 
 type Props = { emisor: Emisor | null; opcionesTipo: Opcion<string>[] };
 
-export default function EmisorForm({ emisor, opcionesTipo }: Props) {
+export default function EmisorForm({ emisor, opcionesTipo, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({ nombre: emisor?.nombre ?? '', tipo: emisor?.tipo ?? 'externo', activo: emisor?.activo ?? true });
     const { data, setData, errors } = form;
 
     const enviar = () => (emisor ? form.put(`/emisores/${emisor.id}`) : form.post('/emisores'));
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={emisor ? `Editar «${emisor.nombre}»` : 'Nuevo emisor'}
             descripcion="Se rechaza un nombre que ya exista aunque cambien tildes, mayúsculas o puntuación."
-            volverA="/emisores"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -34,6 +34,6 @@ export default function EmisorForm({ emisor, opcionesTipo }: Props) {
                     {(c) => <Switch id={c.id} aria-describedby={c['aria-describedby']} checked={data.activo} onCheckedChange={(v) => setData('activo', v)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

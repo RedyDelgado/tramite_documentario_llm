@@ -6,6 +6,8 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 - **Crear, editar y ver en un modal** sobre la lista, en lugar de páginas aparte con `FormPage` (cambia lo que fijaba 5.2).
 - **Confirmación antes de toda acción que cambia algo** (`ConfirmDialog` con una frase de lo que pasará); no en abrir, filtrar, buscar, descargar ni cancelar.
+- **Cómo se implementó**: las rutas de alta, edición y detalle (`/x/create`, `/x/{id}/edit`, `/expedientes/{id}`, `/salientes/{id}`, `/registro/nuevo`) siguen existiendo y devuelven la misma lista con el modal encima (`index()->with('formulario'|'detalle'|'registro', …)`). Así un enlace o el QR siguen abriendo el registro, atrás y recargar funcionan, y un error de validación vuelve con el modal abierto. Abrir y cerrar conservan los filtros de la lista (`lib/modal.ts`).
+- **Componentes**: `FormDialog` reemplaza a `FormPage` (borrado); `Dialog` tiene tamaños `md`, `lg` y `xl` (formularios largos y detalles); el panel lateral `Drawer` pasó a `DetalleDialog` (modal); `BotonConfirmado` junta el botón y su confirmación. Las subidas que actúan (cargo firmado, PDF firmado) confirman tras elegir el archivo.
 
 ## 2026-10-06 — Fase 5
 

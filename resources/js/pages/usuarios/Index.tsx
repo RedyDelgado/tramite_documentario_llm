@@ -7,13 +7,17 @@ import { ActivoBadge } from '@/components/domain/ActivoBadge';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Button, botonClases } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Drawer } from '@/components/ui/Drawer';
+import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
 import type { Opcion, Paginado, UsuarioFila } from '@/types';
+import type { ComponentProps } from 'react';
+import { cerrarModal, rutaModal } from '@/lib/modal';
+import Formulario from './Form';
 
 type Filtros = { q?: string; rol?: string; estado?: string; orden?: string; dir?: 'asc' | 'desc' };
 
@@ -35,7 +39,7 @@ const columnas: Columna<UsuarioFila>[] = [
 
 type Props = { usuarios: Paginado<UsuarioFila>; filtros: Filtros; opcionesRol: Opcion<string>[] };
 
-export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRol }: Props) {
+export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRol, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
     const { auth } = usePage().props;
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
     const [elegidoId, setElegidoId] = useState<number | null>(null);
@@ -63,111 +67,120 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
         );
 
     return (
-        <ListPage
-            titulo="Usuarios"
-            descripcion="Solo ingresan con Google las cuentas registradas aquí y activas; el rol define qué ven y qué pueden hacer."
-            acciones={
-                <Link href="/usuarios/create" className={botonClases({ variante: 'primario' })}>
-                    <Add20Regular />
-                    Nuevo usuario
-                </Link>
-            }
-            filtros={
-                <>
-                    <Select
-                        aria-label="Rol"
-                        className="w-40"
-                        vacia="Todos los roles"
-                        opciones={opcionesRol}
-                        value={filtros.rol ?? ''}
-                        onChange={(e) => cambiar({ rol: e.target.value })}
-                    />
-                    <Select
-                        aria-label="Estado"
-                        className="w-36"
-                        vacia="Todos"
-                        opciones={[
-                            { value: 'activos', label: 'Activos' },
-                            { value: 'inactivos', label: 'Inactivos' },
-                        ]}
-                        value={filtros.estado ?? ''}
-                        onChange={(e) => cambiar({ estado: e.target.value })}
-                    />
-                    <Input
-                        type="search"
-                        aria-label="Buscar por nombre o correo"
-                        placeholder="Buscar por nombre o correo"
-                        iconoInicio={<Search20Regular />}
-                        className="w-64"
-                        value={filtros.q ?? ''}
-                        onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
-                    />
-                </>
-            }
-            tabla={{
-                titulo: 'Usuarios',
-                columnas,
-                filas: usuarios.data,
-                claveFila: (u) => u.id,
-                orden: { clave: filtros.orden ?? 'nombre', dir: filtros.dir ?? 'asc' },
-                onOrdenar: ordenar,
-                seleccionada: elegidoId,
-                onElegirFila: (u) => setElegidoId(u.id),
-                cargando,
-                vacio: (
-                    <EmptyState
-                        icono={<People20Regular />}
-                        titulo={hayFiltros ? 'No hay usuarios que coincidan con los filtros' : 'Aún no hay usuarios'}
-                        descripcion={hayFiltros ? 'Cambia la búsqueda, el rol o el estado.' : 'Registra a las personas que usarán el sistema.'}
-                    />
-                ),
-            }}
-            paginacion={usuarios}
-            detalle={
-                elegido && (
-                    <Drawer
-                        abierto
-                        onCambiar={(abierto) => !abierto && setElegidoId(null)}
-                        titulo={elegido.name}
-                        subtitulo={<ActivoBadge activo={elegido.activo} />}
-                        acciones={
-                            <>
-                                <Link href={`/usuarios/${elegido.id}/edit`} className={botonClases()}>
-                                    <Edit20Regular />
-                                    Editar
-                                </Link>
-                                {/* Nadie se desactiva a sí mismo; el servidor también lo impide. */}
-                                {elegido.id !== auth.user?.id &&
-                                    (elegido.activo ? (
-                                        <Button onClick={() => setConfirmando(true)}>Desactivar</Button>
-                                    ) : (
-                                        <Button cargando={procesando} onClick={() => cambiarEstado(elegido)}>
-                                            Activar
-                                        </Button>
-                                    ))}
-                            </>
-                        }
-                    >
-                        <DetalleLista
-                            items={[
-                                { etiqueta: 'Correo', valor: elegido.email },
-                                { etiqueta: 'Rol', valor: elegido.rol_etiqueta ?? 'Sin rol' },
-                                { etiqueta: 'Última actualización', valor: formatearFechaHora(elegido.actualizado) },
+        <>
+            {formulario && <Formulario {...formulario} onCerrar={() => cerrarModal('/usuarios')} />}
+            <ListPage
+                titulo="Usuarios"
+                descripcion="Solo ingresan con Google las cuentas registradas aquí y activas; el rol define qué ven y qué pueden hacer."
+                acciones={
+                    <Link href={rutaModal('/usuarios/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
+                        <Add20Regular />
+                        Nuevo usuario
+                    </Link>
+                }
+                filtros={
+                    <>
+                        <Select
+                            aria-label="Rol"
+                            className="w-40"
+                            vacia="Todos los roles"
+                            opciones={opcionesRol}
+                            value={filtros.rol ?? ''}
+                            onChange={(e) => cambiar({ rol: e.target.value })}
+                        />
+                        <Select
+                            aria-label="Estado"
+                            className="w-36"
+                            vacia="Todos"
+                            opciones={[
+                                { value: 'activos', label: 'Activos' },
+                                { value: 'inactivos', label: 'Inactivos' },
                             ]}
+                            value={filtros.estado ?? ''}
+                            onChange={(e) => cambiar({ estado: e.target.value })}
                         />
-                        <ConfirmDialog
-                            abierto={confirmando}
-                            onCambiar={setConfirmando}
-                            titulo={`¿Desactivar a «${elegido.name}»?`}
-                            descripcion="Perderá el acceso de inmediato, incluso si tiene una sesión abierta. Su historial se conserva y puedes volver a activarlo."
-                            confirmar="Desactivar"
-                            peligro
-                            cargando={procesando}
-                            onConfirmar={() => cambiarEstado(elegido)}
+                        <Input
+                            type="search"
+                            aria-label="Buscar por nombre o correo"
+                            placeholder="Buscar por nombre o correo"
+                            iconoInicio={<Search20Regular />}
+                            className="w-64"
+                            value={filtros.q ?? ''}
+                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
                         />
-                    </Drawer>
-                )
-            }
-        />
+                    </>
+                }
+                tabla={{
+                    titulo: 'Usuarios',
+                    columnas,
+                    filas: usuarios.data,
+                    claveFila: (u) => u.id,
+                    orden: { clave: filtros.orden ?? 'nombre', dir: filtros.dir ?? 'asc' },
+                    onOrdenar: ordenar,
+                    seleccionada: elegidoId,
+                    onElegirFila: (u) => setElegidoId(u.id),
+                    cargando,
+                    vacio: (
+                        <EmptyState
+                            icono={<People20Regular />}
+                            titulo={hayFiltros ? 'No hay usuarios que coincidan con los filtros' : 'Aún no hay usuarios'}
+                            descripcion={hayFiltros ? 'Cambia la búsqueda, el rol o el estado.' : 'Registra a las personas que usarán el sistema.'}
+                        />
+                    ),
+                }}
+                paginacion={usuarios}
+                detalle={
+                    elegido && (
+                        <DetalleDialog
+                            abierto
+                            onCambiar={(abierto) => !abierto && setElegidoId(null)}
+                            titulo={elegido.name}
+                            subtitulo={<ActivoBadge activo={elegido.activo} />}
+                            acciones={
+                                <>
+                                    <Link href={rutaModal(`/usuarios/${elegido.id}/edit`)} preserveScroll className={botonClases()}>
+                                        <Edit20Regular />
+                                        Editar
+                                    </Link>
+                                    {/* Nadie se desactiva a sí mismo; el servidor también lo impide. */}
+                                    {elegido.id !== auth.user?.id &&
+                                        (elegido.activo ? (
+                                            <Button onClick={() => setConfirmando(true)}>Desactivar</Button>
+                                        ) : (
+                                            <BotonConfirmado
+                                                titulo={`¿Activar «${elegido.name}»?`}
+                                                descripcion="Podrá volver a iniciar sesión."
+                                                confirmar="Activar"
+                                                cargando={procesando}
+                                                onConfirmar={() => cambiarEstado(elegido)}
+                                            >
+                                                Activar
+                                            </BotonConfirmado>
+                                        ))}
+                                </>
+                            }
+                        >
+                            <DetalleLista
+                                items={[
+                                    { etiqueta: 'Correo', valor: elegido.email },
+                                    { etiqueta: 'Rol', valor: elegido.rol_etiqueta ?? 'Sin rol' },
+                                    { etiqueta: 'Última actualización', valor: formatearFechaHora(elegido.actualizado) },
+                                ]}
+                            />
+                            <ConfirmDialog
+                                abierto={confirmando}
+                                onCambiar={setConfirmando}
+                                titulo={`¿Desactivar a «${elegido.name}»?`}
+                                descripcion="Perderá el acceso de inmediato, incluso si tiene una sesión abierta. Su historial se conserva y puedes volver a activarlo."
+                                confirmar="Desactivar"
+                                peligro
+                                cargando={procesando}
+                                onConfirmar={() => cambiarEstado(elegido)}
+                            />
+                        </DetalleDialog>
+                    )
+                }
+            />
+        </>
     );
 }

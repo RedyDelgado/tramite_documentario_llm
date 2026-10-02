@@ -135,7 +135,7 @@ class EntregaRespuestasTest extends TestCase
 
         $admin = User::factory()->create()->assignRole('director');
         $this->actingAs($admin)->get('/salientes')->assertInertia(fn ($page) => $page->where('salientes.data.0.rebotes', 1));
-        $this->actingAs($admin)->get("/salientes/{$this->saliente->id}")->assertInertia(fn ($page) => $page->where('saliente.envios.0.estado', 'rebotado'));
+        $this->actingAs($admin)->get("/salientes/{$this->saliente->id}")->assertInertia(fn ($page) => $page->where('detalle.envios.0.estado', 'rebotado'));
     }
 
     public function test_el_documento_tiene_su_propio_semaforo_por_plazo_de_respuesta(): void

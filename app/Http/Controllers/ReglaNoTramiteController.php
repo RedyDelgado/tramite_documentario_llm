@@ -42,11 +42,11 @@ class ReglaNoTramiteController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', ReglaNoTramite::class);
 
-        return Inertia::render('reglas-no-tramite/Form', ['regla' => null, 'opcionesCampo' => $this->opcionesCampo()]);
+        return $this->index($request)->with('formulario', ['regla' => null, 'opcionesCampo' => $this->opcionesCampo()]);
     }
 
     public function store(ReglaNoTramiteRequest $request): RedirectResponse
@@ -58,11 +58,11 @@ class ReglaNoTramiteController extends Controller
         return to_route('reglas-no-tramite.index');
     }
 
-    public function edit(ReglaNoTramite $regla): Response
+    public function edit(Request $request, ReglaNoTramite $regla): Response
     {
         Gate::authorize('update', $regla);
 
-        return Inertia::render('reglas-no-tramite/Form', ['regla' => $this->fila($regla), 'opcionesCampo' => $this->opcionesCampo()]);
+        return $this->index($request)->with('formulario', ['regla' => $this->fila($regla), 'opcionesCampo' => $this->opcionesCampo()]);
     }
 
     public function update(ReglaNoTramiteRequest $request, ReglaNoTramite $regla): RedirectResponse

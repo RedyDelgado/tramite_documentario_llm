@@ -13,7 +13,7 @@ type Props<T> = {
     filtros?: ReactNode;
     tabla: DataTableProps<T>;
     paginacion?: Pick<Paginado<T>, 'links' | 'meta'>;
-    // Drawer de detalle: se abre al elegir una fila sin perder la lista.
+    // Detalle en modal: se abre al elegir una fila.
     detalle?: ReactNode;
     // Bloque sobre la lista que pide atención (p. ej. posibles duplicados).
     aviso?: ReactNode;

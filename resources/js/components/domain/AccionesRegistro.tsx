@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import type { ExpedienteFila, Opcion } from '@/types';
 import { EmisorCombobox } from './EmisorCombobox';
 
@@ -44,15 +45,29 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
                     <Button variante="primario" icono={<CheckmarkCircle20Regular />} onClick={() => setConfirmando(true)}>
                         Registrar como trámite
                     </Button>
-                    <Button icono={<Archive20Regular />} cargando={procesando} onClick={() => ejecutar('no-tramite')}>
+                    <BotonConfirmado
+                        icono={<Archive20Regular />}
+                        titulo="¿Marcar como no trámite?"
+                        descripcion="Se archiva sin número ni semáforo. No se borra: se puede devolver a revisión."
+                        confirmar="No es trámite"
+                        cargando={procesando}
+                        onConfirmar={(cerrar) => ejecutar('no-tramite', cerrar)}
+                    >
                         No es trámite
-                    </Button>
+                    </BotonConfirmado>
                 </>
             )}
             {estado === 'no_tramite' && (
-                <Button icono={<ArrowUndo20Regular />} cargando={procesando} onClick={() => ejecutar('devolver')}>
+                <BotonConfirmado
+                    icono={<ArrowUndo20Regular />}
+                    titulo="¿Devolver a revisión?"
+                    descripcion="Vuelve a la bandeja por revisar para decidir si es trámite."
+                    confirmar="Devolver"
+                    cargando={procesando}
+                    onConfirmar={(cerrar) => ejecutar('devolver', cerrar)}
+                >
                     Devolver a revisión
-                </Button>
+                </BotonConfirmado>
             )}
             {expediente.numero_registro && estado !== 'anulado' && (
                 <Button icono={<Prohibited20Regular />} onClick={() => setAnulando(true)}>

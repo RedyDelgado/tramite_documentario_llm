@@ -21,7 +21,7 @@ class UmbralController extends Controller
 
         $valores = Configuracion::todas();
 
-        return Inertia::render('umbrales/Form', [
+        return Inertia::render('umbrales/Index', [
             'umbrales' => [
                 'porcentaje_amarillo' => $valores['semaforo.porcentaje_amarillo'],
                 'dias_sin_movimiento' => $valores['semaforo.dias_sin_movimiento'],

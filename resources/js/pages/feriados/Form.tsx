@@ -1,14 +1,14 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import type { Feriado, Opcion } from '@/types';
 
 type Props = { feriado: Feriado | null; opcionesArea: Opcion<number>[] };
 
-export default function FeriadoForm({ feriado, opcionesArea }: Props) {
+export default function FeriadoForm({ feriado, opcionesArea, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({
         fecha: feriado?.fecha ?? '',
         descripcion: feriado?.descripcion ?? '',
@@ -26,10 +26,10 @@ export default function FeriadoForm({ feriado, opcionesArea }: Props) {
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={feriado ? `Editar «${feriado.descripcion}»` : 'Nuevo feriado'}
             descripcion="Cuenta para los plazos en días hábiles que se calculen desde ahora; no cambia fechas límite ya asignadas."
-            volverA="/feriados"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -46,6 +46,6 @@ export default function FeriadoForm({ feriado, opcionesArea }: Props) {
                     {(c) => <Input {...c} value={data.descripcion} maxLength={150} placeholder="Fiestas Patrias" onChange={(e) => setData('descripcion', e.target.value)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

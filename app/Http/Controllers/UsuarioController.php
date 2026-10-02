@@ -52,11 +52,11 @@ class UsuarioController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', User::class);
 
-        return Inertia::render('usuarios/Form', $this->datosFormulario(null));
+        return $this->index($request)->with('formulario', $this->datosFormulario(null));
     }
 
     public function store(UsuarioRequest $request): RedirectResponse
@@ -68,11 +68,11 @@ class UsuarioController extends Controller
         return to_route('usuarios.index');
     }
 
-    public function edit(User $usuario): Response
+    public function edit(Request $request, User $usuario): Response
     {
         Gate::authorize('update', $usuario);
 
-        return Inertia::render('usuarios/Form', $this->datosFormulario($usuario));
+        return $this->index($request)->with('formulario', $this->datosFormulario($usuario));
     }
 
     public function update(UsuarioRequest $request, User $usuario): RedirectResponse

@@ -1,7 +1,7 @@
 import { useForm, useHttp } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -35,7 +35,7 @@ type Props = {
     opcionesPlantilla: Opcion<number>[];
 };
 
-export default function SalienteForm({ saliente, expediente, opcionesTipo, opcionesArea, opcionesPlantilla }: Props) {
+export default function SalienteForm({ saliente, expediente, opcionesTipo, opcionesArea, opcionesPlantilla, onCerrar }: Props & { onCerrar: () => void }) {
     // Los nombres conocidos (el remitente del expediente) acompañan a su correo.
     const nombres = new Map((saliente?.destinatarios ?? (expediente?.remitente.email ? [expediente.remitente] : [])).map((d) => [d.email, d.nombre]));
     const form = useForm({
@@ -83,14 +83,15 @@ export default function SalienteForm({ saliente, expediente, opcionesTipo, opcio
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
+            tamano="xl"
             titulo={saliente ? 'Editar borrador' : expediente?.codigo ? `Redactar documento · ${expediente.codigo}` : 'Redactar documento'}
             descripcion={
                 saliente?.observacion
                     ? `Observación de la revisión: ${saliente.observacion}`
                     : 'Se guarda como borrador. Recibe número y sale solo después de la aprobación.'
             }
-            volverA={saliente ? `/salientes/${saliente.id}` : expediente ? `/expedientes/${expediente.id}` : '/salientes'}
             onEnviar={enviar}
             procesando={form.processing}
             textoGuardar="Guardar borrador"
@@ -151,6 +152,6 @@ export default function SalienteForm({ saliente, expediente, opcionesTipo, opcio
                     </FormField>
                 )}
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

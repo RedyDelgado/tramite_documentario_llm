@@ -42,11 +42,11 @@ class FeriadoController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         Gate::authorize('create', Feriado::class);
 
-        return Inertia::render('feriados/Form', ['feriado' => null, 'opcionesArea' => Area::opciones()]);
+        return $this->index($request)->with('formulario', ['feriado' => null, 'opcionesArea' => Area::opciones()]);
     }
 
     public function store(FeriadoRequest $request): RedirectResponse
@@ -58,11 +58,11 @@ class FeriadoController extends Controller
         return to_route('feriados.index', ['anio' => $feriado->fecha->year]);
     }
 
-    public function edit(Feriado $feriado): Response
+    public function edit(Request $request, Feriado $feriado): Response
     {
         Gate::authorize('update', $feriado);
 
-        return Inertia::render('feriados/Form', ['feriado' => FeriadoResource::make($feriado)->resolve(), 'opcionesArea' => Area::opciones()]);
+        return $this->index($request)->with('formulario', ['feriado' => FeriadoResource::make($feriado)->resolve(), 'opcionesArea' => Area::opciones()]);
     }
 
     public function update(FeriadoRequest $request, Feriado $feriado): RedirectResponse

@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import type { Opcion, Responsable } from '@/types';
@@ -15,7 +15,7 @@ type Props = {
 
 const hoy = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
-export default function ResponsableForm({ responsable, opcionesArea, opcionesUsuario, opcionesTipo }: Props) {
+export default function ResponsableForm({ responsable, opcionesArea, opcionesUsuario, opcionesTipo, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({
         area_id: responsable ? String(responsable.area_id) : '',
         user_id: responsable ? String(responsable.user_id) : '',
@@ -35,10 +35,10 @@ export default function ResponsableForm({ responsable, opcionesArea, opcionesUsu
     };
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={responsable ? `${responsable.usuario} en ${responsable.area}` : 'Asignar responsable'}
             descripcion="Para que alguien deje de ser responsable, pon la fecha en «Vigente hasta»: el historial se conserva."
-            volverA="/responsables"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -64,6 +64,6 @@ export default function ResponsableForm({ responsable, opcionesArea, opcionesUsu
                     {(c) => <Input {...c} type="date" value={data.vigente_hasta} onChange={(e) => setData('vigente_hasta', e.target.value)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }

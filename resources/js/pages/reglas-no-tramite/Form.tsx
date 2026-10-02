@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
-import { FormPage } from '@/components/layouts/FormPage';
+import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -16,17 +16,17 @@ const AYUDA: Record<string, string> = {
     encabezado: '«Nombre» si basta con que exista, o «Nombre: texto» si debe contenerlo. P. ej. precedence: bulk.',
 };
 
-export default function ReglaNoTramiteForm({ regla, opcionesCampo }: Props) {
+export default function ReglaNoTramiteForm({ regla, opcionesCampo, onCerrar }: Props & { onCerrar: () => void }) {
     const form = useForm({ nombre: regla?.nombre ?? '', campo: regla?.campo ?? 'remitente', valor: regla?.valor ?? '', activa: regla?.activa ?? true });
     const { data, setData, errors } = form;
 
     const enviar = () => (regla ? form.put(`/reglas-no-tramite/${regla.id}`) : form.post('/reglas-no-tramite'));
 
     return (
-        <FormPage
+        <FormDialog
+            onCerrar={onCerrar}
             titulo={regla ? `Editar «${regla.nombre}»` : 'Nueva regla de correo no trámite'}
             descripcion="Sin distinguir mayúsculas. Los correos ya ingresados no se reclasifican."
-            volverA="/reglas-no-tramite"
             onEnviar={enviar}
             procesando={form.processing}
         >
@@ -44,6 +44,6 @@ export default function ReglaNoTramiteForm({ regla, opcionesCampo }: Props) {
                     {(c) => <Switch id={c.id} aria-describedby={c['aria-describedby']} checked={data.activa} onCheckedChange={(v) => setData('activa', v)} />}
                 </FormField>
             </FormSection>
-        </FormPage>
+        </FormDialog>
     );
 }
