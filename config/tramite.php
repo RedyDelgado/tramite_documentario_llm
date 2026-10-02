@@ -52,6 +52,13 @@ return [
         'token' => env('AI_SERVICE_TOKEN'),
     ],
 
+    // Respaldos (docs/runbook-respaldos.md). La retención por defecto espera la política del pendiente 6.
+    'respaldo' => [
+        'directorio' => env('RESPALDO_DIRECTORIO', storage_path('app/respaldos')),
+        'modelos' => env('RESPALDO_MODELOS', '/var/www/modelos_ia'),
+        'dias' => (int) env('RESPALDO_DIAS', 30),
+    ],
+
     // Primer número de una secuencia en un año dado; sin entrada empieza en 1.
     // Por defecto 2026 continúa el registro en papel (pendiente 9).
     'secuencias_inicio' => [

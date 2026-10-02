@@ -4,6 +4,13 @@ use App\Jobs\IngestarCorreos;
 use App\Models\Feriado;
 use Illuminate\Support\Facades\Schedule;
 
+// Antes de la verificación de la auditoría, para que el respaldo no compita con ella.
+$respaldo = Schedule::command('respaldo:crear')->dailyAt('02:30')->withoutOverlapping();
+// Un respaldo que falla en silencio se descubre el día que hace falta restaurar.
+if ($superadmin = config('tramite.superadmin.email')) {
+    $respaldo->emailOutputOnFailure($superadmin);
+}
+
 // Una alteración de la auditoría debe detectarse en menos de un día (sección 9).
 Schedule::command('auditoria:verificar')->dailyAt('03:00')->withoutOverlapping();
 

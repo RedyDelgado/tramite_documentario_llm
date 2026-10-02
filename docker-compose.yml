@@ -8,6 +8,8 @@ x-php: &php
   image: tramite-php
   volumes:
     - ./:/var/www/html
+    # Para respaldar y restaurar los modelos entrenados junto con la base.
+    - modelos_ia:/var/www/modelos_ia
   depends_on:
     postgres:
       condition: service_healthy

@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Piloto: respaldo y restauración
+
+- **`respaldo:crear` a diario (02:30) y `respaldo:restaurar`** (`RespaldoService`), en el mismo contenedor que el resto: no depende de que el servidor sea Ubuntu físico o VM (pendiente 3). Cada respaldo es una carpeta con `base.dump` (`pg_dump -Fc`; la imagen PHP trae `postgresql18-client`, misma versión que el servidor), `originales.tar.gz`, `modelos.tar.gz` (el volumen `modelos_ia` se monta en los contenedores PHP) y `SHA256SUMS`.
+- **Restaurar verifica antes de tocar nada** y restaura la base en una sola transacción; luego los archivos, el índice de Meilisearch (flush + import) y un registro `respaldo.restaurado` en la auditoría. No se respaldan Meilisearch (se rehace) ni Redis; el `.env` se guarda aparte.
+- **Retención de 30 días** (`RESPALDO_DIAS`) hasta definir el pendiente 6. La copia fuera del servidor queda en el runbook, con destino por decidir (pendiente 12).
+- **Aviso por correo al superadmin si el respaldo falla** (`emailOutputOnFailure`).
+- **Límite conocido**: si Redis se pierde, los envíos aprobados que estaban en cola quedan pendientes sin job (igual el OCR y la clasificación); no hay botón para reencolarlos. El runbook dice cómo detectarlo.
+
 ## 2026-10-06 — Interfaz (decisión del usuario)
 
 - **Paleta al estilo de Gmail** (Material 3 de Google) en lugar del índigo de 5.3: azul `#0B57D0`, fondos `#F6F8FC`/`#F2F6FC`, celeste de selección `#D3E3FD` y los grises, verde, amarillo y rojo de Google. Mismos nombres de tokens, así que solo cambió `tokens.css` (y la tabla de 5.3). Todos los pares texto/fondo cumplen AA; el borde de los campos pasó de `#C8C8C8` (1,6:1) a `#747775` (4,5:1), que además cumple el 3:1 de componentes. Se toman solo los colores: sin nombre, logo ni tipografía de Google (la pila de fuentes sigue siendo la del sistema, sin CDN).

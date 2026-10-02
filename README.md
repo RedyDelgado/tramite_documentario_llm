@@ -22,6 +22,16 @@ Stack: Laravel 13 + Inertia 3 + React 19 (TypeScript) + Tailwind 4, PostgreSQL 1
 
 ClamAV (~1,5 GB de RAM) no arranca por defecto: `docker compose --profile clamav up -d`.
 
+Los comandos de artisan que escriben en `storage/` se corren con `docker compose exec --user www-data app php artisan …`: como root dejan archivos que la web y el respaldo no pueden leer.
+
+## Operación
+
+| Runbook | Para qué |
+|---|---|
+| [docs/runbook-respaldos.md](docs/runbook-respaldos.md) | Respaldo diario, copia fuera del servidor y restauración |
+| [docs/runbook-gmail.md](docs/runbook-gmail.md) | Conectar el buzón central |
+| [docs/runbook-google-login.md](docs/runbook-google-login.md) | Inicio de sesión con Google |
+
 ## Pruebas
 
 | Comando | Qué prueba |
