@@ -13,6 +13,25 @@ Lee primero `PLAN_SISTEMA_TRAMITE_DOCUMENTARIO.md`: es la fuente de verdad. Trab
 - **Fechas y horas**: `America/Lima`.
 - Comentarios en español, una línea, solo el porqué (12.1).
 
+## Tablero (GitHub Projects #3)
+
+Una issue por entregable, con el hito de su fase. `gh` está en `"/c/Program Files/GitHub CLI/gh.exe"` (no en el PATH).
+
+- **Backlog → Ready**: lo decide el usuario. No hay columna Ready: lo que está arriba en Backlog va primero.
+- **En proceso**: al empezar un entregable. Commits con `refs #N`.
+- **En revisión**: al terminarlo con los tests en verde; es la aprobación de la sección 16.
+- **Aprobado**: solo el usuario. Nunca cerrar issues ni usar `closes #N`: al pasar a Aprobado, el workflow cierra la issue; si la reabre, vuelve sola a En proceso.
+- Límites: Backlog 5, En proceso 3, En revisión 5.
+- El repositorio es público: en las issues, nada que no esté ya en el plan.
+
+Mover una tarjeta (ids fijos del proyecto):
+
+```bash
+"/c/Program Files/GitHub CLI/gh.exe" project item-edit --project-id PVT_kwHOACYV184BlYzh --id <ITEM_ID> --field-id PVTSSF_lAHOACYV184BlYzhzhkF4Xk --single-select-option-id <OPCION>
+```
+
+Opciones: Backlog `f75ad846`, En proceso `47fc9ee4`, En revisión `df73e18b`, Aprobado `98236657`. El `ITEM_ID` sale de `gh project item-list 3 --owner RedyDelgado --format json`.
+
 ## Comandos
 
 Ver `README.md`. PHP corre en el contenedor `app` (Windows no tiene `pcntl` ni `pdo_pgsql`); Node puede correr en el host.
