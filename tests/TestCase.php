@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -12,5 +13,7 @@ abstract class TestCase extends BaseTestCase
 
         // Las respuestas Inertia no necesitan los assets compilados para probarse.
         $this->withoutVite();
+        // Ningún test habla con servicios externos (IA, Google) sin simularlos.
+        Http::preventStrayRequests();
     }
 }

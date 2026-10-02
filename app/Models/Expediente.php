@@ -56,7 +56,7 @@ class Expediente extends Model
             'fecha_ingreso' => $this->fecha_ingreso->getTimestamp(),
             'visible_para' => $this->tokensVisibilidad(),
             'texto' => Str::limit(
-                $this->correos->map(fn (Correo $c) => $c->asunto."\n".$c->cuerpo_texto)
+                $this->correos->toBase()->map(fn (Correo $c) => $c->asunto."\n".$c->cuerpo_texto)
                     ->merge($this->documentos->map(fn (Documento $d) => $d->nombre_original."\n".$d->texto_extraido))
                     ->implode("\n"),
                 self::MAX_TEXTO_INDICE, '',

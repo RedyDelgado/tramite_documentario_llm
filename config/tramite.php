@@ -37,6 +37,12 @@ return [
         ],
     ],
 
+    // Servicio de IA local (sección 10); si está caído, el sistema sigue ingresando (principio 2).
+    'ai' => [
+        'url' => env('AI_SERVICE_URL', 'http://ai:8000'),
+        'token' => env('AI_SERVICE_TOKEN'),
+    ],
+
     // Primer número de una secuencia en un año dado; sin entrada empieza en 1.
     // Por defecto 2026 continúa el registro en papel (pendiente 9).
     'secuencias_inicio' => [

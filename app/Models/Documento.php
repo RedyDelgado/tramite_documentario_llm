@@ -2,19 +2,31 @@
 
 namespace App\Models;
 
+use App\Jobs\OcrDocumento;
+use App\Services\OcrService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'expediente_id', 'correo_id', 'version', 'nombre_original', 'ruta', 'mime', 'tamano', 'sha256',
+    'expediente_id', 'correo_id', 'version', 'nombre_original', 'ruta', 'mime', 'tamano', 'paginas', 'sha256',
     'texto_extraido', 'es_adjunto',
 ])]
 class Documento extends Model
 {
     protected function casts(): array
     {
-        return ['es_adjunto' => 'boolean', 'tamano' => 'integer', 'version' => 'integer'];
+        return ['es_adjunto' => 'boolean', 'tamano' => 'integer', 'paginas' => 'integer', 'version' => 'integer', 'texto_por_ocr' => 'boolean'];
+    }
+
+    protected static function booted(): void
+    {
+        // Un PDF sin capa de texto o una imagen es un escaneo: su texto sale del OCR, en cola (7.3).
+        static::created(function (self $documento) {
+            if ($documento->texto_extraido === null && in_array($documento->mime, OcrService::MIMES, true)) {
+                OcrDocumento::dispatch($documento->id)->afterCommit();
+            }
+        });
     }
 
     /** @return BelongsTo<Expediente, $this> */

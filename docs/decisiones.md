@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-04 — Fase 3
+
+- **OCR con Tesseract (`spa`) en el servicio de IA**, rasterizando PDF a 300 ppp con `pdftoppm`. El archivo viaja como cuerpo crudo (sin `python-multipart`). Todo local (sección 10).
+- **El OCR se encola desde `Documento::created`**: un PDF sin capa de texto o una imagen pasan por `OcrDocumento`, venga del correo o del registro de papel. El job es idempotente, reintenta durante ~6 h si el servicio de IA está caído y abandona sin reintentar si el servicio no puede leer el archivo. El ingreso nunca espera al OCR (principio 2).
+- **`texto_por_ocr`** marca el texto reconocido (puede tener errores); el texto entra al índice al terminar el OCR.
+- **Los tests bloquean HTTP no simulado** (`Http::preventStrayRequests` en `TestCase`): ningún test depende del servicio de IA ni de Google. El OCR real se prueba en el contenedor de IA (`pytest`), con un PDF generado en el test.
+
 ## 2026-10-03 — Fase 2
 
 - **Ingreso con Google: tres barreras.** La cuenta debe traer `hd` igual a `GOOGLE_DOMINIO` (Google lo firma solo para cuentas administradas por ese Workspace; el sufijo del correo no basta), el correo verificado, y existir como usuario activo. Sin `GOOGLE_DOMINIO` el ingreso con Google queda apagado (404), no abierto. Cada intento fallido se audita con su motivo (`fuera_del_dominio`, `no_registrado`, `inactivo`).
