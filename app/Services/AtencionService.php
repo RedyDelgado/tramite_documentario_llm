@@ -28,6 +28,7 @@ class AtencionService
     public function __construct(
         private readonly AuditoriaService $auditoria,
         private readonly PlazoService $plazos,
+        private readonly ClasificacionService $clasificacion,
     ) {}
 
     /**
@@ -37,7 +38,7 @@ class AtencionService
      */
     public function derivar(Expediente $expediente, array $datos): Expediente
     {
-        return $this->paso($expediente, [EstadoExpediente::Registrado, ...self::ABIERTOS], 'derivar', function (Expediente $e) use ($datos) {
+        $expediente = $this->paso($expediente, [EstadoExpediente::Registrado, ...self::ABIERTOS], 'derivar', function (Expediente $e) use ($datos) {
             $tipo = TipoTramite::findOrFail($datos['tipo_tramite_id']);
             $areaId = (int) $datos['area_id'];
             $cambios = [
@@ -73,6 +74,10 @@ class AtencionService
                 ],
             ];
         });
+        // La derivación es la decisión humana con la que se mide la IA (10).
+        $this->clasificacion->registrarDecision($expediente, Auth::user());
+
+        return $expediente;
     }
 
     /** Quien atiende lo toma; si es solo para conocimiento y sin plazo, tomarlo ya lo deja atendido (8). */

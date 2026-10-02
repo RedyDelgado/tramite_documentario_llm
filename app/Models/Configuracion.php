@@ -18,6 +18,10 @@ class Configuracion extends Model
     public const DEFECTOS = [
         'semaforo.porcentaje_amarillo' => 30,
         'semaforo.dias_sin_movimiento' => 5,
+        // IA (10): en sombra propone y se compara, sin mostrarse ni ejecutar nada; los umbrales se ajustan con sus datos.
+        'ia.modo' => 'sombra',
+        'ia.umbral_sugerencia' => 0.60,
+        'ia.umbral_alta' => 0.90,
     ];
 
     protected function casts(): array

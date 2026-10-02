@@ -107,6 +107,8 @@ export type OpcionesDerivacion = {
     usuarios: Opcion<number>[];
     instrucciones: Opcion<number>[];
     sugerencia: { regla: string; area_id: number; responsable_id: number | null } | null;
+    // Solo en modo activo y sobre el umbral (ClasificacionService::sugerencia).
+    ia: { area_id: number | null; tipo_tramite_id: number | null; confianza_area: number | null; confianza_tipo: number | null; alta: boolean } | null;
 };
 
 /** AreaResource. */

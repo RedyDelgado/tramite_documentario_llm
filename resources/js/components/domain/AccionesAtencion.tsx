@@ -22,9 +22,11 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
     const cerrar = () => setAbierto(null);
 
     const sugerencia = derivacion?.sugerencia;
+    const ia = derivacion?.ia;
+    // Primero lo ya decidido, luego la regla (determinista) y al final la IA (10: la IA propone, las reglas deciden).
     const derivar = useForm({
-        tipo_tramite_id: e.tipo_tramite_id ? String(e.tipo_tramite_id) : '',
-        area_id: String(e.area_principal_id ?? sugerencia?.area_id ?? ''),
+        tipo_tramite_id: String(e.tipo_tramite_id ?? ia?.tipo_tramite_id ?? ''),
+        area_id: String(e.area_principal_id ?? sugerencia?.area_id ?? ia?.area_id ?? ''),
         responsable_id: String(e.responsable_id ?? (e.area_principal_id ? '' : (sugerencia?.responsable_id ?? ''))),
         requiere_respuesta: e.requiere_respuesta,
         instruccion: '',
@@ -101,7 +103,15 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                     abierto={abierto === 'derivar'}
                     onCambiar={(v) => !v && cerrar()}
                     titulo={e.estado.valor === 'registrado' ? 'Derivar' : 'Reasignar'}
-                    descripcion={sugerencia ? `Sugerencia de la regla «${sugerencia.regla}»; puedes cambiarla.` : 'El plazo sale del tipo de trámite y del área, salvo que el documento fije una fecha.'}
+                    descripcion={
+                        [
+                            sugerencia && `Sugerencia de la regla «${sugerencia.regla}».`,
+                            ia && `Propuesta de la IA${ia.alta ? ' (alta confianza)' : ''}: ${[ia.confianza_area && `área ${Math.round(ia.confianza_area * 100)} %`, ia.confianza_tipo && `tipo ${Math.round(ia.confianza_tipo * 100)} %`].filter(Boolean).join(', ')}.`,
+                            'Revisa antes de derivar: el plazo sale del tipo y del área, salvo que el documento fije una fecha.',
+                        ]
+                            .filter(Boolean)
+                            .join(' ')
+                    }
                     pie={
                         <>
                             <Button onClick={cerrar}>Cancelar</Button>

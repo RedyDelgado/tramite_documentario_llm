@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\EstadoExpediente;
 use App\Exceptions\ReglaDeNegocio;
+use App\Jobs\ClasificarExpediente;
 use App\Models\Expediente;
 use App\Models\TipoTramite;
 use Illuminate\Support\Facades\Auth;
@@ -69,6 +70,8 @@ class ExpedienteService
                 antes: ['estado' => $estadoPrevio->value],
                 despues: ['estado' => EstadoExpediente::Registrado->value, 'numero' => $expediente->numero_registro, 'codigo' => $expediente->codigo, ...$documento],
             );
+            // La IA propone en segundo plano; el registro no la espera (10).
+            ClasificarExpediente::dispatch($expediente->id)->afterCommit();
 
             return $expediente;
         });

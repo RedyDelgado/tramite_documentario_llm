@@ -2,8 +2,10 @@
 
 namespace Tests;
 
+use App\Jobs\ClasificarExpediente;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -15,5 +17,7 @@ abstract class TestCase extends BaseTestCase
         $this->withoutVite();
         // Ningún test habla con servicios externos (IA, Google) sin simularlos.
         Http::preventStrayRequests();
+        // La clasificación con IA corre en cola; los tests que la prueban ejecutan el job a mano.
+        Queue::fake([ClasificarExpediente::class]);
     }
 }

@@ -56,7 +56,10 @@ class OcrDocumento implements ShouldBeUnique, ShouldQueue
         ])->save();
         $auditoria->registrar('documento.ocr', $documento, despues: ['caracteres' => mb_strlen($texto), 'paginas' => $resultado['paginas']]);
 
-        // El texto del escaneo entra a la búsqueda (7.4).
+        // El texto del escaneo entra a la búsqueda (7.4) y, si ya es trámite, a la clasificación (10).
         $documento->expediente->searchable();
+        if ($documento->expediente->secuencia) {
+            ClasificarExpediente::dispatch($documento->expediente_id);
+        }
     }
 }

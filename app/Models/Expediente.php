@@ -56,13 +56,21 @@ class Expediente extends Model
             'semaforo' => $this->semaforo?->value,
             'fecha_ingreso' => $this->fecha_ingreso->getTimestamp(),
             'visible_para' => $this->tokensVisibilidad(),
-            'texto' => Str::limit(
-                $this->correos->toBase()->map(fn (Correo $c) => $c->asunto."\n".$c->cuerpo_texto)
-                    ->merge($this->documentos->map(fn (Documento $d) => $d->nombre_original."\n".$d->texto_extraido))
-                    ->implode("\n"),
-                self::MAX_TEXTO_INDICE, '',
-            ),
+            'texto' => $this->textoCompleto(self::MAX_TEXTO_INDICE),
         ];
+    }
+
+    /** Correos y documentos en un solo texto: lo usan la búsqueda (7.4) y la clasificación (10). */
+    public function textoCompleto(int $maximo): string
+    {
+        $this->loadMissing(['correos', 'documentos']);
+
+        return Str::limit(
+            $this->correos->toBase()->map(fn (Correo $c) => $c->asunto."\n".$c->cuerpo_texto)
+                ->merge($this->documentos->map(fn (Documento $d) => $d->nombre_original."\n".$d->texto_extraido))
+                ->implode("\n"),
+            $maximo, '',
+        );
     }
 
     /** @param Collection<int, Expediente> $modelos */
@@ -198,6 +206,12 @@ class Expediente extends Model
     public function grupo(): BelongsTo
     {
         return $this->belongsTo(Grupo::class);
+    }
+
+    /** @return HasMany<ClasificacionIa, $this> */
+    public function clasificaciones(): HasMany
+    {
+        return $this->hasMany(ClasificacionIa::class);
     }
 
     /** @return HasMany<Movimiento, $this> */

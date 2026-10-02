@@ -21,6 +21,7 @@ use App\Models\TipoTramite;
 use App\Models\UbicacionFisica;
 use App\Models\User;
 use App\Services\AuditoriaService;
+use App\Services\ClasificacionService;
 use App\Services\ExpedienteService;
 use App\Services\SerieService;
 use App\Support\AccionesAuditoria;
@@ -246,6 +247,7 @@ class ExpedienteController extends Controller
             'usuarios' => User::opciones(),
             'instrucciones' => InstruccionFrecuente::opciones(),
             'sugerencia' => $regla ? ['regla' => $regla->nombre, 'area_id' => $regla->area_destino_id, 'responsable_id' => $regla->responsable_id] : null,
+            'ia' => app(ClasificacionService::class)->sugerencia($expediente),
         ];
     }
 

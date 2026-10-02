@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-05 — Fase 4
+
+- **La IA clasifica en cola** (`ClasificarExpediente`) al registrar un trámite y al terminar el OCR de un escaneo; si su texto no cambió, no vuelve a clasificar. Si la IA está caída, el job reintenta durante ~6 h; el ingreso y el registro nunca la esperan (principio 2).
+- **El catálogo viaja en cada petición** (áreas y tipos activos con descripción y palabras clave): no hace falta `POST /catalog/reload` y un área inactiva no puede volver como propuesta.
+- **Modo sombra** (`ia.modo` en `configuraciones`, por defecto `sombra`): se registra la propuesta y se compara con la primera derivación, pero no se muestra para no sesgar la decisión que la mide.
+- **Modo activo = solo propuesta**: sobre `ia.umbral_sugerencia` el diálogo de derivación llega prellenado y dice la confianza; la regla de derivación manda sobre la IA. No hay acciones automáticas (etiquetar, asignar área o registrar sin persona): se habilitan cuando el modo sombra muestre la precisión necesaria; ninguna puede responder, cerrar ni derivar con efecto legal.
+- **`/extract` no se movió al servicio de IA**: la extracción por reglas ya vive en Laravel (`ExtraccionService`, fase 3) y es determinista; duplicarla en Python no aporta.
+
 ## 2026-10-04 — Fase 3
 
 - **Series** (`grupos`): se agrupan desde el detalle; el sistema propone los documentos del mismo emisor (o remitente), mismo asunto y mismo día, como los oficios circulares del día pico (14.1). Derivar con «toda la serie» deriva en una transacción cada expediente derivable con los mismos datos: cada uno conserva su número, su movimiento y su auditoría.
