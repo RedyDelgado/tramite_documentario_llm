@@ -4,13 +4,14 @@ namespace App\Jobs;
 
 use App\Models\Envio;
 use App\Services\EnvioService;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\RateLimited;
 use Throwable;
 
-/** Un correo de un documento aprobado a un destinatario, a ritmo controlado (7.3.4). */
-class EnviarDocumento implements ShouldQueue
+/** Un correo de un documento aprobado a un destinatario, a ritmo controlado (7.3.4); único por envío para que reencolarlo no lo mande dos veces. */
+class EnviarDocumento implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -26,6 +27,11 @@ class EnviarDocumento implements ShouldQueue
     }
 
     public function __construct(public int $envioId) {}
+
+    public function uniqueId(): string
+    {
+        return (string) $this->envioId;
+    }
 
     /** @return list<object> */
     public function middleware(): array

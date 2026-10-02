@@ -14,13 +14,13 @@ use Throwable;
 /**
  * Respaldo y restauración (docs/runbook-respaldos.md): la base con pg_dump, los originales y los
  * modelos de IA en tar.gz, y un SHA256SUMS que se verifica antes de restaurar. Meilisearch y Redis
- * no se respaldan: el índice se reconstruye desde la base y la cola se vacía al restaurar.
+ * no se respaldan: el índice se reconstruye desde la base y lo pendiente se vuelve a encolar.
  */
 class RespaldoService
 {
     private const FORMATO = 'Y-m-d_His';
 
-    public function __construct(private AuditoriaService $auditoria) {}
+    public function __construct(private AuditoriaService $auditoria, private ColaService $colas) {}
 
     /** Devuelve la carpeta creada; si algo falla, la borra para no dejar un respaldo a medias. */
     public function crear(): string
@@ -75,6 +75,8 @@ class RespaldoService
         // El índice puede tener expedientes posteriores al respaldo: se rehace desde la base.
         Artisan::call('scout:flush', ['model' => Expediente::class]);
         Artisan::call('scout:import', ['model' => Expediente::class]);
+        // En un servidor nuevo la cola está vacía: lo pendiente según la base vuelve a encolarse.
+        $this->colas->reencolar();
 
         $this->auditoria->registrar('respaldo.restaurado', 'respaldo', basename($carpeta));
     }

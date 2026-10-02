@@ -8,7 +8,7 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 - **Restaurar verifica antes de tocar nada** y restaura la base en una sola transacción; luego los archivos, el índice de Meilisearch (flush + import) y un registro `respaldo.restaurado` en la auditoría. No se respaldan Meilisearch (se rehace) ni Redis; el `.env` se guarda aparte.
 - **Retención de 30 días** (`RESPALDO_DIAS`) hasta definir el pendiente 6. La copia fuera del servidor queda en el runbook, con destino por decidir (pendiente 12).
 - **Aviso por correo al superadmin si el respaldo falla** (`emailOutputOnFailure`).
-- **Límite conocido**: si Redis se pierde, los envíos aprobados que estaban en cola quedan pendientes sin job (igual el OCR y la clasificación); no hay botón para reencolarlos. El runbook dice cómo detectarlo.
+- **`colas:reencolar`** (`ColaService`): si Redis se pierde, la base dice qué falta y se vuelve a encolar: envíos pendientes de documentos aprobados (y con firma si la esperaban), escaneos sin texto y expedientes registrados sin clasificación. `EnviarDocumento` pasó a ser único por envío, como ya lo eran el OCR y la clasificación, así que reencolar lo que sigue en la cola no envía dos veces. La restauración lo ejecuta sola. Un OCR que la IA rechazó (archivo dañado) se reintenta una vez por ejecución: es barato y no se marca aparte.
 
 ## 2026-10-06 — Interfaz (decisión del usuario)
 

@@ -16,7 +16,7 @@ Cada respaldo es una carpeta `storage/app/respaldos/AAAA-MM-DD_HHMMSS/` (hora de
 **No se respalda, a propósito:**
 
 - **Meilisearch**: el índice se rehace desde la base al restaurar.
-- **Redis**: sesiones y colas. Al restaurar en un servidor nuevo, todos deben volver a iniciar sesión, y los trabajos que estaban en cola se pierden (ver «Después de restaurar»).
+- **Redis**: sesiones y colas. Al restaurar en un servidor nuevo, todos deben volver a iniciar sesión; lo que estaba en cola se reencola solo (ver «Después de restaurar»).
 - **`.env`**: tiene las claves de Google, de la base y `APP_KEY`. Se guarda aparte (abajo), nunca junto a los respaldos ni en el repositorio.
 
 ## Cuándo y cuánto se guarda
@@ -88,7 +88,7 @@ El comando pide confirmación, comprueba las sumas y se niega a seguir si algo n
 - Entrar al sistema y abrir un expediente reciente y uno con escaneo: deben verse sus datos y su PDF.
 - `docker compose exec app php artisan auditoria:verificar` debe decir «Cadena íntegra». La restauración queda registrada en la auditoría (`respaldo.restaurado`).
 - La búsqueda se reindexa sola; si un expediente no aparece al buscarlo, espera a que Horizon termine la cola.
-- **Trabajos que estaban en cola**: si Redis se perdió (servidor nuevo), los documentos salientes aprobados que aún no habían salido quedan en estado pendiente sin volver a enviarse. Revisa la lista de Salientes y avisa a quien los aprobó. Lo mismo para escaneos sin OCR y expedientes sin clasificar de las últimas horas.
+- **Trabajos que estaban en cola**: la restauración vuelve a encolar los envíos aprobados que no salieron, los escaneos sin OCR y los expedientes sin clasificar; lo que aún seguía en la cola no se duplica. Si alguna vez Redis se pierde sin restaurar nada, se hace a mano con `docker compose exec --user www-data app php artisan colas:reencolar`.
 
 ## Simulacro (una vez al mes durante el piloto)
 
