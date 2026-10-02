@@ -1,4 +1,5 @@
 // Formas que envía Laravel; cada una espeja su API Resource o el middleware de Inertia.
+import type { Semaforo } from '@/components/domain/SemaforoBadge';
 
 export type Usuario = { id: number; name: string; email: string };
 
@@ -42,6 +43,8 @@ export type ExpedienteFila = {
     remitente_email: string | null;
     remitente_por_confirmar: boolean;
     estado: { valor: EstadoExpediente; etiqueta: string };
+    semaforo: Semaforo | null;
+    fecha_limite: string | null;
     fecha_ingreso: string;
     area?: string | null;
     documentos_count?: number;
@@ -70,11 +73,29 @@ export type ExpedienteDetalle = ExpedienteFila & {
     responsable: string | null;
     emisor: string | null;
     tipo_documento: string | null;
+    tipo_tramite_id: number | null;
+    tipo_tramite: string | null;
+    area_principal_id: number | null;
+    responsable_id: number | null;
+    plazo_dias_aplicado: number | null;
+    requiere_respuesta: boolean;
+    cierre_solicitado_at: string | null;
+    atendido_at: string | null;
+    permisos: { derivar: boolean; tomar: boolean; comentar: boolean; solicitar_cierre: boolean; resolver_cierre: boolean };
     correos: CorreoDetalle[];
     documentos: DocumentoDetalle[];
 };
 
-export type EventoHistorial = { id: number; fecha: string; accion: string; usuario: string };
+export type EventoHistorial = { id: number; fecha: string; accion: string; usuario: string; detalle?: string | null };
+
+/** ExpedienteController@opcionesDerivacion. */
+export type OpcionesDerivacion = {
+    tipos: Opcion<number>[];
+    areas: Opcion<number>[];
+    usuarios: Opcion<number>[];
+    instrucciones: Opcion<number>[];
+    sugerencia: { regla: string; area_id: number; responsable_id: number | null } | null;
+};
 
 /** AreaResource. */
 export type Area = {

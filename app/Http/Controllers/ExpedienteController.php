@@ -3,13 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoExpediente;
+use App\Enums\Semaforo;
 use App\Http\Resources\ExpedienteResource;
+use App\Models\Area;
 use App\Models\Auditoria;
 use App\Models\Correo;
 use App\Models\Documento;
 use App\Models\Emisor;
 use App\Models\Expediente;
+use App\Models\InstruccionFrecuente;
+use App\Models\Movimiento;
+use App\Models\ReglaDerivacion;
 use App\Models\TipoDocumento;
+use App\Models\TipoTramite;
 use App\Models\User;
 use App\Services\AuditoriaService;
 use App\Services\ExpedienteService;
@@ -32,6 +38,7 @@ class ExpedienteController extends Controller
         $filtros = $request->validate([
             'q' => ['nullable', 'string', 'max:200'],
             'estado' => ['nullable', Rule::enum(EstadoExpediente::class)],
+            'semaforo' => ['nullable', Rule::enum(Semaforo::class)],
             'dir' => ['nullable', 'in:asc,desc'],
         ]);
         $user = $request->user();
@@ -46,12 +53,16 @@ class ExpedienteController extends Controller
             if ($estado = $filtros['estado'] ?? null) {
                 $busqueda->where('estado', $estado);
             }
+            if ($semaforo = $filtros['semaforo'] ?? null) {
+                $busqueda->where('semaforo', $semaforo);
+            }
             $pagina = $busqueda->paginate(25);
         } else {
             $pagina = Expediente::visiblesPara($user)
                 ->with('area:id,nombre')
                 ->withCount('documentos')
                 ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
+                ->when($filtros['semaforo'] ?? null, fn ($q, $semaforo) => $q->where('semaforo', $semaforo))
                 ->orderBy('fecha_ingreso', $filtros['dir'] ?? 'desc')
                 ->orderByDesc('id')
                 ->paginate(25);
@@ -61,6 +72,7 @@ class ExpedienteController extends Controller
             'expedientes' => ExpedienteResource::collection($pagina->withQueryString()),
             'filtros' => (object) $filtros,
             'estados' => collect(EstadoExpediente::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->etiqueta()]),
+            'semaforos' => collect(Semaforo::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->etiqueta()]),
         ]);
     }
 
@@ -70,8 +82,11 @@ class ExpedienteController extends Controller
 
         // Leer el contenido de un trámite queda registrado (9).
         $auditoria->registrar('expediente.consultado', $expediente);
-        $registrable = $expediente->estado->puedeConfirmarse() && $request->user()->can('registrar', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre']);
+        $user = $request->user();
+        $registrable = $expediente->estado->puedeConfirmarse() && $user->can('registrar', $expediente);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite']);
+        $abierto = in_array($expediente->estado, [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion], true);
+        $derivable = ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('derivar', $expediente);
 
         return Inertia::render('expedientes/Show', [
             'expediente' => [
@@ -82,6 +97,22 @@ class ExpedienteController extends Controller
                 'responsable' => $expediente->responsable?->name,
                 'emisor' => $expediente->emisor?->nombre,
                 'tipo_documento' => $expediente->tipoDocumento?->nombre,
+                'tipo_tramite_id' => $expediente->tipo_tramite_id,
+                'tipo_tramite' => $expediente->tipoTramite?->nombre,
+                'area_principal_id' => $expediente->area_principal_id,
+                'responsable_id' => $expediente->responsable_id,
+                'plazo_dias_aplicado' => $expediente->plazo_dias_aplicado,
+                'fecha_limite' => $expediente->fecha_limite?->toDateString(),
+                'requiere_respuesta' => $expediente->requiere_respuesta,
+                'cierre_solicitado_at' => $expediente->cierre_solicitado_at?->toIso8601String(),
+                'atendido_at' => $expediente->atendido_at?->toIso8601String(),
+                'permisos' => [
+                    'derivar' => $derivable,
+                    'tomar' => $expediente->estado === EstadoExpediente::Derivado && $user->can('atender', $expediente),
+                    'comentar' => ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('comentar', $expediente),
+                    'solicitar_cierre' => $abierto && ! $expediente->cierre_solicitado_at && $user->can('atender', $expediente),
+                    'resolver_cierre' => $abierto && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),
+                ],
                 'correos' => $expediente->correos->map(fn (Correo $c) => [
                     'id' => $c->id,
                     'de_nombre' => $c->de_nombre,
@@ -105,6 +136,7 @@ class ExpedienteController extends Controller
             'historial' => $this->historial($expediente),
             // Solo para el diálogo de registro (6.1).
             ...($registrable ? ['opcionesEmisor' => Emisor::opciones(), 'opcionesTipoDocumento' => TipoDocumento::opciones()] : []),
+            ...($derivable ? ['derivacion' => $this->opcionesDerivacion($expediente)] : []),
         ]);
     }
 
@@ -154,6 +186,22 @@ class ExpedienteController extends Controller
     }
 
     /** @return list<array{id: int, fecha: string, accion: string, usuario: string}> */
+    /** Opciones del diálogo de derivación, con lo que sugiere la primera regla que aplica (5.1). */
+    private function opcionesDerivacion(Expediente $expediente): array
+    {
+        $regla = ReglaDerivacion::primeraQueAplica($expediente);
+
+        return [
+            'tipos' => TipoTramite::where('activo', true)->orderBy('nombre')->get()
+                ->map(fn (TipoTramite $t) => ['value' => $t->id, 'label' => $t->nombre.($t->plazo_dias ? " ({$t->plazo_dias} días ".($t->tipo_dias === 'habiles' ? 'hábiles' : 'calendario').')' : ' (sin plazo)')])
+                ->all(),
+            'areas' => Area::opciones(),
+            'usuarios' => User::opciones(),
+            'instrucciones' => InstruccionFrecuente::opciones(),
+            'sugerencia' => $regla ? ['regla' => $regla->nombre, 'area_id' => $regla->area_destino_id, 'responsable_id' => $regla->responsable_id] : null,
+        ];
+    }
+
     private function historial(Expediente $expediente): array
     {
         $eventos = Auditoria::query()
@@ -168,12 +216,27 @@ class ExpedienteController extends Controller
             ->orderBy('id')
             ->get();
         $usuarios = User::whereIn('id', $eventos->pluck('usuario_id')->filter()->unique())->pluck('name', 'id');
+        $movimientos = Movimiento::where('expediente_id', $expediente->id)->with(['aArea:id,nombre', 'aUser:id,name'])->get()->keyBy('id');
 
         return $eventos->map(fn (Auditoria $a) => [
             'id' => $a->id,
             'fecha' => $a->fecha_hora->toIso8601String(),
             'accion' => AccionesAuditoria::etiqueta($a->accion),
             'usuario' => $a->usuario_id ? ($usuarios[$a->usuario_id] ?? "Usuario {$a->usuario_id}") : 'Sistema',
+            'detalle' => ($m = $movimientos->get($a->valor_nuevo['movimiento_id'] ?? 0)) ? $this->detalle($m) : null,
         ])->all();
+    }
+
+    /** Destino, instrucción, plazo y nota de un movimiento, en una línea legible. */
+    private function detalle(Movimiento $m): ?string
+    {
+        $partes = array_filter([
+            $m->aArea ? 'A '.$m->aArea->nombre.($m->aUser ? " ({$m->aUser->name})" : '') : null,
+            $m->instruccion,
+            $m->fecha_limite ? 'hasta el '.$m->fecha_limite->format('d/m/Y') : null,
+            $m->nota,
+        ]);
+
+        return $partes === [] ? null : implode(' · ', $partes);
     }
 }

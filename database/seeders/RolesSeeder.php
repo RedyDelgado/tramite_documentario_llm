@@ -29,6 +29,8 @@ class RolesSeeder extends Seeder
         'expedientes.ver_todos' => ['director', 'administrativo'],
         'expedientes.ver_areas' => ['coordinador'],
         'expedientes.registrar' => ['administrativo'],
+        // Derivar y reasignar (5); atender y cerrar se deciden por expediente en ExpedientePolicy.
+        'expedientes.derivar' => ['director', 'administrativo'],
     ];
 
     public function run(): void

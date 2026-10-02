@@ -21,6 +21,8 @@ class ExpedienteResource extends JsonResource
             'remitente_email' => $this->remitente_email,
             'remitente_por_confirmar' => $this->remitente_por_confirmar,
             'estado' => ['valor' => $this->estado->value, 'etiqueta' => $this->estado->etiqueta()],
+            'semaforo' => $this->semaforo?->value,
+            'fecha_limite' => $this->fecha_limite?->toDateString(),
             'fecha_ingreso' => $this->fecha_ingreso->toIso8601String(),
             'area' => $this->whenLoaded('area', fn () => $this->area?->nombre),
             'documentos_count' => $this->whenCounted('documentos'),

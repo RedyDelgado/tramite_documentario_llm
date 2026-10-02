@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password', 'activo'])]
@@ -47,12 +48,21 @@ class User extends Authenticatable
     }
 
     /**
-     * Áreas de las que hoy es titular o suplente.
+     * Áreas de las que hoy es titular o suplente, con sus dependientes: el coordinador de escuela ve toda su escuela (5).
      *
      * @return list<int>
      */
     public function areasVigentes(): array
     {
-        return AreaResponsable::where('user_id', $this->id)->vigentes()->pluck('area_id')->unique()->values()->all();
+        $propias = AreaResponsable::where('user_id', $this->id)->vigentes()->pluck('area_id')->unique()->values()->all();
+        if ($propias === []) {
+            return [];
+        }
+
+        // UNION (no UNION ALL) corta un eventual ciclo en la jerarquía.
+        return array_map('intval', DB::table(DB::raw('(WITH RECURSIVE arbol(id) AS (
+                SELECT id FROM areas WHERE id IN ('.implode(',', array_map('intval', $propias)).')
+                UNION SELECT a.id FROM areas a JOIN arbol ON a.parent_id = arbol.id WHERE a.deleted_at IS NULL
+            ) SELECT id FROM arbol) AS arbol'))->orderBy('id')->pluck('id')->all());
     }
 }

@@ -1,16 +1,18 @@
 import { ArrowDownload16Regular, Attach16Regular, Mail20Regular } from '@fluentui/react-icons';
 import { DetalleLista } from '@/components/data/DetalleLista';
+import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
 import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { LineaTiempo } from '@/components/domain/LineaTiempo';
+import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { formatearFechaHora } from '@/lib/fechas';
+import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 import { formatearBytes } from '@/lib/formato';
-import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetalle, Opcion } from '@/types';
+import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetalle, Opcion, OpcionesDerivacion } from '@/types';
 
 const ORIGEN = { correo: 'Correo', fisico: 'Documento físico', pdf: 'PDF subido' };
 
@@ -61,24 +63,32 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
     );
 }
 
+// En rojo sin haber vencido: el área no tiene quien lo atienda (8).
+const motivoRojo = (e: ExpedienteDetalle) =>
+    e.semaforo === 'rojo' && (!e.fecha_limite || e.fecha_limite >= new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })) ? 'Sin responsable' : undefined;
+
 type Props = {
     expediente: ExpedienteDetalle;
     historial: EventoHistorial[];
     opcionesEmisor?: Opcion<number>[];
     opcionesTipoDocumento?: Opcion<number>[];
+    derivacion?: OpcionesDerivacion;
 };
 
-export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento }: Props) {
+export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion }: Props) {
     return (
         <AppShell>
             <PageHeader
                 titulo={e.numero_registro ? `Expediente ${e.numero_registro}` : 'Expediente sin número'}
                 descripcion={e.asunto}
                 acciones={
-                    <AccionesRegistro
-                        expediente={e}
-                        opciones={opcionesEmisor && opcionesTipoDocumento && { emisor: opcionesEmisor, tipoDocumento: opcionesTipoDocumento }}
-                    />
+                    <>
+                        <AccionesAtencion expediente={e} derivacion={derivacion} />
+                        <AccionesRegistro
+                            expediente={e}
+                            opciones={opcionesEmisor && opcionesTipoDocumento && { emisor: opcionesEmisor, tipoDocumento: opcionesTipoDocumento }}
+                        />
+                    </>
                 }
             />
             <div className="grid items-start gap-4 lg:grid-cols-3">
@@ -95,6 +105,8 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         <DetalleLista
                             items={[
                                 { etiqueta: 'Estado', valor: <EstadoBadge estado={e.estado} /> },
+                                ...(e.semaforo ? [{ etiqueta: 'Semáforo', valor: <SemaforoBadge estado={e.semaforo} texto={motivoRojo(e)} /> }] : []),
+                                ...(e.cierre_solicitado_at ? [{ etiqueta: 'Cierre', valor: <Badge tono="aviso">Pendiente de aprobación</Badge> }] : []),
                                 { etiqueta: 'Código', valor: e.codigo ?? 'Se asigna al registrar como trámite' },
                                 ...(e.motivo_anulacion ? [{ etiqueta: 'Motivo de anulación', valor: e.motivo_anulacion }] : []),
                                 {
@@ -110,7 +122,16 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                 ...(e.registrado_at ? [{ etiqueta: 'Registrado', valor: formatearFechaHora(e.registrado_at) }] : []),
                                 { etiqueta: 'Origen', valor: ORIGEN[e.origen] },
                                 { etiqueta: 'Área', valor: e.area ?? 'Sin asignar' },
-                                { etiqueta: 'Responsable', valor: e.responsable ?? 'Sin asignar' },
+                                { etiqueta: 'Responsable', valor: e.responsable ?? (e.area ? 'Quien coordina el área' : 'Sin asignar') },
+                                { etiqueta: 'Tipo de trámite', valor: e.tipo_tramite ?? 'Sin clasificar' },
+                                {
+                                    etiqueta: 'Fecha límite',
+                                    valor: e.fecha_limite
+                                        ? `${formatearFecha(e.fecha_limite)}${e.plazo_dias_aplicado ? ` (plazo de ${e.plazo_dias_aplicado} días)` : ''}`
+                                        : 'Sin plazo',
+                                },
+                                { etiqueta: 'Requiere respuesta', valor: e.requiere_respuesta ? 'Sí' : 'No, para conocimiento' },
+                                ...(e.atendido_at ? [{ etiqueta: 'Atendido', valor: formatearFechaHora(e.atendido_at) }] : []),
                                 { etiqueta: 'Emisor', valor: e.emisor ?? '—' },
                                 { etiqueta: 'Tipo de documento', valor: e.tipo_documento ?? '—' },
                             ]}

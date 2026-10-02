@@ -5,6 +5,7 @@ import type { Columna } from '@/components/data/DataTable';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
+import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Badge } from '@/components/ui/Badge';
 import { botonClases } from '@/components/ui/Button';
@@ -16,7 +17,7 @@ import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
 import type { ExpedienteFila, Opcion, Paginado } from '@/types';
 
-type Filtros = { q?: string; estado?: string; dir?: 'asc' | 'desc' };
+type Filtros = { q?: string; estado?: string; semaforo?: string; dir?: 'asc' | 'desc' };
 
 function Remitente({ e }: { e: ExpedienteFila }) {
     return (
@@ -64,15 +65,16 @@ const columnas: Columna<ExpedienteFila>[] = [
             ),
     },
     { clave: 'estado', titulo: 'Estado', ancho: '10rem', celda: (e) => <EstadoBadge estado={e.estado} /> },
+    { clave: 'semaforo', titulo: 'Semáforo', ancho: '9rem', celda: (e) => (e.semaforo ? <SemaforoBadge estado={e.semaforo} /> : <span className="text-fg-muted">—</span>) },
 ];
 
-type Props = { expedientes: Paginado<ExpedienteFila>; filtros: Filtros; estados: Opcion<string>[] };
+type Props = { expedientes: Paginado<ExpedienteFila>; filtros: Filtros; estados: Opcion<string>[]; semaforos: Opcion<string>[] };
 
-export default function ExpedientesIndex({ expedientes, filtros: iniciales, estados }: Props) {
+export default function ExpedientesIndex({ expedientes, filtros: iniciales, estados, semaforos }: Props) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
     const [elegidoId, setElegidoId] = useState<number | null>(null);
     const elegido = expedientes.data.find((e) => e.id === elegidoId) ?? null;
-    const hayFiltros = Boolean(filtros.q || filtros.estado);
+    const hayFiltros = Boolean(filtros.q || filtros.estado || filtros.semaforo);
 
     return (
         <ListPage
@@ -87,6 +89,14 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, esta
                         opciones={estados}
                         value={filtros.estado ?? ''}
                         onChange={(e) => cambiar({ estado: e.target.value })}
+                    />
+                    <Select
+                        aria-label="Semáforo"
+                        className="w-48"
+                        vacia="Todos los semáforos"
+                        opciones={semaforos}
+                        value={filtros.semaforo ?? ''}
+                        onChange={(e) => cambiar({ semaforo: e.target.value })}
                     />
                     <Input
                         type="search"

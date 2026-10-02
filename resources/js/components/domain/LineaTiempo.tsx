@@ -13,6 +13,7 @@ export function LineaTiempo({ eventos }: { eventos: EventoHistorial[] }) {
                 <li key={e.id} className="relative">
                     <span aria-hidden className="absolute top-1.5 -left-[21px] size-2.5 rounded-full border-2 border-surface bg-primary-600" />
                     <p className="text-base font-semibold text-fg">{e.accion}</p>
+                    {e.detalle && <p className="text-base text-fg">{e.detalle}</p>}
                     <p className="text-sm text-fg-muted">
                         <time dateTime={e.fecha}>{formatearFechaHora(e.fecha)}</time> · {e.usuario}
                     </p>

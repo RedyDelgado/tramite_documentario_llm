@@ -147,7 +147,7 @@ return [
             Expediente::class => [
                 'searchableAttributes' => ['codigo', 'numero_registro', 'asunto', 'remitente_nombre', 'remitente_email', 'texto'],
                 // visible_para: filtro de permisos dentro de Meilisearch (área o responsable).
-                'filterableAttributes' => ['estado', 'visible_para'],
+                'filterableAttributes' => ['estado', 'semaforo', 'visible_para'],
                 'sortableAttributes' => ['fecha_ingreso'],
             ],
         ],

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\EstadoExpediente;
 use App\Enums\OrigenExpediente;
+use App\Enums\Semaforo;
+use App\Services\SemaforoService;
 use Database\Factories\ExpedienteFactory;
 use Illuminate\Database\Eloquent\Attributes\DateFormat;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,6 +33,12 @@ class Expediente extends Model
     // Tope del texto indexado por expediente: cubre oficios largos sin inflar el índice.
     private const MAX_TEXTO_INDICE = 60_000;
 
+    protected static function booted(): void
+    {
+        // Cada cambio recalcula el semáforo; el paso del tiempo lo cubre semaforos:recalcular (8).
+        static::saving(fn (self $e) => $e->semaforo = app(SemaforoService::class)->calcular($e));
+    }
+
     /** @return array<string, mixed> */
     public function toSearchableArray(): array
     {
@@ -44,6 +52,7 @@ class Expediente extends Model
             'remitente_nombre' => $this->remitente_nombre,
             'remitente_email' => $this->remitente_email,
             'estado' => $this->estado->value,
+            'semaforo' => $this->semaforo?->value,
             'fecha_ingreso' => $this->fecha_ingreso->getTimestamp(),
             'visible_para' => $this->tokensVisibilidad(),
             'texto' => Str::limit(
@@ -94,7 +103,12 @@ class Expediente extends Model
             'fecha_ingreso' => 'datetime',
             'registrado_at' => 'datetime',
             'remitente_por_confirmar' => 'boolean',
+            'requiere_respuesta' => 'boolean',
+            'semaforo' => Semaforo::class,
             'fecha_limite' => 'date:Y-m-d',
+            'ultimo_movimiento_at' => 'datetime',
+            'cierre_solicitado_at' => 'datetime',
+            'atendido_at' => 'datetime',
             'plazo_dias_aplicado' => 'integer',
             'anio' => 'integer',
             'secuencia' => 'integer',
@@ -157,6 +171,12 @@ class Expediente extends Model
     public function responsable(): BelongsTo
     {
         return $this->belongsTo(User::class, 'responsable_id');
+    }
+
+    /** @return HasMany<Movimiento, $this> */
+    public function movimientos(): HasMany
+    {
+        return $this->hasMany(Movimiento::class);
     }
 
     /** @return BelongsTo<Emisor, $this> */
