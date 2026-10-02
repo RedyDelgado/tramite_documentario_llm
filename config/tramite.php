@@ -24,6 +24,14 @@ return [
         'inicio_operacion' => env('CORREO_INICIO_OPERACION'),
         // Mensajes por ejecución del job (ritmo limitado para la cuota de Google).
         'lote' => (int) env('CORREO_LOTE', 50),
+        // Cuenta del buzón central; el refresh token se obtiene una vez (docs/runbook-gmail.md).
+        'gmail' => [
+            'client_id' => env('GMAIL_CLIENT_ID'),
+            'client_secret' => env('GMAIL_CLIENT_SECRET'),
+            'refresh_token' => env('GMAIL_REFRESH_TOKEN'),
+            'usuario' => env('GMAIL_USUARIO', 'me'),
+            'etiqueta' => env('GMAIL_ETIQUETA', 'tramite/procesado'),
+        ],
     ],
 
     // Primer número de una secuencia en un año dado; sin entrada empieza en 1.
