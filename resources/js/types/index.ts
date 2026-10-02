@@ -130,3 +130,20 @@ export type Responsable = {
     vigente: boolean;
     actualizado: string | null;
 };
+
+/** ReglaDerivacionResource. */
+export type ReglaDerivacion = {
+    id: number;
+    nombre: string;
+    tipo_tramite_id: number | null;
+    tipo: string | null;
+    palabras_clave: string[];
+    remitentes: string[];
+    area_destino_id: number;
+    area_destino: string;
+    responsable_id: number | null;
+    responsable: string | null;
+    prioridad: number;
+    activa: boolean;
+    actualizado: string | null;
+};

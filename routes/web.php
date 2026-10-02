@@ -6,8 +6,10 @@ use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\PlazoAreaController;
+use App\Http\Controllers\ReglaDerivacionController;
 use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\TipoTramiteController;
+use App\Http\Controllers\UmbralController;
 use App\Http\Controllers\UsuarioController;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
@@ -59,6 +61,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('tipos-tramite/{tipo}/estado', [TipoTramiteController::class, 'cambiarEstado'])->name('tipos-tramite.estado');
     Route::resource('plazos', PlazoAreaController::class)->except(['show']);
     Route::resource('feriados', FeriadoController::class)->except(['show']);
+    Route::resource('reglas-derivacion', ReglaDerivacionController::class)->parameters(['reglas-derivacion' => 'regla'])->except(['show', 'destroy']);
+    Route::patch('reglas-derivacion/{regla}/estado', [ReglaDerivacionController::class, 'cambiarEstado'])->name('reglas-derivacion.estado');
+    Route::get('umbrales', [UmbralController::class, 'edit'])->name('umbrales.edit');
+    Route::put('umbrales', [UmbralController::class, 'update'])->name('umbrales.update');
 
     Route::resource('usuarios', UsuarioController::class)->except(['show', 'destroy']);
     Route::patch('usuarios/{usuario}/estado', [UsuarioController::class, 'cambiarEstado'])->name('usuarios.estado');

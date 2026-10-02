@@ -1,5 +1,6 @@
 import {
     Apps20Regular,
+    ArrowRouting20Regular,
     CalendarCancel20Regular,
     DocumentBulletList20Regular,
     DocumentText20Regular,
@@ -9,6 +10,7 @@ import {
     People20Regular,
     PersonAccounts20Regular,
     Timer20Regular,
+    TopSpeed20Regular,
 } from '@fluentui/react-icons';
 import type { ReactElement } from 'react';
 import type { SharedProps } from '@/types';
@@ -44,6 +46,8 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Tipos de trámite', href: '/tipos-tramite', icono: <DocumentText20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Plazos por área', href: '/plazos', icono: <Timer20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Feriados', href: '/feriados', icono: <CalendarCancel20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Reglas de derivación', href: '/reglas-derivacion', icono: <ArrowRouting20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Umbrales del semáforo', href: '/umbrales', icono: <TopSpeed20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Usuarios', href: '/usuarios', icono: <People20Regular />, permisos: ['usuarios.gestionar'] },
         ],
     },

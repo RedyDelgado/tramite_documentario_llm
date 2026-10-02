@@ -16,6 +16,8 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 - **Una sola `ConfiguracionPolicy`** (`#[UsePolicy]`) y un `CatalogoService` para todos los catálogos de configuración; reemplazan a `AreaPolicy`.
 - **Un titular por área a la vez; suplentes sin límite** (cubren vacaciones solapadas). Quitar a un responsable es cerrar su vigencia, no borrarlo: el historial dice quién veía qué y cuándo.
 - **Fusionar un área** pasa sus expedientes y áreas dependientes al destino y la desactiva; sus responsables no se trasladan (el destino conserva los suyos). No se fusiona en una dependiente (ciclo) ni en un área inactiva. Los expedientes movidos se reindexan porque `visible_para` cambia.
+- **Reglas de derivación**: el tipo de trámite va en columna (con FK) y palabras clave y remitentes en `condicion` jsonb. Se cumplen todas las condiciones presentes (al menos una); dentro de una lista basta una coincidencia. Palabras clave sobre el asunto; remitente como correo exacto o dominio con sus subdominios (`minedu.gob.pe` no coincide con `falsominedu.gob.pe`). Gana la primera activa por prioridad (menor número). Solo sugieren: la derivación (#10) la decide una persona (principio de la sección 1).
+- **Umbrales del semáforo en `configuraciones`** (clave/valor jsonb), con valores por defecto en código (30 % y 5 días) mientras no se guarden; se leen en cada cálculo. Solo se audita la clave que cambió. Los días sin movimiento son calendario: miden inactividad, no plazo legal.
 - **Pantalla de roles y permisos**: no se hizo. Los roles son los de la sección 5; delegar `configuracion.gestionar` a otro rol espera el pendiente 8.
 
 ## 2026-10-02 — Fase 1

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Configuracion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +53,26 @@ class CatalogoService
         DB::transaction(function () use ($modelo, $accion) {
             $modelo->delete();
             $this->auditoria->registrar($accion, $modelo, antes: Arr::except($modelo->attributesToArray(), self::SIN_AUDITAR));
+        });
+    }
+
+    /**
+     * Guarda parámetros de `configuraciones` y audita solo los que cambiaron.
+     *
+     * @param  array<string, mixed>  $valores
+     */
+    public function guardarConfiguracion(array $valores): void
+    {
+        DB::transaction(function () use ($valores) {
+            $antes = array_intersect_key(Configuracion::todas(), $valores);
+            $cambios = array_filter($valores, fn ($valor, $clave) => $antes[$clave] !== $valor, ARRAY_FILTER_USE_BOTH);
+
+            foreach ($cambios as $clave => $valor) {
+                Configuracion::updateOrCreate(['clave' => $clave], ['valor' => $valor]);
+            }
+            if ($cambios !== []) {
+                $this->auditoria->registrar('configuracion.actualizada', 'configuracion', antes: array_intersect_key($antes, $cambios), despues: $cambios);
+            }
         });
     }
 }
