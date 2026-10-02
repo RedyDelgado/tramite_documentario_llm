@@ -7,7 +7,9 @@ use App\Http\Resources\ExpedienteResource;
 use App\Models\Auditoria;
 use App\Models\Correo;
 use App\Models\Documento;
+use App\Models\Emisor;
 use App\Models\Expediente;
+use App\Models\TipoDocumento;
 use App\Models\User;
 use App\Services\AuditoriaService;
 use App\Services\ExpedienteService;
@@ -68,7 +70,8 @@ class ExpedienteController extends Controller
 
         // Leer el contenido de un trámite queda registrado (9).
         $auditoria->registrar('expediente.consultado', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name']);
+        $registrable = $expediente->estado->puedeConfirmarse() && $request->user()->can('registrar', $expediente);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre']);
 
         return Inertia::render('expedientes/Show', [
             'expediente' => [
@@ -77,6 +80,8 @@ class ExpedienteController extends Controller
                 'registrado_at' => $expediente->registrado_at?->toIso8601String(),
                 'motivo_anulacion' => $expediente->motivo_anulacion,
                 'responsable' => $expediente->responsable?->name,
+                'emisor' => $expediente->emisor?->nombre,
+                'tipo_documento' => $expediente->tipoDocumento?->nombre,
                 'correos' => $expediente->correos->map(fn (Correo $c) => [
                     'id' => $c->id,
                     'de_nombre' => $c->de_nombre,
@@ -98,13 +103,19 @@ class ExpedienteController extends Controller
                 ]),
             ],
             'historial' => $this->historial($expediente),
+            // Solo para el diálogo de registro (6.1).
+            ...($registrable ? ['opcionesEmisor' => Emisor::opciones(), 'opcionesTipoDocumento' => TipoDocumento::opciones()] : []),
         ]);
     }
 
-    public function confirmar(Expediente $expediente): RedirectResponse
+    public function confirmar(Request $request, Expediente $expediente): RedirectResponse
     {
         Gate::authorize('registrar', $expediente);
-        $expediente = $this->expedientes->confirmar($expediente);
+        $datos = $request->validate([
+            'emisor_id' => ['nullable', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->whereNull('fusionado_en_id')],
+            'tipo_documento_id' => ['nullable', 'integer', Rule::exists('tipos_documento', 'id')->where('activo', true)],
+        ], attributes: ['emisor_id' => 'emisor', 'tipo_documento_id' => 'tipo de documento']);
+        $expediente = $this->expedientes->confirmar($expediente, $datos);
 
         Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => "Registrado como {$expediente->numero_registro} ({$expediente->codigo})."]);
 

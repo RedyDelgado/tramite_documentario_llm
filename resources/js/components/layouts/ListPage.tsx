@@ -15,13 +15,16 @@ type Props<T> = {
     paginacion?: Pick<Paginado<T>, 'links' | 'meta'>;
     // Drawer de detalle: se abre al elegir una fila sin perder la lista.
     detalle?: ReactNode;
+    // Bloque sobre la lista que pide atención (p. ej. posibles duplicados).
+    aviso?: ReactNode;
 };
 
 /** Plantilla de toda bandeja o catálogo: CommandBar + tabla con cabecera fija + paginación + detalle lateral. */
-export function ListPage<T>({ titulo, descripcion, acciones, filtros, tabla, paginacion, detalle }: Props<T>) {
+export function ListPage<T>({ titulo, descripcion, acciones, filtros, tabla, paginacion, detalle, aviso }: Props<T>) {
     return (
         <AppShell>
             <PageHeader titulo={titulo} descripcion={descripcion} />
+            {aviso && <div className="mb-4">{aviso}</div>}
             <section className="overflow-hidden rounded-card border border-border bg-surface shadow-card">
                 <CommandBar acciones={acciones} filtros={filtros} />
                 <div className="max-h-[calc(100vh-16rem)] overflow-auto">

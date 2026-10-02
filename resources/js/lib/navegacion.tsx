@@ -1,14 +1,18 @@
 import {
     Apps20Regular,
     ArrowRouting20Regular,
+    BuildingGovernment20Regular,
     CalendarCancel20Regular,
     DocumentBulletList20Regular,
+    DocumentCopy20Regular,
     DocumentText20Regular,
     Gauge20Regular,
     Home20Regular,
+    MailProhibited20Regular,
     Organization20Regular,
     People20Regular,
     PersonAccounts20Regular,
+    TaskListLtr20Regular,
     Timer20Regular,
     TopSpeed20Regular,
 } from '@fluentui/react-icons';
@@ -49,6 +53,15 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Reglas de derivación', href: '/reglas-derivacion', icono: <ArrowRouting20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Umbrales del semáforo', href: '/umbrales', icono: <TopSpeed20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Usuarios', href: '/usuarios', icono: <People20Regular />, permisos: ['usuarios.gestionar'] },
+        ],
+    },
+    {
+        titulo: 'Catálogos de registro',
+        items: [
+            { etiqueta: 'Emisores', href: '/emisores', icono: <BuildingGovernment20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Tipos de documento', href: '/tipos-documento', icono: <DocumentCopy20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Instrucciones', href: '/instrucciones', icono: <TaskListLtr20Regular />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Correo no trámite', href: '/reglas-no-tramite', icono: <MailProhibited20Regular />, permisos: ['configuracion.gestionar'] },
         ],
     },
     {

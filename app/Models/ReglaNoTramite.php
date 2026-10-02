@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Correo\MensajeLeido;
+use App\Policies\ConfiguracionPolicy;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -11,9 +13,12 @@ use Illuminate\Support\Str;
  * Campos: `remitente` (el correo contiene el valor), `dominio` (dominio o subdominio),
  * `asunto` (contiene) y `encabezado` («Nombre» existe, o «Nombre: texto» lo contiene).
  */
+#[UsePolicy(ConfiguracionPolicy::class)]
 #[Fillable(['nombre', 'campo', 'valor', 'activa'])]
 class ReglaNoTramite extends Model
 {
+    public const CAMPOS = ['remitente' => 'Remitente contiene', 'dominio' => 'Dominio del remitente', 'asunto' => 'Asunto contiene', 'encabezado' => 'Encabezado'];
+
     protected $table = 'reglas_no_tramite';
 
     protected function casts(): array

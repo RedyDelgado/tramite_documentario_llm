@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatearFechaHora } from '@/lib/fechas';
 import { formatearBytes } from '@/lib/formato';
-import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetalle } from '@/types';
+import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetalle, Opcion } from '@/types';
 
 const ORIGEN = { correo: 'Correo', fisico: 'Documento físico', pdf: 'PDF subido' };
 
@@ -61,13 +61,25 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
     );
 }
 
-export default function ExpedienteShow({ expediente: e, historial }: { expediente: ExpedienteDetalle; historial: EventoHistorial[] }) {
+type Props = {
+    expediente: ExpedienteDetalle;
+    historial: EventoHistorial[];
+    opcionesEmisor?: Opcion<number>[];
+    opcionesTipoDocumento?: Opcion<number>[];
+};
+
+export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento }: Props) {
     return (
         <AppShell>
             <PageHeader
                 titulo={e.numero_registro ? `Expediente ${e.numero_registro}` : 'Expediente sin número'}
                 descripcion={e.asunto}
-                acciones={<AccionesRegistro expediente={e} />}
+                acciones={
+                    <AccionesRegistro
+                        expediente={e}
+                        opciones={opcionesEmisor && opcionesTipoDocumento && { emisor: opcionesEmisor, tipoDocumento: opcionesTipoDocumento }}
+                    />
+                }
             />
             <div className="grid items-start gap-4 lg:grid-cols-3">
                 <Card titulo={`Correos (${e.correos.length})`} sinRelleno className="lg:col-span-2">
@@ -99,6 +111,8 @@ export default function ExpedienteShow({ expediente: e, historial }: { expedient
                                 { etiqueta: 'Origen', valor: ORIGEN[e.origen] },
                                 { etiqueta: 'Área', valor: e.area ?? 'Sin asignar' },
                                 { etiqueta: 'Responsable', valor: e.responsable ?? 'Sin asignar' },
+                                { etiqueta: 'Emisor', valor: e.emisor ?? '—' },
+                                { etiqueta: 'Tipo de documento', valor: e.tipo_documento ?? '—' },
                             ]}
                         />
                     </Card>

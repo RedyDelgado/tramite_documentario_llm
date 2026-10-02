@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\EmisorController;
 use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\InstruccionFrecuenteController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\PlazoAreaController;
 use App\Http\Controllers\ReglaDerivacionController;
+use App\Http\Controllers\ReglaNoTramiteController;
 use App\Http\Controllers\ResponsableController;
+use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\TipoTramiteController;
 use App\Http\Controllers\UmbralController;
 use App\Http\Controllers\UsuarioController;
@@ -63,6 +67,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('feriados', FeriadoController::class)->except(['show']);
     Route::resource('reglas-derivacion', ReglaDerivacionController::class)->parameters(['reglas-derivacion' => 'regla'])->except(['show', 'destroy']);
     Route::patch('reglas-derivacion/{regla}/estado', [ReglaDerivacionController::class, 'cambiarEstado'])->name('reglas-derivacion.estado');
+    Route::post('emisores/rapido', [EmisorController::class, 'rapido'])->name('emisores.rapido');
+    Route::post('emisores/{emisor}/fusionar', [EmisorController::class, 'fusionar'])->name('emisores.fusionar');
+    Route::resource('emisores', EmisorController::class)->parameters(['emisores' => 'emisor'])->except(['show', 'destroy']);
+    Route::resource('tipos-documento', TipoDocumentoController::class)->parameters(['tipos-documento' => 'tipo'])->except(['show', 'destroy']);
+    Route::resource('instrucciones', InstruccionFrecuenteController::class)->parameters(['instrucciones' => 'instruccion'])->except(['show', 'destroy']);
+    Route::resource('reglas-no-tramite', ReglaNoTramiteController::class)->parameters(['reglas-no-tramite' => 'regla'])->except(['show', 'destroy']);
     Route::get('umbrales', [UmbralController::class, 'edit'])->name('umbrales.edit');
     Route::put('umbrales', [UmbralController::class, 'update'])->name('umbrales.update');
 

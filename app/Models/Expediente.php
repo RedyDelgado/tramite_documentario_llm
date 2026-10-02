@@ -159,6 +159,18 @@ class Expediente extends Model
         return $this->belongsTo(User::class, 'responsable_id');
     }
 
+    /** @return BelongsTo<Emisor, $this> */
+    public function emisor(): BelongsTo
+    {
+        return $this->belongsTo(Emisor::class);
+    }
+
+    /** @return BelongsTo<TipoDocumento, $this> */
+    public function tipoDocumento(): BelongsTo
+    {
+        return $this->belongsTo(TipoDocumento::class);
+    }
+
     /** @return HasMany<Correo, $this> */
     public function correos(): HasMany
     {

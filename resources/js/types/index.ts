@@ -68,6 +68,8 @@ export type ExpedienteDetalle = ExpedienteFila & {
     registrado_at: string | null;
     motivo_anulacion: string | null;
     responsable: string | null;
+    emisor: string | null;
+    tipo_documento: string | null;
     correos: CorreoDetalle[];
     documentos: DocumentoDetalle[];
 };
@@ -144,6 +146,28 @@ export type ReglaDerivacion = {
     responsable_id: number | null;
     responsable: string | null;
     prioridad: number;
+    activa: boolean;
+    actualizado: string | null;
+};
+
+/** EmisorController@fila. */
+export type Emisor = { id: number; nombre: string; tipo: 'interno' | 'externo'; activo: boolean; expedientes: number | null; actualizado: string | null };
+
+export type ParDuplicado = { a: { id: number; nombre: string }; b: { id: number; nombre: string } };
+
+/** TipoDocumentoController@fila. */
+export type TipoDocumento = { id: number; nombre: string; activo: boolean; actualizado: string | null };
+
+/** InstruccionFrecuenteController@fila. */
+export type InstruccionFrecuente = { id: number; texto: string; orden: number; activa: boolean; actualizado: string | null };
+
+/** ReglaNoTramiteController@fila. */
+export type ReglaNoTramite = {
+    id: number;
+    nombre: string;
+    campo: 'remitente' | 'dominio' | 'asunto' | 'encabezado';
+    campo_etiqueta: string;
+    valor: string;
     activa: boolean;
     actualizado: string | null;
 };

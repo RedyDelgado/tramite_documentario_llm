@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Combobox } from '@/components/ui/Combobox';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
 import { Drawer } from '@/components/ui/Drawer';
@@ -82,6 +83,12 @@ const columnas: Columna<Ejemplo>[] = [
 
 export default function Catalogo() {
     const [dialogo, setDialogo] = useState(false);
+    const [emisores, setEmisores] = useState([
+        { value: 1, label: 'Dirección General de Administración' },
+        { value: 2, label: 'Oficina de Gestión Académica' },
+        { value: 3, label: 'Municipalidad Provincial' },
+    ]);
+    const [emisor, setEmisor] = useState<number | null>(null);
     const [confirmar, setConfirmar] = useState(false);
     const [drawer, setDrawer] = useState(false);
     const [orden, setOrden] = useState<Orden>({ clave: 'id', dir: 'asc' });
@@ -176,6 +183,21 @@ export default function Catalogo() {
                                     { value: 'carta', label: 'Carta' },
                                     { value: 'informe', label: 'Informe' },
                                 ]}
+                            />
+                        )}
+                    </FormField>
+                    <FormField etiqueta="Emisor (Combobox)" ayuda="Escribe para filtrar; si no existe, se crea en línea.">
+                        {(c) => (
+                            <Combobox
+                                {...c}
+                                opciones={emisores}
+                                value={emisor}
+                                onChange={setEmisor}
+                                onCrear={(nombre) => {
+                                    const nuevo = { value: emisores.length + 1, label: nombre };
+                                    setEmisores([...emisores, nuevo]);
+                                    setEmisor(nuevo.value);
+                                }}
                             />
                         )}
                     </FormField>

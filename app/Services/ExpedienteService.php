@@ -39,11 +39,13 @@ class ExpedienteService
     /**
      * Confirma como trámite y asigna el número de registro del año en curso (6.2).
      *
+     * @param  array{emisor_id?: ?int, tipo_documento_id?: ?int}  $datos  datos del documento (6.1) que se fijan al registrar
+     *
      * @throws ReglaDeNegocio si el estado no admite confirmación.
      */
-    public function confirmar(Expediente $expediente): Expediente
+    public function confirmar(Expediente $expediente, array $datos = []): Expediente
     {
-        return DB::transaction(function () use ($expediente) {
+        return DB::transaction(function () use ($expediente, $datos) {
             // Bloqueo de la fila: dos confirmaciones simultáneas no pueden numerar dos veces.
             $expediente = Expediente::lockForUpdate()->findOrFail($expediente->id);
 
@@ -53,7 +55,9 @@ class ExpedienteService
 
             $estadoPrevio = $expediente->estado;
             $anio = now()->year;
+            $documento = array_intersect_key($datos, array_flip(['emisor_id', 'tipo_documento_id']));
             $expediente->forceFill([
+                ...$documento,
                 'anio' => $anio,
                 'secuencia' => $this->secuencias->siguiente('registro', $anio),
                 'estado' => EstadoExpediente::Registrado,
@@ -63,7 +67,7 @@ class ExpedienteService
 
             $this->auditoria->registrar('registro.asignado', $expediente,
                 antes: ['estado' => $estadoPrevio->value],
-                despues: ['estado' => EstadoExpediente::Registrado->value, 'numero' => $expediente->numero_registro, 'codigo' => $expediente->codigo],
+                despues: ['estado' => EstadoExpediente::Registrado->value, 'numero' => $expediente->numero_registro, 'codigo' => $expediente->codigo, ...$documento],
             );
 
             return $expediente;
