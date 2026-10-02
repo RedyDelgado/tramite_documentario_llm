@@ -4,6 +4,7 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 ## 2026-10-06 — Interfaz (decisión del usuario)
 
+- **Paleta al estilo de Gmail** (Material 3 de Google) en lugar del índigo de 5.3: azul `#0B57D0`, fondos `#F6F8FC`/`#F2F6FC`, celeste de selección `#D3E3FD` y los grises, verde, amarillo y rojo de Google. Mismos nombres de tokens, así que solo cambió `tokens.css` (y la tabla de 5.3). Todos los pares texto/fondo cumplen AA; el borde de los campos pasó de `#C8C8C8` (1,6:1) a `#747775` (4,5:1), que además cumple el 3:1 de componentes. Se toman solo los colores: sin nombre, logo ni tipografía de Google (la pila de fuentes sigue siendo la del sistema, sin CDN).
 - **Crear, editar y ver en un modal** sobre la lista, en lugar de páginas aparte con `FormPage` (cambia lo que fijaba 5.2).
 - **Confirmación antes de toda acción que cambia algo** (`ConfirmDialog` con una frase de lo que pasará); no en abrir, filtrar, buscar, descargar ni cancelar.
 - **Cómo se implementó**: las rutas de alta, edición y detalle (`/x/create`, `/x/{id}/edit`, `/expedientes/{id}`, `/salientes/{id}`, `/registro/nuevo`) siguen existiendo y devuelven la misma lista con el modal encima (`index()->with('formulario'|'detalle'|'registro', …)`). Así un enlace o el QR siguen abriendo el registro, atrás y recargar funcionan, y un error de validación vuelve con el modal abierto. Abrir y cerrar conservan los filtros de la lista (`lib/modal.ts`).

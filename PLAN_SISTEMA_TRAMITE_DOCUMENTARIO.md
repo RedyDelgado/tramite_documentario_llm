@@ -169,39 +169,39 @@ Todo lo que ve el usuario (administración, bandejas, dashboard, registro de pap
 
 **Paleta única (HEX)**
 
-Color de marca: **índigo `#4A4FB5`**. Es una identidad **propia del sistema**, distinta del azul institucional de la UAC, porque el proyecto es una iniciativa personal y no oficial: no usar los colores, escudo ni logo de la UAC como marca del sistema hasta que se oficialice. Contraste con texto blanco 6.8:1 (cumple AA). Se distingue de los cuatro colores de semáforo, que no deben confundirse con la marca. Sin dorado, para no chocar con el amarillo del semáforo.
+Paleta **al estilo de Gmail (Material 3 de Google)**, por decisión del usuario (antes era índigo `#4A4FB5`). Color de marca: **azul `#0B57D0`**, el de los botones y enlaces de Gmail; contraste con texto blanco 6.4:1 (cumple AA). Solo se toman los colores: no se usan el nombre, el logo ni la tipografía de Google o Gmail. El proyecto sigue siendo una iniciativa personal y no oficial: no usar los colores, escudo ni logo de la UAC como marca del sistema hasta que se oficialice. Se distingue de los cuatro colores de semáforo, que no deben confundirse con la marca.
 
 | Token | HEX | Uso |
 |---|---|---|
-| `primary-50` | `#F0F1FA` | Fondo de ítem activo, fila seleccionada |
-| `primary-100` | `#DFE1F4` | Hover suave, etiquetas informativas |
-| `primary-200` | `#C0C4E8` | Bordes de elementos activos |
-| `primary-300` | `#9EA3DA` | Series secundarias de gráficos |
-| `primary-400` | `#7479C8` | Iconos sobre fondo claro |
-| `primary-500` | `#5A5FBF` | Hover de enlaces |
-| **`primary-600`** | **`#4A4FB5`** | **Color de marca: botón primario, enlaces, foco** |
-| `primary-700` | `#3C4094` | Botón primario en hover |
-| `primary-800` | `#2F3274` | Botón primario presionado |
-| `primary-900` | `#232656` | Texto de énfasis sobre fondo claro |
-| `primary-950` | `#171939` | Reservado |
+| `primary-50` | `#ECF3FE` | Fondo de ítem activo, fila seleccionada |
+| `primary-100` | `#D3E3FD` | Hover suave, etiquetas informativas (el celeste de selección de Gmail) |
+| `primary-200` | `#A8C7FA` | Bordes de elementos activos |
+| `primary-300` | `#7CACF8` | Series secundarias de gráficos |
+| `primary-400` | `#4C8DF6` | Iconos sobre fondo claro |
+| `primary-500` | `#1B6EF3` | Hover de enlaces |
+| **`primary-600`** | **`#0B57D0`** | **Color de marca: botón primario, enlaces, foco** |
+| `primary-700` | `#0842A0` | Botón primario en hover |
+| `primary-800` | `#062E6F` | Botón primario presionado |
+| `primary-900` | `#041E49` | Texto de énfasis sobre fondo claro |
+| `primary-950` | `#021430` | Reservado |
 
 | Token neutro | HEX | Uso |
 |---|---|---|
-| `bg-app` | `#F5F5F5` | Fondo de página |
+| `bg-app` | `#F6F8FC` | Fondo de página (el de Gmail) |
 | `surface` | `#FFFFFF` | Tarjetas, tablas, barra superior |
-| `surface-subtle` | `#FAFAFA` | Cabecera de tabla, zonas secundarias |
-| `border` | `#E0E0E0` | Bordes y separadores |
-| `border-strong` | `#C8C8C8` | Bordes de campos de formulario |
-| `text-primary` | `#242424` | Texto principal |
-| `text-secondary` | `#616161` | Texto secundario, etiquetas |
-| `text-disabled` | `#A0A0A0` | Elementos deshabilitados |
+| `surface-subtle` | `#F2F6FC` | Cabecera de tabla, zonas secundarias |
+| `border` | `#E1E3E1` | Bordes y separadores |
+| `border-strong` | `#747775` | Bordes de campos de formulario (4.5:1 sobre blanco) |
+| `text-primary` | `#1F1F1F` | Texto principal |
+| `text-secondary` | `#444746` | Texto secundario, etiquetas |
+| `text-disabled` | `#9AA0A6` | Elementos deshabilitados |
 
 | Token semántico (solo estados) | Color | Fondo suave | Estado |
 |---|---|---|---|
-| `status-ok` | `#107C10` | `#DFF6DD` | 🟢 En plazo |
-| `status-warn` | `#F2B600` | `#FFF4CE` | 🟡 Por vencer (texto sobre este color: `#242424`) |
-| `status-danger` | `#C50F1F` | `#FDE7E9` | 🔴 Vencido o sin responsable; errores |
-| `status-neutral` | `#8A8A8A` | `#F0F0F0` | ⚪ Pendiente de clasificar o revisar |
+| `status-ok` | `#137333` | `#E6F4EA` | 🟢 En plazo |
+| `status-warn` | `#F9AB00` | `#FEF7E0` | 🟡 Por vencer (texto sobre este color: `#1F1F1F`) |
+| `status-danger` | `#B3261E` | `#FCE8E6` | 🔴 Vencido o sin responsable; errores |
+| `status-neutral` | `#5F6368` | `#F1F3F4` | ⚪ Pendiente de clasificar o revisar |
 
 **Reglas de uso**
 - No se usa ningún color fuera de esta tabla. Cualquier ajuste se hace aquí primero.

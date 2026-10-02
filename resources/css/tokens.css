@@ -1,37 +1,39 @@
 /* Única fuente de color, tipografía y forma (PLAN 5.3). Ningún otro archivo escribe HEX. */
+/* Paleta al estilo de Gmail (Material 3 de Google), por decisión del usuario. */
 :root {
-    --primary-50: #F0F1FA;
-    --primary-100: #DFE1F4;
-    --primary-200: #C0C4E8;
-    --primary-300: #9EA3DA;
-    --primary-400: #7479C8;
-    --primary-500: #5A5FBF;
-    --primary-600: #4A4FB5;
-    --primary-700: #3C4094;
-    --primary-800: #2F3274;
-    --primary-900: #232656;
-    --primary-950: #171939;
+    --primary-50: #ECF3FE;
+    --primary-100: #D3E3FD;
+    --primary-200: #A8C7FA;
+    --primary-300: #7CACF8;
+    --primary-400: #4C8DF6;
+    --primary-500: #1B6EF3;
+    --primary-600: #0B57D0;
+    --primary-700: #0842A0;
+    --primary-800: #062E6F;
+    --primary-900: #041E49;
+    --primary-950: #021430;
 
-    --bg-app: #F5F5F5;
+    --bg-app: #F6F8FC;
     --surface: #FFFFFF;
-    --surface-subtle: #FAFAFA;
-    --border: #E0E0E0;
-    --border-strong: #C8C8C8;
-    --text-primary: #242424;
-    --text-secondary: #616161;
-    --text-disabled: #A0A0A0;
+    --surface-subtle: #F2F6FC;
+    --border: #E1E3E1;
+    /* Bordes de campos: 4.6:1 sobre blanco, cumple el 3:1 de componentes (WCAG 1.4.11). */
+    --border-strong: #747775;
+    --text-primary: #1F1F1F;
+    --text-secondary: #444746;
+    --text-disabled: #9AA0A6;
 
-    --status-ok: #107C10;
-    --status-ok-bg: #DFF6DD;
-    --status-warn: #F2B600;
-    --status-warn-bg: #FFF4CE;
-    --status-danger: #C50F1F;
-    --status-danger-bg: #FDE7E9;
-    --status-neutral: #8A8A8A;
-    --status-neutral-bg: #F0F0F0;
+    --status-ok: #137333;
+    --status-ok-bg: #E6F4EA;
+    --status-warn: #F9AB00;
+    --status-warn-bg: #FEF7E0;
+    --status-danger: #B3261E;
+    --status-danger-bg: #FCE8E6;
+    --status-neutral: #5F6368;
+    --status-neutral-bg: #F1F3F4;
 
     /* Velo de diálogos: text-primary al 40 %, no es un color nuevo. */
-    --overlay: rgb(36 36 36 / 0.4);
+    --overlay: rgb(31 31 31 / 0.4);
 
     --fuente-base: "Segoe UI", "Segoe UI Variable", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
     --radio-control: 4px;
