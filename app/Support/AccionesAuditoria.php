@@ -25,6 +25,8 @@ final class AccionesAuditoria
         'cargo.impreso' => 'Imprimió el cargo de entrega',
         'cargo.adjuntado' => 'Adjuntó el cargo firmado',
         'documento.ocr' => 'Leyó el escaneo con OCR',
+        'expediente.agrupado' => 'Agrupó en una serie',
+        'expediente.desagrupado' => 'Quitó de la serie',
         'correo.ingresado' => 'Llegó un correo',
         'correo.descargado' => 'Descargó el correo original',
         'documento.descargado' => 'Descargó un documento',

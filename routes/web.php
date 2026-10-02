@@ -14,6 +14,7 @@ use App\Http\Controllers\RegistroFisicoController;
 use App\Http\Controllers\ReglaDerivacionController;
 use App\Http\Controllers\ReglaNoTramiteController;
 use App\Http\Controllers\ResponsableController;
+use App\Http\Controllers\SerieController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\TipoTramiteController;
 use App\Http\Controllers\UbicacionFisicaController;
@@ -100,6 +101,9 @@ Route::middleware('auth')->group(function () {
     Route::get('expedientes/{expediente}/etiqueta', [OriginalFisicoController::class, 'etiqueta'])->name('expedientes.etiqueta');
     Route::get('movimientos/{movimiento}/cargo', [OriginalFisicoController::class, 'cargo'])->name('movimientos.cargo');
     Route::post('movimientos/{movimiento}/cargo', [OriginalFisicoController::class, 'adjuntarCargo'])->name('movimientos.cargo.adjuntar');
+
+    Route::post('expedientes/{expediente}/serie', [SerieController::class, 'agrupar'])->name('expedientes.serie');
+    Route::delete('expedientes/{expediente}/serie', [SerieController::class, 'quitar'])->name('expedientes.serie.quitar');
 
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');
     Route::get('expedientes/{expediente}', [ExpedienteController::class, 'show'])->name('expedientes.show');

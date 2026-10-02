@@ -12,6 +12,7 @@ use App\Models\Correo;
 use App\Models\Documento;
 use App\Models\Emisor;
 use App\Models\Expediente;
+use App\Models\Grupo;
 use App\Models\InstruccionFrecuente;
 use App\Models\Movimiento;
 use App\Models\ReglaDerivacion;
@@ -21,6 +22,7 @@ use App\Models\UbicacionFisica;
 use App\Models\User;
 use App\Services\AuditoriaService;
 use App\Services\ExpedienteService;
+use App\Services\SerieService;
 use App\Support\AccionesAuditoria;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,7 +85,7 @@ class ExpedienteController extends Controller
         ]);
     }
 
-    public function show(Request $request, Expediente $expediente, AuditoriaService $auditoria): Response
+    public function show(Request $request, Expediente $expediente, AuditoriaService $auditoria, SerieService $series): Response
     {
         Gate::authorize('view', $expediente);
 
@@ -91,10 +93,11 @@ class ExpedienteController extends Controller
         $auditoria->registrar('expediente.consultado', $expediente);
         $user = $request->user();
         $registrable = $expediente->estado->puedeConfirmarse() && $user->can('registrar', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre']);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo']);
         $abierto = in_array($expediente->estado, [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion], true);
         $derivable = ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('derivar', $expediente);
         $custodia = $expediente->codigo !== null && $user->can('custodiar', $expediente);
+        $agrupable = $user->can('agrupar', $expediente);
 
         return Inertia::render('expedientes/Show', [
             'expediente' => [
@@ -125,7 +128,14 @@ class ExpedienteController extends Controller
                     'solicitar_cierre' => $abierto && ! $expediente->cierre_solicitado_at && $user->can('atender', $expediente),
                     'resolver_cierre' => $abierto && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),
                     'custodiar' => $custodia,
+                    'agrupar' => $agrupable,
                 ],
+                'serie' => $expediente->grupo ? [
+                    'id' => $expediente->grupo->id,
+                    'nombre' => $expediente->grupo->nombre,
+                    'expedientes' => $expediente->grupo->expedientes()->visiblesPara($user)->orderBy('id')->get()
+                        ->map(fn (Expediente $x) => $this->resumen($x)),
+                ] : null,
                 // El papel nunca se descarta: solo se registra dónde está y quién lo tiene (7.3.1).
                 'original' => $expediente->origen === OrigenExpediente::Fisico ? [
                     'ubicacion_fisica_id' => $expediente->ubicacion_fisica_id,
@@ -163,6 +173,10 @@ class ExpedienteController extends Controller
             // Solo para el diálogo de registro (6.1).
             ...($registrable ? ['opcionesEmisor' => Emisor::opciones(), 'opcionesTipoDocumento' => TipoDocumento::opciones()] : []),
             ...($derivable ? ['derivacion' => $this->opcionesDerivacion($expediente)] : []),
+            ...($agrupable && ! $expediente->grupo_id ? ['agrupacion' => [
+                'parecidos' => $series->parecidos($expediente, $user)->map(fn (Expediente $x) => $this->resumen($x)),
+                'series' => Grupo::latest('id')->limit(50)->get(['id', 'nombre'])->map(fn (Grupo $g) => ['value' => $g->id, 'label' => $g->nombre]),
+            ]] : []),
             ...($custodia && $expediente->origen === OrigenExpediente::Fisico ? ['custodia' => ['ubicaciones' => UbicacionFisica::opciones(), 'usuarios' => User::opciones()]] : []),
         ]);
     }
@@ -213,6 +227,12 @@ class ExpedienteController extends Controller
     }
 
     /** @return list<array{id: int, fecha: string, accion: string, usuario: string}> */
+    /** @return array{id: int, numero_registro: ?string, asunto: string, estado: string} */
+    private function resumen(Expediente $e): array
+    {
+        return ['id' => $e->id, 'numero_registro' => $e->numero_registro, 'asunto' => $e->asunto, 'estado' => $e->estado->etiqueta()];
+    }
+
     /** Opciones del diálogo de derivación, con lo que sugiere la primera regla que aplica (5.1). */
     private function opcionesDerivacion(Expediente $expediente): array
     {

@@ -37,6 +37,12 @@ class ExpedientePolicy
         return $this->registrar($user, $expediente) || $this->derivar($user, $expediente);
     }
 
+    /** Agrupar en series (7.3.1): quien registra o deriva. */
+    public function agrupar(User $user, Expediente $expediente): bool
+    {
+        return $this->registrar($user, $expediente) || $this->derivar($user, $expediente);
+    }
+
     /** Derivar y reasignar: director y administrativo (5). */
     public function derivar(User $user, Expediente $expediente): bool
     {

@@ -30,6 +30,7 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
         instruccion: '',
         fecha_limite: '',
         nota: '',
+        toda_la_serie: false,
     });
     const nota = useForm({ nota: '', aprobar: true });
     const soloConocimiento = !e.requiere_respuesta && !e.fecha_limite;
@@ -177,6 +178,13 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                         >
                             {(c) => <Input {...c} type="date" value={derivar.data.fecha_limite} onChange={(ev) => derivar.setData('fecha_limite', ev.target.value)} />}
                         </FormField>
+                        {e.serie && e.serie.expedientes.length > 1 && (
+                            <Checkbox
+                                etiqueta={`Derivar toda la serie «${e.serie.nombre}» (${e.serie.expedientes.length} documentos)`}
+                                checked={derivar.data.toda_la_serie}
+                                onChange={(ev) => derivar.setData('toda_la_serie', ev.target.checked)}
+                            />
+                        )}
                         <Checkbox
                             etiqueta="Requiere respuesta"
                             checked={derivar.data.requiere_respuesta}

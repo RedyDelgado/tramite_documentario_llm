@@ -23,6 +23,8 @@ class DerivarRequest extends FormRequest
             'nota' => ['nullable', 'string', 'max:2000'],
             // Fecha que fija el documento (reunión, entrega); vacía, rige el plazo del tipo (8).
             'fecha_limite' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:today'],
+            // Una serie se deriva una sola vez para todo el lote (7.3.5, punto 6).
+            'toda_la_serie' => ['sometimes', 'boolean'],
         ];
     }
 

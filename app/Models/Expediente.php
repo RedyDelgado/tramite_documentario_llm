@@ -22,7 +22,7 @@ use Laravel\Scout\Searchable;
 #[Fillable([
     'origen', 'estado', 'asunto', 'remitente_nombre', 'remitente_email', 'remitente_por_confirmar',
     'fecha_ingreso', 'area_principal_id', 'responsable_id', 'emisor_id', 'tipo_documento_id', 'numero_documento',
-    'numero_documento_original', 'fecha_documento', 'folios', 'motivo_folios', 'requiere_respuesta', 'ubicacion_fisica_id', 'custodio_id',
+    'numero_documento_original', 'fecha_documento', 'folios', 'motivo_folios', 'requiere_respuesta', 'ubicacion_fisica_id', 'custodio_id', 'grupo_id',
 ])]
 // Con desfase: fecha_ingreso viene del correo, en la zona del remitente (ver Correo).
 #[DateFormat('Y-m-d H:i:sP')]
@@ -192,6 +192,12 @@ class Expediente extends Model
     public function custodio(): BelongsTo
     {
         return $this->belongsTo(User::class, 'custodio_id');
+    }
+
+    /** @return BelongsTo<Grupo, $this> */
+    public function grupo(): BelongsTo
+    {
+        return $this->belongsTo(Grupo::class);
     }
 
     /** @return HasMany<Movimiento, $this> */

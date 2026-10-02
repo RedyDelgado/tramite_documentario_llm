@@ -9,7 +9,8 @@ const port = Number(process.env.VITE_PORT ?? 5174);
 export default defineConfig({
     plugins: [
         laravel({
-            input: 'resources/js/app.tsx',
+            // app.css aparte: lo usan las vistas imprimibles (constancia, cargo, etiqueta).
+            input: ['resources/js/app.tsx', 'resources/css/app.css'],
             refresh: true,
         }),
         react(),

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DerivarRequest;
 use App\Models\Expediente;
 use App\Services\AtencionService;
+use App\Services\SerieService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -15,8 +16,13 @@ class AtencionController extends Controller
 {
     public function __construct(private readonly AtencionService $atencion) {}
 
-    public function derivar(DerivarRequest $request, Expediente $expediente): RedirectResponse
+    public function derivar(DerivarRequest $request, Expediente $expediente, SerieService $series): RedirectResponse
     {
+        if ($request->boolean('toda_la_serie') && $expediente->grupo) {
+            $total = $series->derivar($expediente->grupo, $request->validated(), $request->user());
+
+            return $this->listo("Serie derivada: {$total} expedientes.");
+        }
         $expediente = $this->atencion->derivar($expediente, $request->validated());
 
         return $this->listo("Derivado a {$expediente->area->nombre}.");

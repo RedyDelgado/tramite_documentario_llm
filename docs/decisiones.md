@@ -4,6 +4,8 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 ## 2026-10-04 — Fase 3
 
+- **Series** (`grupos`): se agrupan desde el detalle; el sistema propone los documentos del mismo emisor (o remitente), mismo asunto y mismo día, como los oficios circulares del día pico (14.1). Derivar con «toda la serie» deriva en una transacción cada expediente derivable con los mismos datos: cada uno conserva su número, su movimiento y su auditoría.
+- **`resources/css/app.css` es entrada de Vite** además de `app.tsx`: las vistas imprimibles lo cargan solo, sin arrancar React.
 - **QR con `bacon/bacon-qr-code`** (PHP puro, SVG): codifica el enlace `/qr/REG-AAAA-NNNNN`. La cámara de un teléfono lo abre como enlace y un lector USB lo escribe en la búsqueda de expedientes, que abre directo el expediente. No hace falta un lector QR propio en la página; los permisos los sigue aplicando la vista del expediente.
 - **Constancia, etiqueta y cargo son vistas Blade imprimibles** con los mismos tokens de Tailwind (tinta sobre blanco), fuera del AppShell; cada impresión queda auditada (9).
 - **El original no tiene acción de descarte**: solo ubicación y custodio, y moverlo es un movimiento auditado. Quien registra el papel queda como su primer custodio.

@@ -5,6 +5,7 @@ import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { LineaTiempo } from '@/components/domain/LineaTiempo';
 import { OriginalPapel } from '@/components/domain/OriginalPapel';
+import { SerieCard } from '@/components/domain/SerieCard';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
@@ -13,7 +14,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 import { formatearBytes } from '@/lib/formato';
-import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetalle, Opcion, OpcionesDerivacion } from '@/types';
+import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetalle, Opcion, OpcionesAgrupacion, OpcionesDerivacion } from '@/types';
 
 const ORIGEN = { correo: 'Correo', fisico: 'Documento físico', pdf: 'PDF subido' };
 
@@ -75,9 +76,10 @@ type Props = {
     opcionesTipoDocumento?: Opcion<number>[];
     derivacion?: OpcionesDerivacion;
     custodia?: { ubicaciones: Opcion<number>[]; usuarios: Opcion<number>[] };
+    agrupacion?: OpcionesAgrupacion;
 };
 
-export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion, custodia }: Props) {
+export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion, custodia, agrupacion }: Props) {
     return (
         <AppShell>
             <PageHeader
@@ -115,7 +117,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                     etiqueta: 'Remitente',
                                     valor: (
                                         <span className="flex flex-wrap items-center gap-1">
-                                            {e.remitente_nombre ? `${e.remitente_nombre} <${e.remitente_email}>` : e.remitente_email}
+                                            {[e.remitente_nombre, e.remitente_email && (e.remitente_nombre ? `<${e.remitente_email}>` : e.remitente_email)].filter(Boolean).join(' ')}
                                             {e.remitente_por_confirmar && <Badge>Por confirmar</Badge>}
                                         </span>
                                     ),
@@ -142,6 +144,8 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                             ]}
                         />
                     </Card>
+
+                    <SerieCard expediente={e} agrupacion={agrupacion} />
 
                     <OriginalPapel expediente={e} custodia={custodia} />
 
