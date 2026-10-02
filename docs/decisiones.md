@@ -2,6 +2,11 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-06 — Interfaz (decisión del usuario)
+
+- **Crear, editar y ver en un modal** sobre la lista, en lugar de páginas aparte con `FormPage` (cambia lo que fijaba 5.2).
+- **Confirmación antes de toda acción que cambia algo** (`ConfirmDialog` con una frase de lo que pasará); no en abrir, filtrar, buscar, descargar ni cancelar.
+
 ## 2026-10-06 — Fase 5
 
 - **Rebotes y respuestas en la ingesta** (`EntregaService`): un aviso DSN (mailer-daemon/postmaster o `multipart/report`) marca `rebotado` el envío cuyo Message-ID cita, con el `Diagnostic-Code`, y no se anexa al expediente (queda como no trámite). Una respuesta se enlaza por In-Reply-To/References con el envío o, si el cliente perdió el hilo, por el código del asunto y el remitente que recibió el envío; detiene el plazo del documento (`respondido_at`).

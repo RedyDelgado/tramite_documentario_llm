@@ -4,7 +4,9 @@ Lee primero `PLAN_SISTEMA_TRAMITE_DOCUMENTARIO.md`: es la fuente de verdad. Trab
 
 ## Reglas que más se rompen
 
-- **Interfaz solo con el sistema de componentes** (`resources/js/components`, sección 5.2). Las páginas componen plantillas (`ListPage`, `FormPage`) y compuestos; no llevan CSS propio. Antes de crear un componente, busca uno que sirva o añádele una variante.
+- **Interfaz solo con el sistema de componentes** (`resources/js/components`, sección 5.2). Las páginas componen plantillas (`ListPage`) y compuestos; no llevan CSS propio. Antes de crear un componente, busca uno que sirva o añádele una variante.
+- **Crear, editar y ver van en un modal** (`Dialog`) sobre la lista, no en una página aparte: la lista sigue detrás y al guardar se vuelve a ella. Reemplaza a `FormPage` de 5.2 (decisión del usuario).
+- **Confirmación antes de actuar**: todo botón que cambia algo (activar, desactivar, aprobar, enviar, derivar, registrar, anular, quitar, fusionar…) pide confirmación con `ConfirmDialog`, que dice en una frase qué va a pasar. No hace falta para abrir, filtrar, buscar, descargar ni cancelar.
 - **Colores solo desde `resources/css/tokens.css`** (5.3). Tailwind no tiene su paleta por defecto; `npm test` falla con un HEX fuera de tokens.
 - **Sin `tailwind-merge`**: no pases clases que choquen con las del componente (`px-*`, `bg-*`); usa una variante.
 - **Escritura por Services** (`app/Services`), nunca desde el controlador: ahí se engancha la auditoría.
