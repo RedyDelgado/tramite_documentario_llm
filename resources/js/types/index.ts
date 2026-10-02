@@ -86,3 +86,32 @@ export type Area = {
     activa: boolean;
     actualizada: string | null;
 };
+
+/** TipoTramiteResource. */
+export type TipoTramite = {
+    id: number;
+    nombre: string;
+    descripcion: string | null;
+    plazo_dias: number | null;
+    tipo_dias: 'habiles' | 'calendario';
+    aprueba_cierre: 'director' | 'coordinador' | null;
+    aprueba_cierre_etiqueta: string | null;
+    activo: boolean;
+    actualizado: string | null;
+};
+
+/** PlazoAreaResource. */
+export type PlazoArea = {
+    id: number;
+    tipo_tramite_id: number;
+    tipo: string;
+    tipo_dias: TipoTramite['tipo_dias'];
+    plazo_del_tipo: number | null;
+    area_id: number;
+    area: string;
+    plazo_dias: number;
+    actualizado: string | null;
+};
+
+/** FeriadoResource. */
+export type Feriado = { id: number; fecha: string; descripcion: string; area_id: number | null; area?: string | null; actualizado: string | null };

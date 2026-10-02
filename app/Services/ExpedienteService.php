@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\EstadoExpediente;
 use App\Exceptions\ReglaDeNegocio;
 use App\Models\Expediente;
+use App\Models\TipoTramite;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +15,26 @@ class ExpedienteService
     public function __construct(
         private readonly SecuenciaService $secuencias,
         private readonly AuditoriaService $auditoria,
+        private readonly PlazoService $plazos,
     ) {}
+
+    /** Asigna el tipo de trámite con una copia del plazo vigente: cambiar después la configuración no lo altera (5.1). */
+    public function asignarTipo(Expediente $expediente, TipoTramite $tipo): Expediente
+    {
+        return DB::transaction(function () use ($expediente, $tipo) {
+            $expediente = Expediente::lockForUpdate()->findOrFail($expediente->id);
+            $plazo = $this->plazos->calcular($tipo, $expediente->area_principal_id, $expediente->fecha_ingreso);
+
+            $expediente->forceFill([
+                'tipo_tramite_id' => $tipo->id,
+                'plazo_dias_aplicado' => $plazo['plazo_dias'],
+                'fecha_limite' => $plazo['fecha_limite']?->toDateString(),
+            ])->save();
+            $this->auditoria->registrarCambios('expediente.tipo_asignado', $expediente);
+
+            return $expediente;
+        });
+    }
 
     /**
      * Confirma como trámite y asigna el número de registro del año en curso (6.2).

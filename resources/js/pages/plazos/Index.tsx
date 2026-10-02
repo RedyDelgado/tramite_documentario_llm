@@ -1,0 +1,134 @@
+import { Add20Regular, Delete20Regular, Edit20Regular, Timer20Regular } from '@fluentui/react-icons';
+import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
+import type { Columna } from '@/components/data/DataTable';
+import { DetalleLista } from '@/components/data/DetalleLista';
+import { ListPage } from '@/components/layouts/ListPage';
+import { Button, botonClases } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Drawer } from '@/components/ui/Drawer';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Select } from '@/components/ui/Select';
+import { useFiltros } from '@/hooks/useFiltros';
+import { formatearFechaHora, formatearPlazo } from '@/lib/fechas';
+import type { Opcion, Paginado, PlazoArea } from '@/types';
+
+type Filtros = { tipo?: string; area?: string };
+
+const columnas: Columna<PlazoArea>[] = [
+    { clave: 'tipo', titulo: 'Tipo de trámite', celda: (p) => <span className="font-semibold">{p.tipo}</span> },
+    { clave: 'area', titulo: 'Área', celda: (p) => p.area },
+    { clave: 'plazo', titulo: 'Plazo en el área', celda: (p) => formatearPlazo(p.plazo_dias, p.tipo_dias) },
+    { clave: 'base', titulo: 'Plazo del tipo', celda: (p) => <span className="text-fg-muted">{formatearPlazo(p.plazo_del_tipo, p.tipo_dias)}</span> },
+];
+
+type Props = { plazos: Paginado<PlazoArea>; filtros: Filtros; opcionesTipo: Opcion<number>[]; opcionesArea: Opcion<number>[] };
+
+export default function PlazosIndex({ plazos, filtros: iniciales, opcionesTipo, opcionesArea }: Props) {
+    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+    const [elegidoId, setElegidoId] = useState<number | null>(null);
+    const [confirmando, setConfirmando] = useState(false);
+    const [procesando, setProcesando] = useState(false);
+    const elegido = plazos.data.find((p) => p.id === elegidoId) ?? null;
+    const hayFiltros = Boolean(filtros.tipo || filtros.area);
+
+    const quitar = (plazo: PlazoArea) =>
+        router.delete(`/plazos/${plazo.id}`, {
+            preserveScroll: true,
+            onStart: () => setProcesando(true),
+            onFinish: () => setProcesando(false),
+            onSuccess: () => {
+                setConfirmando(false);
+                setElegidoId(null);
+            },
+        });
+
+    return (
+        <ListPage
+            titulo="Plazos por área"
+            descripcion="Un tipo de trámite puede tener otro plazo en un área concreta; si no hay uno aquí, se usa el del tipo."
+            acciones={
+                <Link href="/plazos/create" className={botonClases({ variante: 'primario' })}>
+                    <Add20Regular />
+                    Nuevo plazo por área
+                </Link>
+            }
+            filtros={
+                <>
+                    <Select
+                        aria-label="Tipo de trámite"
+                        className="w-56"
+                        vacia="Todos los tipos"
+                        opciones={opcionesTipo}
+                        value={filtros.tipo ?? ''}
+                        onChange={(e) => cambiar({ tipo: e.target.value })}
+                    />
+                    <Select
+                        aria-label="Área"
+                        className="w-56"
+                        vacia="Todas las áreas"
+                        opciones={opcionesArea}
+                        value={filtros.area ?? ''}
+                        onChange={(e) => cambiar({ area: e.target.value })}
+                    />
+                </>
+            }
+            tabla={{
+                titulo: 'Plazos por área',
+                columnas,
+                filas: plazos.data,
+                claveFila: (p) => p.id,
+                seleccionada: elegidoId,
+                onElegirFila: (p) => setElegidoId(p.id),
+                cargando,
+                vacio: (
+                    <EmptyState
+                        icono={<Timer20Regular />}
+                        titulo={hayFiltros ? 'No hay plazos que coincidan con los filtros' : 'Ningún área tiene un plazo propio'}
+                        descripcion={hayFiltros ? 'Cambia el tipo o el área.' : 'Todas usan el plazo de cada tipo de trámite.'}
+                    />
+                ),
+            }}
+            paginacion={plazos}
+            detalle={
+                elegido && (
+                    <Drawer
+                        abierto
+                        onCambiar={(abierto) => !abierto && setElegidoId(null)}
+                        titulo={elegido.tipo}
+                        subtitulo={elegido.area}
+                        acciones={
+                            <>
+                                <Link href={`/plazos/${elegido.id}/edit`} className={botonClases()}>
+                                    <Edit20Regular />
+                                    Editar
+                                </Link>
+                                <Button icono={<Delete20Regular />} onClick={() => setConfirmando(true)}>
+                                    Quitar
+                                </Button>
+                            </>
+                        }
+                    >
+                        <DetalleLista
+                            items={[
+                                { etiqueta: 'Plazo en el área', valor: formatearPlazo(elegido.plazo_dias, elegido.tipo_dias) },
+                                { etiqueta: 'Plazo del tipo', valor: formatearPlazo(elegido.plazo_del_tipo, elegido.tipo_dias) },
+                                { etiqueta: 'Última actualización', valor: formatearFechaHora(elegido.actualizado) },
+                            ]}
+                        />
+                        <ConfirmDialog
+                            abierto={confirmando}
+                            onCambiar={setConfirmando}
+                            titulo="¿Quitar el plazo propio del área?"
+                            descripcion="El área volverá a usar el plazo del tipo para los nuevos expedientes. Los ya ingresados conservan su plazo."
+                            confirmar="Quitar"
+                            peligro
+                            cargando={procesando}
+                            onConfirmar={() => quitar(elegido)}
+                        />
+                    </Drawer>
+                )
+            }
+        />
+    );
+}

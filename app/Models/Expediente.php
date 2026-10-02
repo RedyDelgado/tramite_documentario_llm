@@ -94,6 +94,8 @@ class Expediente extends Model
             'fecha_ingreso' => 'datetime',
             'registrado_at' => 'datetime',
             'remitente_por_confirmar' => 'boolean',
+            'fecha_limite' => 'date:Y-m-d',
+            'plazo_dias_aplicado' => 'integer',
             'anio' => 'integer',
             'secuencia' => 'integer',
         ];
@@ -143,6 +145,12 @@ class Expediente extends Model
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class, 'area_principal_id');
+    }
+
+    /** @return BelongsTo<TipoTramite, $this> */
+    public function tipoTramite(): BelongsTo
+    {
+        return $this->belongsTo(TipoTramite::class);
     }
 
     /** @return BelongsTo<User, $this> */

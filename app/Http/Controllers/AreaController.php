@@ -51,7 +51,7 @@ class AreaController extends Controller
 
         return Inertia::render('areas/Form', [
             'area' => null,
-            'opcionesPadre' => $this->opcionesPadre(),
+            'opcionesPadre' => Area::opciones(),
         ]);
     }
 
@@ -71,7 +71,7 @@ class AreaController extends Controller
         return Inertia::render('areas/Form', [
             // resolve(): el recurso suelto va sin el envoltorio `data`.
             'area' => AreaResource::make($area)->resolve(),
-            'opcionesPadre' => $this->opcionesPadre($area),
+            'opcionesPadre' => Area::opciones($area->id),
         ]);
     }
 
@@ -97,17 +97,5 @@ class AreaController extends Controller
         ]);
 
         return back();
-    }
-
-    /** @return list<array{value: int, label: string}> */
-    private function opcionesPadre(?Area $excluir = null): array
-    {
-        return Area::query()
-            ->where('activa', true)
-            ->when($excluir, fn ($q) => $q->whereKeyNot($excluir->id))
-            ->orderBy('nombre')
-            ->get(['id', 'nombre'])
-            ->map(fn (Area $a) => ['value' => $a->id, 'label' => $a->nombre])
-            ->all();
     }
 }

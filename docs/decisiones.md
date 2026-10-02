@@ -9,6 +9,11 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 - **`usuarios.gestionar` aparte de `configuracion.gestionar`.** Quien asigna roles podría darse cualquier privilegio; delegar la configuración (5.1) no debe incluirlo.
 - **Nadie cambia su propio rol ni se desactiva.** Así siempre queda al menos un superadmin activo (el que hace el cambio) sin tener que contarlos.
 - **Desactivar corta la sesión abierta** (middleware `UsuarioActivo`): las sesiones viven en Redis y no se pueden buscar por usuario para borrarlas.
+- **Plazos**: el del área manda sobre el del tipo; un tipo sin plazo no vence. Días hábiles excluyen sábados, domingos y feriados (globales o del área); el día de ingreso no cuenta, y un plazo que vence en día inhábil pasa al siguiente hábil (TUO Ley 27444). El día de ingreso es el de Lima.
+- **El plazo se copia al asignar el tipo** (`ExpedienteService::asignarTipo`): `plazo_dias_aplicado` y `fecha_limite` no cambian aunque luego cambie la configuración. La pantalla que asigna el tipo llega con la derivación (#10).
+- **Plazos por área sin vigencia desde/hasta**: la copia en el expediente ya protege lo ingresado; la vigencia solo serviría para programar cambios futuros.
+- **Quitar un plazo por área o un feriado es borrado lógico**, con índice único parcial para poder volver a crearlo.
+- **Una sola `ConfiguracionPolicy`** (`#[UsePolicy]`) y un `CatalogoService` para todos los catálogos de configuración; reemplazan a `AreaPolicy`.
 - **Pantalla de roles y permisos**: no se hizo. Los roles son los de la sección 5; delegar `configuracion.gestionar` a otro rol espera el pendiente 8.
 
 ## 2026-10-02 — Fase 1

@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\ExpedienteController;
+use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\OriginalController;
+use App\Http\Controllers\PlazoAreaController;
+use App\Http\Controllers\TipoTramiteController;
 use App\Http\Controllers\UsuarioController;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
@@ -48,6 +51,11 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('areas', AreaController::class)->except(['show', 'destroy']);
     Route::patch('areas/{area}/estado', [AreaController::class, 'cambiarEstado'])->name('areas.estado');
+
+    Route::resource('tipos-tramite', TipoTramiteController::class)->parameters(['tipos-tramite' => 'tipo'])->except(['show', 'destroy']);
+    Route::patch('tipos-tramite/{tipo}/estado', [TipoTramiteController::class, 'cambiarEstado'])->name('tipos-tramite.estado');
+    Route::resource('plazos', PlazoAreaController::class)->except(['show']);
+    Route::resource('feriados', FeriadoController::class)->except(['show']);
 
     Route::resource('usuarios', UsuarioController::class)->except(['show', 'destroy']);
     Route::patch('usuarios/{usuario}/estado', [UsuarioController::class, 'cambiarEstado'])->name('usuarios.estado');
