@@ -7,6 +7,7 @@ use App\Models\UbicacionFisica;
 use App\Services\CatalogoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,7 +31,7 @@ class UbicacionFisicaController extends Controller
             ->withQueryString();
 
         return Inertia::render('ubicaciones/Index', [
-            'ubicaciones' => $ubicaciones->through(fn (UbicacionFisica $i) => $this->fila($i)),
+            'ubicaciones' => JsonResource::collection($ubicaciones->through(fn (UbicacionFisica $i) => $this->fila($i))),
             'filtros' => (object) $filtros,
         ]);
     }

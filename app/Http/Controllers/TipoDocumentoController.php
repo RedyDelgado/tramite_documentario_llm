@@ -7,6 +7,7 @@ use App\Models\TipoDocumento;
 use App\Services\CatalogoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,7 +30,7 @@ class TipoDocumentoController extends Controller
             ->withQueryString();
 
         return Inertia::render('tipos-documento/Index', [
-            'tipos' => $tipos->through(fn (TipoDocumento $t) => $this->fila($t)),
+            'tipos' => JsonResource::collection($tipos->through(fn (TipoDocumento $t) => $this->fila($t))),
             'filtros' => (object) $filtros,
         ]);
     }

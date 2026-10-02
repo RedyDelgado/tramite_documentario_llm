@@ -26,6 +26,7 @@ final class AccionesAuditoria
         'cargo.adjuntado' => 'Adjuntó el cargo firmado',
         'documento.ocr' => 'Leyó el escaneo con OCR',
         'expediente.agrupado' => 'Agrupó en una serie',
+        'ia.clasificado' => 'La IA propuso área y tipo',
         'expediente.desagrupado' => 'Quitó de la serie',
         'correo.ingresado' => 'Llegó un correo',
         'correo.descargado' => 'Descargó el correo original',

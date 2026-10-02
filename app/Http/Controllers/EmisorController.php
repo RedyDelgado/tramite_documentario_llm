@@ -9,6 +9,7 @@ use App\Services\EmisorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,7 +39,7 @@ class EmisorController extends Controller
             ->withQueryString();
 
         return Inertia::render('emisores/Index', [
-            'emisores' => $emisores->through(fn (Emisor $e) => $this->fila($e)),
+            'emisores' => JsonResource::collection($emisores->through(fn (Emisor $e) => $this->fila($e))),
             'filtros' => (object) $filtros,
             'duplicados' => Emisor::posiblesDuplicados(),
             'opcionesEmisor' => Emisor::opciones(),

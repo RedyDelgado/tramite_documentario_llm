@@ -2,14 +2,17 @@
 
 namespace App\Services;
 
+use App\Exceptions\ReglaDeNegocio;
 use App\Models\Area;
 use App\Models\ClasificacionIa;
 use App\Models\Configuracion;
+use App\Models\CorreccionPendiente;
 use App\Models\Expediente;
 use App\Models\TipoTramite;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /** Clasificación con la IA local (10): propone área y tipo; las reglas y las personas deciden. */
@@ -89,7 +92,54 @@ class ClasificacionService
             'decidido_at' => now(),
         ])->save();
 
+        // Donde la persona contradijo a la IA queda una corrección, que otra persona valida antes de reentrenar.
+        foreach (['area' => [$clasificacion->area_id, $expediente->area_principal_id, $clasificacion->acierto_area],
+            'tipo' => [$clasificacion->tipo_tramite_id, $expediente->tipo_tramite_id, $clasificacion->acierto_tipo]] as $campo => [$ia, $humano, $acierto]) {
+            if ($acierto === false && $humano !== null) {
+                CorreccionPendiente::create(['clasificacion_id' => $clasificacion->id, 'campo' => $campo, 'valor_ia' => $ia, 'valor_humano' => $humano, 'usuario_id' => $user?->id]);
+            }
+        }
+
         return $clasificacion;
+    }
+
+    /** Valida o rechaza una corrección; nunca la valida quien la hizo (5). */
+    public function resolverCorreccion(CorreccionPendiente $correccion, bool $validar, User $user): void
+    {
+        if ($correccion->estado !== 'pendiente') {
+            throw new ReglaDeNegocio('Esta corrección ya fue resuelta.');
+        }
+        $correccion->forceFill(['estado' => $validar ? 'validada' : 'rechazada', 'validada_por' => $user->id, 'validada_at' => now()])->save();
+        $this->auditoria->registrar($validar ? 'ia.correccion_validada' : 'ia.correccion_rechazada', $correccion, despues: [
+            'campo' => $correccion->campo, 'valor_ia' => $correccion->valor_ia, 'valor_humano' => $correccion->valor_humano,
+        ]);
+    }
+
+    /**
+     * % de acierto por categoría de la decisión humana, por campo (8, 10).
+     *
+     * @return array{area: list<array{nombre: string, total: int, aciertos: int}>, tipo: list<array{nombre: string, total: int, aciertos: int}>, versiones: list<array{version: string, modo: string, total: int, aciertos_area: int, aciertos_tipo: int}>}
+     */
+    public function precision(): array
+    {
+        $porCategoria = fn (string $tabla, string $final, string $acierto) => ClasificacionIa::query()
+            ->join($tabla, "{$tabla}.id", '=', "clasificaciones_ia.{$final}")
+            ->whereNotNull($acierto)
+            ->groupBy("{$tabla}.nombre")
+            ->orderBy("{$tabla}.nombre")
+            ->get(["{$tabla}.nombre", DB::raw('count(*) as total'), DB::raw("count(*) filter (where {$acierto}) as aciertos")])
+            ->map(fn ($f) => ['nombre' => $f->nombre, 'total' => (int) $f->total, 'aciertos' => (int) $f->aciertos])
+            ->all();
+
+        return [
+            'area' => $porCategoria('areas', 'area_final_id', 'acierto_area'),
+            'tipo' => $porCategoria('tipos_tramite', 'tipo_final_id', 'acierto_tipo'),
+            'versiones' => ClasificacionIa::whereNotNull('decidido_at')
+                ->groupBy('version', 'modo')->orderBy('version')
+                ->get(['version', 'modo', DB::raw('count(*) as total'), DB::raw('count(*) filter (where acierto_area) as aciertos_area'), DB::raw('count(*) filter (where acierto_tipo) as aciertos_tipo')])
+                ->map(fn ($f) => ['version' => $f->version, 'modo' => $f->modo, 'total' => (int) $f->total, 'aciertos_area' => (int) $f->aciertos_area, 'aciertos_tipo' => (int) $f->aciertos_tipo])
+                ->all(),
+        ];
     }
 
     /**

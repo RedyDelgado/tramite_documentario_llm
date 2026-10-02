@@ -7,6 +7,7 @@ use App\Models\ReglaNoTramite;
 use App\Services\CatalogoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,7 +36,7 @@ class ReglaNoTramiteController extends Controller
             ->withQueryString();
 
         return Inertia::render('reglas-no-tramite/Index', [
-            'reglas' => $reglas->through(fn (ReglaNoTramite $r) => $this->fila($r)),
+            'reglas' => JsonResource::collection($reglas->through(fn (ReglaNoTramite $r) => $this->fila($r))),
             'filtros' => (object) $filtros,
             'opcionesCampo' => $this->opcionesCampo(),
         ]);

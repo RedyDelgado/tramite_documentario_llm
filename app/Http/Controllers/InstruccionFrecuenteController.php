@@ -7,6 +7,7 @@ use App\Models\InstruccionFrecuente;
 use App\Services\CatalogoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,7 +31,7 @@ class InstruccionFrecuenteController extends Controller
             ->withQueryString();
 
         return Inertia::render('instrucciones/Index', [
-            'instrucciones' => $instrucciones->through(fn (InstruccionFrecuente $i) => $this->fila($i)),
+            'instrucciones' => JsonResource::collection($instrucciones->through(fn (InstruccionFrecuente $i) => $this->fila($i))),
             'filtros' => (object) $filtros,
         ]);
     }

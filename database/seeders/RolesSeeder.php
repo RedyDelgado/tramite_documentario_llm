@@ -31,6 +31,8 @@ class RolesSeeder extends Seeder
         'expedientes.registrar' => ['administrativo'],
         // Derivar y reasignar (5); atender y cerrar se deciden por expediente en ExpedientePolicy.
         'expedientes.derivar' => ['director', 'administrativo'],
+        // Validar las correcciones a la IA que alimentan el reentrenamiento (5, 10).
+        'ia.validar' => ['director', 'administrativo'],
     ];
 
     public function run(): void

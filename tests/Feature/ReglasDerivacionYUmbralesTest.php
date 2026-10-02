@@ -18,6 +18,9 @@ class ReglasDerivacionYUmbralesTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Valores por defecto de la IA: este test solo cambia el semáforo.
+    private const IA = ['ia_modo' => 'sombra', 'ia_umbral_sugerencia' => 0.6, 'ia_umbral_alta' => 0.9];
+
     private User $admin;
 
     protected function setUp(): void
@@ -77,14 +80,14 @@ class ReglasDerivacionYUmbralesTest extends TestCase
     {
         $this->assertSame(30, Configuracion::valor('semaforo.porcentaje_amarillo'));
 
-        $this->actingAs($this->admin)->put('/umbrales', ['porcentaje_amarillo' => 25, 'dias_sin_movimiento' => 5])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->put('/umbrales', ['porcentaje_amarillo' => 25, 'dias_sin_movimiento' => 5, ...self::IA])->assertSessionHasNoErrors();
 
         $this->assertSame(25, Configuracion::valor('semaforo.porcentaje_amarillo'));
         $cambio = DB::table('auditoria')->where('accion', 'configuracion.actualizada')->sole();
         $this->assertSame(['semaforo.porcentaje_amarillo' => 30], json_decode($cambio->valor_anterior, true));
         $this->assertSame(['semaforo.porcentaje_amarillo' => 25], json_decode($cambio->valor_nuevo, true));
 
-        $this->actingAs($this->admin)->put('/umbrales', ['porcentaje_amarillo' => 100, 'dias_sin_movimiento' => 0])
+        $this->actingAs($this->admin)->put('/umbrales', ['porcentaje_amarillo' => 100, 'dias_sin_movimiento' => 0, ...self::IA])
             ->assertSessionHasErrors(['porcentaje_amarillo', 'dias_sin_movimiento']);
     }
 

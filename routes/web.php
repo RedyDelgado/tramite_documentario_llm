@@ -6,6 +6,7 @@ use App\Http\Controllers\EmisorController;
 use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\IaController;
 use App\Http\Controllers\InstruccionFrecuenteController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\OriginalFisicoController;
@@ -84,6 +85,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('instrucciones', InstruccionFrecuenteController::class)->parameters(['instrucciones' => 'instruccion'])->except(['show', 'destroy']);
     Route::resource('ubicaciones', UbicacionFisicaController::class)->parameters(['ubicaciones' => 'ubicacion'])->except(['show', 'destroy']);
     Route::resource('reglas-no-tramite', ReglaNoTramiteController::class)->parameters(['reglas-no-tramite' => 'regla'])->except(['show', 'destroy']);
+    Route::get('ia', [IaController::class, 'index'])->name('ia.index');
+    Route::post('ia/correcciones/{correccion}', [IaController::class, 'resolver'])->name('ia.correcciones.resolver');
     Route::get('umbrales', [UmbralController::class, 'edit'])->name('umbrales.edit');
     Route::put('umbrales', [UmbralController::class, 'update'])->name('umbrales.update');
 
