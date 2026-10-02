@@ -35,6 +35,7 @@ class SalienteController extends Controller
 
         $salientes = DocumentoSaliente::query()
             ->with(['tipoDocumento:id,nombre', 'area:id,nombre', 'expediente'])
+            ->withCount(['envios as rebotes' => fn ($q) => $q->where('estado', 'rebotado')])
             // Mismo criterio que SalientePolicy::view, en la consulta.
             ->unless($user->can('expedientes.ver_todos'), fn ($q) => $q->where(fn ($q) => $q
                 ->where('creado_por', $user->id)
@@ -232,6 +233,7 @@ class SalienteController extends Controller
             'fecha_limite_respuesta' => $s->fecha_limite_respuesta?->toDateString(),
             'respondido_at' => $s->respondido_at?->toIso8601String(),
             'enviado_at' => $s->enviado_at?->toIso8601String(),
+            'rebotes' => $s->rebotes ?? $s->envios()->where('estado', 'rebotado')->count(),
             'actualizado' => $s->updated_at?->toIso8601String(),
         ];
     }

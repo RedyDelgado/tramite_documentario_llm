@@ -4,6 +4,7 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 ## 2026-10-06 — Fase 5
 
+- **Rebotes y respuestas en la ingesta** (`EntregaService`): un aviso DSN (mailer-daemon/postmaster o `multipart/report`) marca `rebotado` el envío cuyo Message-ID cita, con el `Diagnostic-Code`, y no se anexa al expediente (queda como no trámite). Una respuesta se enlaza por In-Reply-To/References con el envío o, si el cliente perdió el hilo, por el código del asunto y el remitente que recibió el envío; detiene el plazo del documento (`respondido_at`).
 - **Envío detrás de `SalidaCorreo`** (como `MailboxDriver`): `gmail` envía el mensaje crudo por la API desde el buzón central con el mismo refresh token (el scope `gmail.modify` permite enviar) y lee el `Message-ID` definitivo, por si Gmail lo reescribe; `mailer` usa el mailer de Laravel (log en desarrollo).
 - **Aprobado, sale solo**: la aprobación crea un envío por destinatario y los encola; con «esperar el PDF firmado», sale al adjuntarlo, y ese PDF reemplaza al generado como versión final. El asunto lleva `[REG-AAAA-NNNNN]` y va con copia oculta al buzón central (7.2).
 - **Ritmo** con `RateLimited('envios')` (`SALIENTES_POR_MINUTO`): como el limitador reencola sin fallar, el job se reintenta por tiempo (24 h), no por número de intentos; agotado, el envío queda `fallido` con el motivo.

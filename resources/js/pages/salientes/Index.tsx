@@ -28,7 +28,17 @@ const columnas: Columna<Saliente>[] = [
             </div>
         ),
     },
-    { clave: 'estado', titulo: 'Estado', ancho: '9rem', celda: (s) => <Badge tono={s.estado.valor === 'enviado' ? 'ok' : 'neutro'}>{s.estado.etiqueta}</Badge> },
+    {
+        clave: 'estado',
+        titulo: 'Estado',
+        ancho: '11rem',
+        celda: (s) => (
+            <span className="flex flex-wrap gap-1">
+                <Badge tono={s.estado.valor === 'enviado' ? 'ok' : 'neutro'}>{s.estado.etiqueta}</Badge>
+                {s.rebotes > 0 && <Badge tono="peligro">{s.rebotes === 1 ? '1 rebote' : `${s.rebotes} rebotes`}</Badge>}
+            </span>
+        ),
+    },
     {
         clave: 'respuesta',
         titulo: 'Respuesta',

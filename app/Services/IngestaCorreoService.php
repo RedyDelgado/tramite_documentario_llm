@@ -29,6 +29,7 @@ class IngestaCorreoService
     public function __construct(
         private readonly LectorEml $lector,
         private readonly TextoDocumentoService $texto,
+        private readonly EntregaService $entregas,
         private readonly AuditoriaService $auditoria,
     ) {}
 
@@ -142,6 +143,12 @@ class IngestaCorreoService
                 'estado' => $expediente->estado->value, 'origen' => 'correo', 'regla_no_tramite' => $regla?->nombre,
             ]);
         }
+        // Lo que vuelve de lo enviado (7.3.4): un rebote marca su envío; una respuesta detiene el plazo del documento.
+        if ($this->entregas->esRebote($mensaje)) {
+            $this->entregas->registrarRebote($mensaje, $correo);
+        } elseif (! $nuevo) {
+            $this->entregas->registrarRespuesta($mensaje, $expediente);
+        }
         $this->auditoria->registrar('correo.ingresado', $correo, despues: [
             'expediente_id' => $expediente->id,
             'message_id' => $messageId,
@@ -152,11 +159,18 @@ class IngestaCorreoService
         return $expediente;
     }
 
-    /** Hilo por In-Reply-To/References y, si no, por el código REG-AAAA-NNNNN del asunto (7.1). */
+    /**
+     * Hilo por In-Reply-To/References (correos recibidos o documentos enviados) y, si no, por el código REG-AAAA-NNNNN
+     * del asunto (7.1, 7.2). Un rebote no se anexa al expediente: queda en su envío (EntregaService).
+     */
     private function expedienteVinculado(MensajeLeido $mensaje): ?Expediente
     {
+        if ($this->entregas->esRebote($mensaje)) {
+            return null;
+        }
         if ($mensaje->enRespuestaA !== []) {
-            $id = Correo::whereIn('message_id', $mensaje->enRespuestaA)->orderBy('id')->value('expediente_id');
+            $id = Correo::whereIn('message_id', $mensaje->enRespuestaA)->orderBy('id')->value('expediente_id')
+                ?? $this->entregas->envioReferido($mensaje)?->saliente?->expediente_id;
             if ($id) {
                 return Expediente::find($id);
             }

@@ -227,6 +227,7 @@ export type Saliente = {
     fecha_limite_respuesta: string | null;
     respondido_at: string | null;
     enviado_at: string | null;
+    rebotes: number;
     actualizado: string | null;
 };
 

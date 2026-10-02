@@ -34,6 +34,7 @@ final class AccionesAuditoria
         'saliente.aprobado' => 'Aprobó y numeró el documento',
         'saliente.enviado' => 'Envió el documento',
         'saliente.firmado_adjunto' => 'Adjuntó el PDF firmado',
+        'saliente.respondido' => 'Llegó la respuesta al documento enviado',
         'expediente.desagrupado' => 'Quitó de la serie',
         'correo.ingresado' => 'Llegó un correo',
         'correo.descargado' => 'Descargó el correo original',
