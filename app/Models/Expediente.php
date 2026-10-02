@@ -21,7 +21,8 @@ use Laravel\Scout\Searchable;
 
 #[Fillable([
     'origen', 'estado', 'asunto', 'remitente_nombre', 'remitente_email', 'remitente_por_confirmar',
-    'fecha_ingreso', 'area_principal_id', 'responsable_id',
+    'fecha_ingreso', 'area_principal_id', 'responsable_id', 'emisor_id', 'tipo_documento_id', 'numero_documento',
+    'numero_documento_original', 'fecha_documento', 'folios', 'motivo_folios', 'requiere_respuesta',
 ])]
 // Con desfase: fecha_ingreso viene del correo, en la zona del remitente (ver Correo).
 #[DateFormat('Y-m-d H:i:sP')]
@@ -106,6 +107,8 @@ class Expediente extends Model
             'requiere_respuesta' => 'boolean',
             'semaforo' => Semaforo::class,
             'fecha_limite' => 'date:Y-m-d',
+            'fecha_documento' => 'date:Y-m-d',
+            'folios' => 'integer',
             'ultimo_movimiento_at' => 'datetime',
             'cierre_solicitado_at' => 'datetime',
             'atendido_at' => 'datetime',

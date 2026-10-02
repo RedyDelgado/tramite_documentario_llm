@@ -4,6 +4,12 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 ## 2026-10-04 — Fase 3
 
+- **Registro de papel en dos pasos**: subir el escaneo (se guarda por hash, se extrae el texto y, si no tiene, se hace OCR síncrono para prellenar) y confirmar el formulario. El escaneo pendiente vive un día en caché con su ruta, tipo, páginas y texto; el registro solo acepta un hash que esté ahí. Un escaneo abandonado queda en el almacén de originales (por hash, sin duplicar).
+- **Extracción por reglas** (`ExtraccionService`): encabezado «TIPO N° número» de la primera página, fecha «12 de agosto de 2026» o dd/mm/aaaa, línea «ASUNTO:» y emisor vigente cuyo nombre aparece en el texto (el más largo). Solo propone; sin IA.
+- **En papel, emisor, tipo, N° y fecha del documento son obligatorios**: sin ellos no hay clave anti-duplicados. El N° se guarda normalizado (mayúsculas, sin tildes, «N°», guiones sin espacios) y tal como venía.
+- **Duplicados**: misma clave de negocio (emisor, tipo, N° normalizado, año del documento) bloquea siempre, con el N° existente y enlace; un índice único parcial (que ignora los anulados) es la última barrera ante dos registros simultáneos. Mismo archivo (SHA-256) o mismo emisor, asunto y fecha avisan y se registran al confirmar.
+- **Folios = páginas del escaneo**; corregirlos exige motivo, que se guarda.
+- **El registro de papel reutiliza `ExpedienteService::confirmar`**: mismo número, mismo bloqueo y misma auditoría que un correo confirmado.
 - **OCR con Tesseract (`spa`) en el servicio de IA**, rasterizando PDF a 300 ppp con `pdftoppm`. El archivo viaja como cuerpo crudo (sin `python-multipart`). Todo local (sección 10).
 - **El OCR se encola desde `Documento::created`**: un PDF sin capa de texto o una imagen pasan por `OcrDocumento`, venga del correo o del registro de papel. El job es idempotente, reintenta durante ~6 h si el servicio de IA está caído y abandona sin reintentar si el servicio no puede leer el archivo. El ingreso nunca espera al OCR (principio 2).
 - **`texto_por_ocr`** marca el texto reconocido (puede tener errores); el texto entra al índice al terminar el OCR.

@@ -134,6 +134,9 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                 ...(e.atendido_at ? [{ etiqueta: 'Atendido', valor: formatearFechaHora(e.atendido_at) }] : []),
                                 { etiqueta: 'Emisor', valor: e.emisor ?? '—' },
                                 { etiqueta: 'Tipo de documento', valor: e.tipo_documento ?? '—' },
+                                ...(e.numero_documento ? [{ etiqueta: 'N° de documento', valor: e.numero_documento }] : []),
+                                ...(e.fecha_documento ? [{ etiqueta: 'Fecha del documento', valor: formatearFecha(e.fecha_documento) }] : []),
+                                ...(e.folios ? [{ etiqueta: 'Folios', valor: e.motivo_folios ? `${e.folios} (${e.motivo_folios})` : e.folios }] : []),
                             ]}
                         />
                     </Card>

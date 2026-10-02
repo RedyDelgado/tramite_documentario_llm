@@ -197,8 +197,7 @@ class IngestaCorreoService
     /** @return array{adjunto: Adjunto, ruta: string, sha256: string, texto: ?string} */
     private function guardarAdjunto(Adjunto $adjunto): array
     {
-        $sha256 = hash('sha256', $adjunto->contenido);
-        $ruta = $this->guardarOriginal('adjuntos/'.substr($sha256, 0, 2).'/'.$sha256, $adjunto->contenido);
+        ['ruta' => $ruta, 'sha256' => $sha256] = Documento::guardarArchivo($adjunto->contenido);
 
         return [
             'adjunto' => $adjunto,

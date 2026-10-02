@@ -9,6 +9,7 @@ use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\InstruccionFrecuenteController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\PlazoAreaController;
+use App\Http\Controllers\RegistroFisicoController;
 use App\Http\Controllers\ReglaDerivacionController;
 use App\Http\Controllers\ReglaNoTramiteController;
 use App\Http\Controllers\ResponsableController;
@@ -84,6 +85,10 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('usuarios', UsuarioController::class)->except(['show', 'destroy']);
     Route::patch('usuarios/{usuario}/estado', [UsuarioController::class, 'cambiarEstado'])->name('usuarios.estado');
+
+    Route::get('registro/nuevo', [RegistroFisicoController::class, 'create'])->name('registro.create');
+    Route::post('registro/prellenar', [RegistroFisicoController::class, 'prellenar'])->name('registro.prellenar');
+    Route::post('registro', [RegistroFisicoController::class, 'store'])->name('registro.store');
 
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');
     Route::get('expedientes/{expediente}', [ExpedienteController::class, 'show'])->name('expedientes.show');

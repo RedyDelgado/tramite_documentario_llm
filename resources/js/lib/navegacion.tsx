@@ -3,6 +3,7 @@ import {
     ArrowRouting20Regular,
     BuildingGovernment20Regular,
     CalendarCancel20Regular,
+    DocumentAdd20Regular,
     DocumentBulletList20Regular,
     DocumentCopy20Regular,
     DocumentText20Regular,
@@ -40,6 +41,7 @@ const NAVEGACION: GrupoNav[] = [
         items: [
             { etiqueta: 'Inicio', href: '/', icono: <Home20Regular /> },
             { etiqueta: 'Expedientes', href: '/expedientes', icono: <DocumentBulletList20Regular />, permisos: PERMISOS_EXPEDIENTES },
+            { etiqueta: 'Registrar papel', href: '/registro/nuevo', icono: <DocumentAdd20Regular />, permisos: ['expedientes.registrar'] },
         ],
     },
     {

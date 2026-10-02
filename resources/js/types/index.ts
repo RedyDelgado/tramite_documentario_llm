@@ -73,6 +73,10 @@ export type ExpedienteDetalle = ExpedienteFila & {
     responsable: string | null;
     emisor: string | null;
     tipo_documento: string | null;
+    numero_documento: string | null;
+    fecha_documento: string | null;
+    folios: number | null;
+    motivo_folios: string | null;
     tipo_tramite_id: number | null;
     tipo_tramite: string | null;
     area_principal_id: number | null;

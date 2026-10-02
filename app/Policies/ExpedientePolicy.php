@@ -19,6 +19,12 @@ class ExpedientePolicy
         return Expediente::whereKey($expediente->id)->visiblesPara($user)->exists();
     }
 
+    /** Registrar un documento en papel (7.3). */
+    public function create(User $user): bool
+    {
+        return $user->can('expedientes.registrar');
+    }
+
     /** Confirmar como trámite, marcar como no trámite o anular. */
     public function registrar(User $user, Expediente $expediente): bool
     {
