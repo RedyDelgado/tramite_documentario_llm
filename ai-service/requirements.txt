@@ -1,2 +1,9 @@
 fastapi==0.118.*
 uvicorn==0.37.*
+# Torch solo CPU: el servidor no tiene GPU y la rueda con CUDA pesa varios GB.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4,<3
+sentence-transformers>=3,<6
+scikit-learn>=1.5,<2
+joblib
+numpy

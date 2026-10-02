@@ -108,6 +108,8 @@ services:
       dockerfile: ../docker/ai/Dockerfile
     environment:
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
+    volumes:
+      - modelos_ia:/srv/models
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 10s
@@ -128,3 +130,4 @@ volumes:
   meili_data:
   clamav_data:
   node_modules:
+  modelos_ia:
