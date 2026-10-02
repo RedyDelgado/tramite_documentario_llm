@@ -131,6 +131,21 @@ class IngestaCorreoTest extends TestCase
         $this->assertSame(EstadoExpediente::Historico, $this->ingresar('antiguo')->estado);
     }
 
+    public function test_la_fecha_del_correo_conserva_el_instante_cualquiera_sea_su_zona_horaria(): void
+    {
+        $lima = $this->ingresar('respuesta-con-codigo');
+        $utc = $this->ingesta->procesar(str_replace(
+            ['Sun, 04 Oct 2026 08:30:00 -0500', 'respuesta-con-codigo@'],
+            ['Sun, 04 Oct 2026 13:30:00 +0000', 'mismo-instante-en-utc@'],
+            $this->eml('respuesta-con-codigo'),
+        ));
+
+        // 08:30 en Lima y 13:30 UTC son el mismo instante.
+        $this->assertSame('2026-10-04 13:30:00', $lima->fresh()->fecha_ingreso->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-04 13:30:00', $utc->fresh()->fecha_ingreso->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-04 08:30', Correo::orderBy('id')->first()->fresh()->fecha->setTimezone('America/Lima')->format('Y-m-d H:i'));
+    }
+
     public function test_el_ingreso_queda_auditado_con_los_hashes(): void
     {
         $expediente = $this->ingresar('oficio-con-pdf');

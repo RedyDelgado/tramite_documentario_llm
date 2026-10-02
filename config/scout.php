@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Expediente;
+
 return [
 
     /*
@@ -55,7 +57,8 @@ return [
     |
     */
 
-    'after_commit' => false,
+    // El índice se actualiza tras el commit: el expediente ya trae sus correos y documentos.
+    'after_commit' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -139,16 +142,14 @@ return [
     'meilisearch' => [
         'host' => env('MEILISEARCH_HOST', 'http://localhost:7700'),
         'key' => env('MEILISEARCH_KEY'),
+        // Aplicar con `php artisan scout:sync-index-settings` tras cambiarlos (7.4).
         'index-settings' => [
-            // 'users' => [
-            //     'filterableAttributes' => ['id', 'name', 'email'],
-            //     'embedders' => [
-            //         'default' => [
-            //             'source' => 'userProvided',
-            //             'dimensions' => 1536,
-            //         ],
-            //     ],
-            // ],
+            Expediente::class => [
+                'searchableAttributes' => ['codigo', 'numero_registro', 'asunto', 'remitente_nombre', 'remitente_email', 'texto'],
+                // visible_para: filtro de permisos dentro de Meilisearch (área o responsable).
+                'filterableAttributes' => ['estado', 'visible_para'],
+                'sortableAttributes' => ['fecha_ingreso'],
+            ],
         ],
         'model-settings' => [
             // User::class => [

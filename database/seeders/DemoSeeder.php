@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Area;
+use App\Models\AreaResponsable;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
 
@@ -36,6 +38,16 @@ class DemoSeeder extends Seeder
             'parent_id' => $direccion->id,
             'orden' => 1,
         ]);
+
+        // Un usuario por rol para el acceso de desarrollo; el coordinador es titular de la escuela.
+        foreach (['director' => 'Directora de prueba', 'administrativo' => 'Administrativo de prueba', 'coordinador' => 'Coordinador de prueba'] as $rol => $nombre) {
+            $usuario = User::firstOrCreate(['email' => "{$rol}@demo.example"], ['name' => $nombre]);
+            $usuario->syncRoles([$rol]);
+        }
+        AreaResponsable::firstOrCreate(
+            ['area_id' => $escuela->id, 'user_id' => User::where('email', 'coordinador@demo.example')->value('id')],
+            ['tipo' => 'titular', 'vigente_desde' => today()->startOfYear()],
+        );
 
         // Buzón de prueba con los correos ficticios de los tests: `php artisan correo:importar`.
         File::copyDirectory(base_path('tests/fixtures/correos'), config('tramite.correo.directorio'));

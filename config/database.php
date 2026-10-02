@@ -97,6 +97,8 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Misma zona que la app: Laravel escribe fechas sin desfase y PostgreSQL las interpreta en esta zona.
+            'timezone' => env('DB_TIMEZONE', env('APP_TIMEZONE', 'America/Lima')),
         ],
 
         'sqlsrv' => [

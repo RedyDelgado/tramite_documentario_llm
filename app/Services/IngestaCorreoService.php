@@ -73,7 +73,11 @@ class IngestaCorreoService
         $adjuntos = array_map($this->guardarAdjunto(...), $mensaje->adjuntos);
 
         try {
-            return DB::transaction(fn () => $this->registrar($mensaje, $messageId, $uidExterno, $fecha, $rutaEml, $hash, $adjuntos));
+            $expediente = DB::transaction(fn () => $this->registrar($mensaje, $messageId, $uidExterno, $fecha, $rutaEml, $hash, $adjuntos));
+            // Un correo anexado no toca la fila del expediente: se reindexa a mano para buscar su texto.
+            $expediente->searchable();
+
+            return $expediente;
         } catch (UniqueConstraintViolationException) {
             // Otro proceso ingresó el mismo mensaje al mismo tiempo.
             return Correo::where('message_id', $messageId)->firstOrFail()->expediente;

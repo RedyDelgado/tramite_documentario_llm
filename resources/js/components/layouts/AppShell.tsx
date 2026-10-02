@@ -7,7 +7,7 @@ import { Menu } from '@/components/ui/Menu';
 import { Toaster } from '@/components/ui/Toaster';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
-import { esActiva, navegacionVisible, type ItemNav } from '@/lib/navegacion';
+import { esActiva, navegacionVisible, PERMISOS_EXPEDIENTES, tieneAlguno, type ItemNav } from '@/lib/navegacion';
 
 const CLAVE_COLAPSADA = 'navegacion-colapsada';
 
@@ -77,14 +77,29 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link href="/" className="shrink-0 rounded-control px-1 text-md font-semibold text-fg">
                     {props.app.nombre}
                 </Link>
-                <div className="mx-auto hidden w-full max-w-xl md:block">
-                    <Input
-                        iconoInicio={<Search20Regular />}
-                        aria-label="Búsqueda global"
-                        placeholder="Buscar expedientes (disponible en la fase 1)"
-                        disabled
-                    />
-                </div>
+                {tieneAlguno(props.auth.can, PERMISOS_EXPEDIENTES) ? (
+                    <form
+                        role="search"
+                        className="mx-auto hidden w-full max-w-xl md:block"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            const q = new FormData(e.currentTarget).get('q')?.toString().trim();
+                            router.get('/expedientes', q ? { q } : {});
+                        }}
+                    >
+                        <Input
+                            key={url}
+                            name="q"
+                            type="search"
+                            iconoInicio={<Search20Regular />}
+                            aria-label="Buscar expedientes"
+                            placeholder="Buscar por asunto, remitente, código o texto de los documentos"
+                            defaultValue={new URLSearchParams(url.split('?')[1] ?? '').get('q') ?? ''}
+                        />
+                    </form>
+                ) : (
+                    <div className="mx-auto" />
+                )}
                 {usuario && (
                     <div className="ml-auto md:ml-0">
                         <Menu

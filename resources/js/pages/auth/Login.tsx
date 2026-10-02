@@ -2,12 +2,19 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 
-export default function Login() {
-    const { app } = usePage().props;
-    const [entrando, setEntrando] = useState(false);
+const ROLES: Record<string, string> = {
+    superadmin: 'Superadmin',
+    director: 'Director',
+    administrativo: 'Administrativo',
+    coordinador: 'Coordinador',
+};
 
-    const entrarDesarrollo = () =>
-        router.post('/dev/entrar', {}, { onStart: () => setEntrando(true), onFinish: () => setEntrando(false) });
+export default function Login({ rolesDesarrollo }: { rolesDesarrollo: string[] }) {
+    const { app } = usePage().props;
+    const [entrando, setEntrando] = useState<string | null>(null);
+
+    const entrar = (rol: string) =>
+        router.post('/dev/entrar', { rol }, { onStart: () => setEntrando(rol), onFinish: () => setEntrando(null) });
 
     return (
         <>
@@ -22,11 +29,16 @@ export default function Login() {
                     </Button>
                     <p className="mt-2 text-sm text-fg-muted">El inicio de sesión con Google se habilita en la fase 2.</p>
 
-                    {app.local && (
+                    {rolesDesarrollo.length > 0 && (
                         <div className="mt-6 border-t border-border pt-4">
-                            <Button className="w-full" cargando={entrando} onClick={entrarDesarrollo}>
-                                Entrar como superadmin (solo desarrollo)
-                            </Button>
+                            <p className="mb-2 text-sm font-semibold text-fg-muted">Solo desarrollo: entrar como</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                {rolesDesarrollo.map((rol) => (
+                                    <Button key={rol} cargando={entrando === rol} disabled={entrando !== null} onClick={() => entrar(rol)}>
+                                        {ROLES[rol] ?? rol}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </section>

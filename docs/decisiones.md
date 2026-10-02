@@ -2,6 +2,18 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-02 — Fase 1
+
+- **Un solo campo `estado`** (incluye `por_revisar`, `no_tramite`, `historico`); no se creó `clasificacion_tramite` aparte porque duplicaba la misma información.
+- **Numeración con `UPDATE secuencias … RETURNING`** dentro de la transacción que confirma: bloquea la fila igual que `SELECT … FOR UPDATE` y un rollback devuelve el número. Probado con 8 procesos reales (`pcntl_fork`); el test falla si se quita el bloqueo.
+- **Todo correo nuevo entra como `por_revisar`** (o `no_tramite` por regla, o `historico` si es anterior a `CORREO_INICIO_OPERACION`). El número se asigna al confirmarlo como trámite.
+- **Driver de buzón en carpeta** (`CORREO_DRIVER=directorio`) para desarrollo y tests; marca lo procesado con `.procesado` sin mover el `.eml`. El de Gmail va detrás de la misma interfaz.
+- **MIME con `zbateson/mail-mime-parser`; texto de PDF con `pdftotext`** (poppler en la imagen). La extracción no depende del servicio de IA (principio 2).
+- **Permisos dentro de Meilisearch**: cada documento lleva `visible_para` (`area:N`, `usuario:N`) y la búsqueda filtra con `whereIn`; el scope `visiblesPara` en la base es la segunda barrera. Un test contra Meilisearch real verifica el total que informa el índice, no solo las filas.
+- **Fechas `timestamptz`**: la sesión de PostgreSQL usa `America/Lima` y los modelos con fechas externas (`Correo`, `Expediente`) escriben con desfase (`#[DateFormat('Y-m-d H:i:sP')]`). Sin esto, un correo de las 08:30 −05:00 se guardaba como 08:30 UTC.
+- **Consultar un expediente queda auditado** (`expediente.consultado`), pero no se muestra en la línea de tiempo para no llenarla.
+- **Pendiente para el despliegue**: rol de base de datos de la aplicación con solo `INSERT`/`SELECT` sobre `auditoria` (hoy la protegen el trigger y la cadena de hashes) y análisis de adjuntos con ClamAV (perfil `clamav`, apagado).
+
 ## 2026-10-01 — Fase 0
 
 - **Inertia en vez de API REST + SPA separada.** Una sola app: sesión, CSRF, Policies y (fase 2) Socialite de Laravel sin CORS ni Sanctum.

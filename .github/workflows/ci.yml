@@ -19,8 +19,16 @@ jobs:
           --health-cmd "pg_isready -U tramite"
           --health-interval 5s
           --health-retries 12
+      meilisearch:
+        image: getmeili/meilisearch:v1.16
+        env:
+          MEILI_MASTER_KEY: tramite-ci-clave-maestra
+          MEILI_NO_ANALYTICS: "true"
+        ports: ["7700:7700"]
     env:
       DB_HOST: 127.0.0.1
+      MEILISEARCH_HOST: http://127.0.0.1:7700
+      MEILISEARCH_KEY: tramite-ci-clave-maestra
       DB_USERNAME: tramite
       DB_PASSWORD: tramite-ci
     steps:
@@ -30,6 +38,7 @@ jobs:
           php-version: "8.4"
           extensions: pdo_pgsql, redis, intl, pcntl
           coverage: none
+      - run: sudo apt-get install -y poppler-utils
       - run: composer install --no-interaction --no-progress
       - run: cp .env.example .env && php artisan key:generate
       - run: vendor/bin/pint --test
