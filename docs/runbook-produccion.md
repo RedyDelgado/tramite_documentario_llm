@@ -34,7 +34,7 @@ Editar `.env` (nunca va al repositorio):
 | `DB_DUENO_PASSWORD`, `DB_PASSWORD`, `REDIS_PASSWORD`, `MEILISEARCH_KEY`, `AI_SERVICE_TOKEN` | Una clave distinta para cada una: `openssl rand -hex 24` |
 | `GOOGLE_DOMINIO`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Del runbook de inicio de sesión |
 | `SUPERADMIN_EMAIL` | Cuenta institucional de quien administra el sistema |
-| `REGISTRO_INICIO_NUMERO` | Siguiente número del registro en papel (pendiente 9) |
+| `REGISTRO_INICIO_NUMERO` | Valor por defecto del primer número del registro (38). El que vale se fija en el panel: **Configuración → Numeración** |
 | `MAIL_MAILER` | `log` hasta tener el buzón autorizado; después `gmail` (el resumen diario y los avisos salen por la cuenta del buzón central, sin SMTP) |
 | `MAIL_FROM_ADDRESS` | La cuenta del buzón central |
 | `RESPALDO_CLAVE` | `openssl rand -base64 32`: cifra los respaldos. Guárdala con la copia del `.env`; sin ella, los respaldos no se pueden leer |
@@ -72,8 +72,9 @@ Desde el panel, en este orden:
 2. **Usuarios**: solo quienes participan: director, administrativo de mesa de partes y coordinador del área piloto. Después, **Responsables**: el coordinador como titular del área.
 3. **Tipos de trámite**, **Plazos por área** y **Feriados** del año.
 4. **Tipos de documento** (quién aprueba la salida), **Plantillas**, **Emisores** frecuentes, **Instrucciones** y **Ubicaciones físicas**.
-5. **Inteligencia artificial**: dejarla en **modo sombra** durante el piloto (es el valor inicial). Propone sin actuar, y así se mide su acierto con las decisiones reales.
-6. **Trámites que ya estaban en curso** (no se importa el registro en papel): a medida que se muevan, el administrativo los registra en **Registrar papel** marcando «Ya estaba en el registro en papel», con su N° del cuaderno (del 1 al 37 en 2026) y su fecha real de ingreso. Conservan su número y su plazo corre desde esa fecha; lo nuevo se numera desde el N°00038.
+5. **Numeración**: el siguiente número del registro (continuando el cuaderno en papel) y, por cada tipo y área, el de los documentos emitidos (por ejemplo, el siguiente oficio de la dirección). Se fija antes de registrar el primer documento: mientras el sistema no haya emitido ninguno, ese número marca también hasta dónde llega el papel para los trámites en curso.
+6. **Inteligencia artificial**: dejarla en **modo sombra** durante el piloto (es el valor inicial). Propone sin actuar, y así se mide su acierto con las decisiones reales.
+7. **Trámites que ya estaban en curso** (no se importa el registro en papel): a medida que se muevan, el administrativo los registra en **Registrar papel** marcando «Ya estaba en el registro en papel», con su N° del cuaderno (del 1 al 37 en 2026) y su fecha real de ingreso. Conservan su número y su plazo corre desde esa fecha; lo nuevo se numera desde el N°00038.
 
 ## 3. Conectar el buzón (solo con la autorización escrita)
 

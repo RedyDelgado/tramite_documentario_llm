@@ -9,6 +9,7 @@ use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\IaController;
 use App\Http\Controllers\InstruccionFrecuenteController;
 use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\NumeracionController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\OriginalFisicoController;
 use App\Http\Controllers\PlantillaController;
@@ -79,6 +80,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('tipos-tramite/{tipo}/estado', [TipoTramiteController::class, 'cambiarEstado'])->name('tipos-tramite.estado');
     Route::resource('plazos', PlazoAreaController::class)->except(['show']);
     Route::resource('feriados', FeriadoController::class)->except(['show']);
+    Route::get('numeracion', [NumeracionController::class, 'index'])->name('numeracion.index');
+    Route::get('numeracion/ajustar', [NumeracionController::class, 'create'])->name('numeracion.create');
+    Route::post('numeracion', [NumeracionController::class, 'store'])->name('numeracion.store');
     Route::resource('reglas-derivacion', ReglaDerivacionController::class)->parameters(['reglas-derivacion' => 'regla'])->except(['show', 'destroy']);
     Route::patch('reglas-derivacion/{regla}/estado', [ReglaDerivacionController::class, 'cambiarEstado'])->name('reglas-derivacion.estado');
     Route::post('emisores/rapido', [EmisorController::class, 'rapido'])->name('emisores.rapido');

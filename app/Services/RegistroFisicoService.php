@@ -148,7 +148,7 @@ class RegistroFisicoService
     /** Último número del registro en papel del año: los trámites en curso usan del 1 hasta aquí; el sistema sigue desde el siguiente. */
     public static function ultimoNumeroEnPapel(): int
     {
-        return (int) (config('tramite.secuencias_inicio.registro.'.now()->year) ?? 1) - 1;
+        return app(SecuenciaService::class)->inicio('registro', now()->year) - 1;
     }
 
     /** Clave de negocio: bloquea. Mismo archivo o mismo emisor, asunto y fecha: avisa hasta que se confirme. */

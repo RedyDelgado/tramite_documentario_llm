@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Exceptions\ReglaDeNegocio;
+use App\Models\Area;
 use App\Models\Documento;
 use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
 use App\Models\PlantillaDocumento;
+use App\Models\TipoDocumento;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -93,7 +95,7 @@ class SalienteService
             $saliente->forceFill([
                 'anio' => $anio,
                 'secuencia' => $secuencia,
-                'numero' => $this->formatear($saliente, $secuencia, $anio),
+                'numero' => $this->formatear($saliente->tipoDocumento, $saliente->area, $secuencia, $anio),
                 'estado' => 'aprobado',
                 'aprobado_por' => $aprobador->id,
                 'aprobado_at' => now(),
@@ -118,13 +120,13 @@ class SalienteService
     }
 
     /** «OFICIO N.º 012-2026-DGA»: formato del tipo de documento (5.1, 7.3.4). */
-    public function formatear(DocumentoSaliente $s, int $secuencia, int $anio): string
+    public function formatear(TipoDocumento $tipo, Area $area, int $secuencia, int $anio): string
     {
-        $siglas = $s->area->siglas ?: Str::of($s->area->nombre)->ascii()->upper()->explode(' ')
+        $siglas = $area->siglas ?: Str::of($area->nombre)->ascii()->upper()->explode(' ')
             ->filter(fn ($p) => mb_strlen($p) > 2)->map(fn ($p) => $p[0])->implode('');
 
-        return strtr($s->tipoDocumento->formato_numero, [
-            '{TIPO}' => Str::upper($s->tipoDocumento->nombre),
+        return strtr($tipo->formato_numero, [
+            '{TIPO}' => Str::upper($tipo->nombre),
             '{NUMERO}' => sprintf('%03d', $secuencia),
             '{ANIO}' => (string) $anio,
             '{AREA}' => $siglas,

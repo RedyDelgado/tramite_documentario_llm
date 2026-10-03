@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-08 — Numeración desde el panel (pendiente 9)
+
+- **Decisión del usuario: el administrador fija con qué número continúa cada correlativo.** Pantalla Configuración → Numeración (permiso `configuracion.gestionar`): el registro de documentos recibidos y un correlativo por tipo y área de documentos emitidos, por año (el actual y el siguiente). Muestra el último usado, el siguiente y cómo saldrá (`N°00120`, `OFICIO N.º 045-2026-DGA`).
+- **Nunca hacia atrás**: el siguiente debe ser mayor que el número más alto ya puesto en la serie, incluidos los trámites en curso que conservaron el suyo. Se comprueba con la fila de `secuencias` bloqueada, así que nadie numera entre la comprobación y el ajuste. Saltar hacia adelante sí se permite y deja el hueco (lo decide el administrador, y queda en la auditoría como `numeracion.ajustada` con antes y después).
+- **`secuencias.inicio`**: el primer número que emitió o emitirá el sistema en el año. Mientras no haya emitido ninguno, el ajuste lo mueve; así fija también hasta dónde llega el registro en papel para los trámites en curso (del 1 al inicio − 1). Después de emitir, un salto ya no lo cambia. `REGISTRO_INICIO_NUMERO` y `secuencias_inicio` quedan como valor por defecto si nadie ajusta.
+- Lo que se mostraba antes («el valor inicial sigue en `config/tramite.php`; no hizo falta editarlo desde el panel», fase 5) queda reemplazado.
+
 ## 2026-10-08 — Sin importación: trámites en curso del registro en papel (pendiente 10)
 
 - **Decisión del usuario: no se importa el Excel 2026.** El sistema empieza vacío; los trámites que siguen en curso se registran cuando se mueven.
