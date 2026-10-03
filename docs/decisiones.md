@@ -2,6 +2,12 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-08 — Estado de entrega del resumen diario
+
+- **`notificaciones_enviadas`** (modelo de datos, sección 6): cada resumen diario se registra al encolarse con un Message-ID propio (`resumen-<uuid>@<dominio>`, vía `Headers` del Mailable). Queda **enviado** al dispararse `MessageSent` (el correo salió del transporte), **fallido** si la cola agota los intentos (`failed()` del Mailable) y **rebotado** si un DSN cita ese Message-ID (`EntregaService`, el mismo mecanismo de los documentos emitidos, ahora con `idsReferidos()` compartido).
+- **Pantalla «Notificaciones»** (Sistema, permiso `configuracion.gestionar`): fecha, destinatario, tipo, cuántos expedientes, estado y motivo. Sin el contenido de los trámites, así que el superadmin puede verla (5).
+- **Límite conocido**: si Gmail reescribiera el Message-ID al enviar por la API, un rebote no se enlazaría y la notificación quedaría «enviado». Los envíos de documentos leen el Message-ID definitivo; para el resumen no se hizo, porque Gmail conserva el que trae el mensaje. Se agrega si aparece el caso.
+
 ## 2026-10-07 — Respaldos cifrados e incrementales
 
 - **Cifrado con libsodium** (`secretstream xchacha20poly1305`, viene con PHP): autenticado y por trozos de 1 MB, así que no carga archivos grandes en memoria, y un archivo alterado, recortado o con otra clave falla al descifrar. Se eligió frente a `openssl enc`, que no autentica. La clave es `RESPALDO_CLAVE` (32 bytes en base64), aparte de `APP_KEY`: si un día se rota `APP_KEY`, los respaldos siguen legibles. Sin clave no se cifra (desarrollo, CI).

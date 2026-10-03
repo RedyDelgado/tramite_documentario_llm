@@ -91,7 +91,7 @@ Desde el panel, en este orden:
 ## 4. Durante el piloto
 
 - **Cada mañana**: debe existir el respaldo de la madrugada y haberse copiado fuera del servidor ([runbook](runbook-respaldos.md)).
-- **Cada semana**: revisar Horizon (`/horizon`, solo superadmin), en especial los trabajos fallidos.
+- **Cada semana**: revisar Horizon (`/horizon`, solo superadmin), en especial los trabajos fallidos, y **Notificaciones**: un resumen diario rebotado o fallido es un coordinador que no recibe sus pendientes (dirección mal escrita o cuenta dada de baja).
 - **Al cierre** (sección 16, punto 7): adopción («Respondidos desde el sistema»), tiempo de atención y semáforos en **Inicio**; acierto y correcciones de la IA en **Inteligencia artificial**. Entra como director para verlos completos: cada rol ve solo lo suyo.
 
 ## Actualizar a una versión nueva

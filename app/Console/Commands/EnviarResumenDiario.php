@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\EstadoExpediente;
 use App\Mail\ResumenDiario;
 use App\Models\Expediente;
+use App\Models\NotificacionEnviada;
 use App\Models\User;
 use App\Services\AuditoriaService;
 use Illuminate\Console\Attributes\Description;
@@ -37,10 +38,18 @@ class EnviarResumenDiario extends Command
                 return;
             }
 
-            Mail::to($coordinador)->queue(new ResumenDiario($coordinador, $expedientes));
+            $notificacion = NotificacionEnviada::create([
+                'user_id' => $coordinador->id,
+                'email' => $coordinador->email,
+                'tipo' => 'resumen_diario',
+                'expedientes' => $expedientes->pluck('id')->all(),
+                'message_id' => NotificacionEnviada::nuevoMessageId('resumen'),
+            ]);
+            Mail::to($coordinador)->queue(new ResumenDiario($coordinador, $expedientes, $notificacion));
             $auditoria->registrar('notificacion.resumen_diario', $coordinador, despues: [
                 'destinatario' => $coordinador->email,
                 'expedientes' => $expedientes->pluck('id')->all(),
+                'notificacion_id' => $notificacion->id,
             ]);
             $enviados++;
         });

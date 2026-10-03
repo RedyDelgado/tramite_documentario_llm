@@ -8,6 +8,7 @@ use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\IaController;
 use App\Http\Controllers\InstruccionFrecuenteController;
+use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OriginalController;
 use App\Http\Controllers\OriginalFisicoController;
 use App\Http\Controllers\PlantillaController;
@@ -130,6 +131,8 @@ Route::middleware('auth')->group(function () {
     Route::post('expedientes/{expediente}/comentar', [AtencionController::class, 'comentar'])->name('expedientes.comentar');
     Route::post('expedientes/{expediente}/solicitar-cierre', [AtencionController::class, 'solicitarCierre'])->name('expedientes.solicitar-cierre');
     Route::post('expedientes/{expediente}/resolver-cierre', [AtencionController::class, 'resolverCierre'])->name('expedientes.resolver-cierre');
+
+    Route::get('notificaciones', [NotificacionController::class, 'index'])->name('notificaciones.index');
 
     Route::get('documentos/{documento}/descargar', [OriginalController::class, 'documento'])->name('documentos.descargar');
     Route::get('correos/{correo}/eml', [OriginalController::class, 'correo'])->name('correos.eml');

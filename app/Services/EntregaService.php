@@ -6,6 +6,7 @@ use App\Correo\MensajeLeido;
 use App\Models\Correo;
 use App\Models\Envio;
 use App\Models\Expediente;
+use App\Models\NotificacionEnviada;
 use Illuminate\Support\Str;
 
 /** Lo que vuelve al buzón central de lo enviado (7.2, 7.3.4): rebotes y respuestas, ligados a su envío por Message-ID. */
@@ -23,6 +24,14 @@ class EntregaService
     /** El envío al que responde o del que avisa el mensaje: por In-Reply-To/References y, en un rebote, por el Message-ID citado. */
     public function envioReferido(MensajeLeido $m): ?Envio
     {
+        $ids = $this->idsReferidos($m);
+
+        return $ids === [] ? null : Envio::whereIn('message_id', $ids)->with('saliente')->orderBy('id')->first();
+    }
+
+    /** @return list<string> Message-IDs que el mensaje cita: los de su hilo y, si es un rebote, el del mensaje que no llegó */
+    private function idsReferidos(MensajeLeido $m): array
+    {
         $ids = $m->enRespuestaA;
         if ($this->esRebote($m)) {
             $texto = $m->cuerpo."\n".implode("\n", array_map(fn ($a) => str_starts_with($a->mime, 'message/') || str_starts_with($a->mime, 'text/') ? $a->contenido : '', $m->adjuntos));
@@ -30,18 +39,26 @@ class EntregaService
             $ids = [...$ids, ...$citados[1]];
         }
 
-        return $ids === [] ? null : Envio::whereIn('message_id', $ids)->with('saliente')->orderBy('id')->first();
+        return $ids;
     }
 
     /** Rebote: el envío queda `rebotado`, visible en el documento, con el diagnóstico del servidor. */
     public function registrarRebote(MensajeLeido $m, Correo $correo): ?Envio
     {
+        preg_match('/^Diagnostic-Code:\s*(.+)$/mi', $m->cuerpo."\n".implode("\n", array_map(fn ($a) => str_starts_with($a->mime, 'message/') ? $a->contenido : '', $m->adjuntos)), $diagnostico);
+        $detalle = Str::limit(trim($diagnostico[1] ?? strtok($m->cuerpo, "\n") ?: $m->asunto), 500);
+
+        // Un aviso del sistema (resumen diario) que no llegó: queda rebotado, visible para quien administra.
+        $notificacion = NotificacionEnviada::whereIn('message_id', $this->idsReferidos($m))->where('estado', '!=', 'rebotado')->first();
+        if ($notificacion) {
+            $notificacion->forceFill(['estado' => 'rebotado', 'rebotado_at' => now(), 'detalle' => $detalle])->save();
+            $this->auditoria->registrar('notificacion.rebotada', $notificacion, despues: ['email' => $notificacion->email, 'correo_id' => $correo->id, 'detalle' => $detalle]);
+        }
+
         $envio = $this->envioReferido($m);
         if (! $envio || $envio->estado === 'rebotado') {
             return $envio;
         }
-        preg_match('/^Diagnostic-Code:\s*(.+)$/mi', $m->cuerpo."\n".implode("\n", array_map(fn ($a) => str_starts_with($a->mime, 'message/') ? $a->contenido : '', $m->adjuntos)), $diagnostico);
-        $detalle = Str::limit(trim($diagnostico[1] ?? strtok($m->cuerpo, "\n") ?: $m->asunto), 500);
 
         $envio->forceFill(['estado' => 'rebotado', 'rebotado_at' => now(), 'detalle' => $detalle])->save();
         $this->auditoria->registrar('envio.rebotado', $envio, despues: ['email' => $envio->email, 'correo_id' => $correo->id, 'detalle' => $detalle]);

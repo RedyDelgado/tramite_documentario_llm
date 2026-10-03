@@ -11,6 +11,7 @@ import {
     DocumentText20Regular,
     Gauge20Regular,
     Home20Regular,
+    MailAlert20Regular,
     MailProhibited20Regular,
     Organization20Regular,
     People20Regular,
@@ -76,6 +77,7 @@ const NAVEGACION: GrupoNav[] = [
     {
         titulo: 'Sistema',
         items: [
+            { etiqueta: 'Notificaciones', href: '/notificaciones', icono: <MailAlert20Regular />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Colas (Horizon)', href: '/horizon', icono: <Gauge20Regular />, rol: 'superadmin', externo: true },
             { etiqueta: 'Componentes', href: '/ui', icono: <Apps20Regular />, soloLocal: true },
         ],

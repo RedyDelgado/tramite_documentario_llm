@@ -9,7 +9,10 @@ use App\Correo\GmailTransport;
 use App\Correo\MailboxDriver;
 use App\Correo\MailerSalidaCorreo;
 use App\Correo\SalidaCorreo;
+use App\Models\NotificacionEnviada;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -38,5 +41,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('envios', fn () => Limit::perMinute(config('tramite.salientes.por_minuto')));
 
         Mail::extend('gmail', fn () => new GmailTransport(new GmailMailboxDriver(config('tramite.correo.gmail'))));
+
+        // Salió del transporte: la notificación con ese Message-ID queda enviada (un rebote posterior la corrige).
+        Event::listen(function (MessageSent $evento) {
+            $id = trim((string) $evento->message->getHeaders()->get('Message-ID')?->getBodyAsString(), '<>');
+            NotificacionEnviada::where('message_id', $id)->where('estado', '!=', 'rebotado')
+                ->update(['estado' => 'enviado', 'enviado_at' => now(), 'detalle' => null]);
+        });
     }
 }
