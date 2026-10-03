@@ -140,7 +140,7 @@ class ExpedienteController extends Controller
                     'agrupar' => $agrupable,
                     // Responder desde el sistema (7.2): solo lo registrado y aún sin cerrar.
                     'redactar' => $expediente->codigo !== null && ! in_array($expediente->estado, [EstadoExpediente::Anulado, EstadoExpediente::Cerrado], true)
-                        && $user->can('create', DocumentoSaliente::class),
+                        && $user->can('create', DocumentoSaliente::class) && $user->can('responder', $expediente),
                 ],
                 'serie' => $expediente->grupo ? [
                     'id' => $expediente->grupo->id,

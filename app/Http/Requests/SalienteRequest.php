@@ -59,6 +59,10 @@ class SalienteRequest extends FormRequest
                 if ($this->boolean('es_respuesta') && ! $expediente) {
                     $validator->errors()->add('es_respuesta', 'Una respuesta necesita el expediente al que responde.');
                 }
+                // Enviada, la respuesta deja el trámite atendido: no la emite un área que solo lo tiene en copia.
+                if ($this->boolean('es_respuesta') && $expediente && $this->user()->can('view', $expediente) && ! $this->user()->can('responder', $expediente)) {
+                    $validator->errors()->add('es_respuesta', 'Solo quien atiende este trámite puede responderlo. Desde una copia, emite el documento sin marcarlo como respuesta.');
+                }
             },
         ];
     }

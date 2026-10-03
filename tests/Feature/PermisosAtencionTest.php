@@ -89,6 +89,19 @@ class PermisosAtencionTest extends TestCase
         $this->assertFalse($director->can('atender', $this->expediente));
     }
 
+    public function test_el_titular_de_un_area_la_atiende_sea_cual_sea_su_rol(): void
+    {
+        // El director como titular de Dirección: atiende lo derivado a Dirección, no lo de sus áreas dependientes.
+        $direccion = Area::factory()->create();
+        $this->escuela->update(['parent_id' => $direccion->id]);
+        $director = $this->rol('director');
+        AreaResponsable::create(['area_id' => $direccion->id, 'user_id' => $director->id, 'tipo' => 'titular', 'vigente_desde' => '2026-01-01']);
+        $deDireccion = Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'area_principal_id' => $direccion->id]);
+
+        $this->assertTrue($director->can('atender', $deDireccion));
+        $this->assertFalse($director->can('atender', $this->expediente));
+    }
+
     public function test_el_superadmin_no_ve_ni_atiende_tramites(): void
     {
         $superadmin = $this->rol('superadmin');

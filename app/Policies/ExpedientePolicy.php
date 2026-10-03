@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\AreaResponsable;
 use App\Models\Expediente;
 use App\Models\Movimiento;
 use App\Models\User;
@@ -55,6 +56,12 @@ class ExpedientePolicy
         return $expediente->responsable_id === $user->id || $this->coordinaElArea($user, $expediente);
     }
 
+    /** Responder (lo que deja el trámite atendido): quien lo atiende, deriva o registra; un área en copia no. */
+    public function responder(User $user, Expediente $expediente): bool
+    {
+        return $this->atender($user, $expediente) || $this->derivar($user, $expediente) || $this->registrar($user, $expediente);
+    }
+
     public function comentar(User $user, Expediente $expediente): bool
     {
         return $this->atender($user, $expediente) || $this->derivar($user, $expediente);
@@ -76,10 +83,19 @@ class ExpedientePolicy
             };
     }
 
+    /**
+     * Titular o suplente vigente del área misma, sea cual sea su rol (el director en Dirección); quien coordina,
+     * además, las áreas que dependen de las suyas.
+     */
     private function coordinaElArea(User $user, Expediente $expediente): bool
     {
-        return $expediente->area_principal_id !== null
-            && $user->can('expedientes.ver_areas')
-            && in_array($expediente->area_principal_id, $user->areasVigentes(), true);
+        if ($expediente->area_principal_id === null) {
+            return false;
+        }
+        if (AreaResponsable::where('area_id', $expediente->area_principal_id)->where('user_id', $user->id)->vigentes()->exists()) {
+            return true;
+        }
+
+        return $user->can('expedientes.ver_areas') && in_array($expediente->area_principal_id, $user->areasVigentes(), true);
     }
 }

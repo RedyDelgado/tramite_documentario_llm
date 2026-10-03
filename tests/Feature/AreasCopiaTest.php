@@ -8,6 +8,7 @@ use App\Models\Area;
 use App\Models\AreaResponsable;
 use App\Models\Expediente;
 use App\Models\Movimiento;
+use App\Models\TipoDocumento;
 use App\Models\TipoTramite;
 use App\Models\User;
 use App\Services\AreaService;
@@ -75,6 +76,22 @@ class AreasCopiaTest extends TestCase
         $this->assertSame(0, app(PanelService::class)->indicadores($this->coordinadorCopia)['abiertos']);
         $this->artisan('resumen:diario')->assertSuccessful();
         Mail::assertNotQueued(ResumenDiario::class);
+    }
+
+    public function test_un_area_en_copia_no_responde_el_tramite(): void
+    {
+        $expediente = $this->registrado();
+        $this->derivar($expediente, [$this->copia]);
+        $tipo = TipoDocumento::create(['nombre' => 'Oficio']);
+        $datos = [
+            'expediente_id' => $expediente->id, 'tipo_documento_id' => $tipo->id, 'area_id' => $this->copia->id, 'asunto' => 'Respuesta',
+            'cuerpo' => 'Texto', 'destinatarios' => [['email' => 'a@b.pe', 'nombre' => null]], 'requiere_respuesta' => false, 'esperar_firma' => false,
+        ];
+
+        $this->actingAs($this->coordinadorCopia)->get("/expedientes/{$expediente->id}")->assertInertia(fn ($page) => $page->where('expediente.permisos.redactar', false));
+        $this->actingAs($this->coordinadorCopia)->post('/salientes', [...$datos, 'es_respuesta' => true])->assertSessionHasErrors('es_respuesta');
+        // Un documento relacionado, sin marcarlo como respuesta, sí.
+        $this->actingAs($this->coordinadorCopia)->post('/salientes', [...$datos, 'es_respuesta' => false])->assertSessionHasNoErrors();
     }
 
     public function test_reasignar_reemplaza_las_copias_y_queda_en_el_historial(): void
