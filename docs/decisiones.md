@@ -2,6 +2,18 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-09 — Recorrido con datos de prueba de la Filial Quillabamba
+
+Se cargó una filial de prueba (DemoSeeder) y se recorrió el flujo por HTTP rol por rol, como lo usaría cada persona. Lo que se corrigió:
+
+- **Reglas de derivación en la primera derivación** (#37): el tipo de una regla era solo condición, y un expediente recién registrado no tiene tipo, así que ninguna regla con tipo sugería nada. Sin tipo aún, la regla aplica por sus palabras o remitentes y **propone su tipo**; una regla que solo tiene tipo no aplica a lo no clasificado.
+- **Atender y responder** (#38): atiende quien es titular o suplente vigente **del área misma**, sea cual sea su rol (el director en Dirección; antes exigía el permiso de coordinador y lo de Dirección no lo atendía nadie). Responder (la respuesta que deja el trámite atendido) es de quien atiende, deriva o registra (`ExpedientePolicy::responder`): un área en copia emite documentos, pero no «la respuesta».
+- **Panel desde el ingreso** (#39): la tendencia y el tiempo de atención cuentan desde `fecha_ingreso`, no desde el registro. Un trámite en curso registrado tarde contaba como ingresado ese mes y atendido en 0 días. La línea de tiempo muestra remitente y asunto de cada correo que llega.
+- **Cierres y aprobaciones sin quién los apruebe** (#40): si quien pide el cierre ya tiene la facultad de aprobarlo (el coordinador que atiende en persona, el director en lo suyo), se cierra en el acto (`cerrarSinAprobacion`); si atiende un docente, aprueba el coordinador. El director aprueba también los documentos que aprueba «el coordinador» (un área de un solo coordinador no podía aprobar lo que él redactaba). El superadmin titular de un área no la atiende: ser responsable no le da acceso a los trámites.
+- **Docentes y personal asignado** (#42): el rol «otros» no tenía bandeja, y como el detalle se dibuja sobre la bandeja, ni siquiera abría su expediente. Nuevo permiso `expedientes.ver_asignados` (volver a correr `RolesSeeder` en cada entorno): bandeja, menú y panel con lo suyo. El resumen diario también les llega cuando tienen pendientes.
+- **Prellenado del FUT** (#43): el asunto se toma también de «SOLICITO:»; un tipo con sigla entre paréntesis («Solicitud (FUT)») se reconoce por la sigla; y el número solo se acepta de una línea cuyo tipo está en el catálogo («voucher de pago N° 0045871» ya no pasa por número del documento).
+- **Datos de prueba y acceso de desarrollo** (#41): `DemoSeeder` arma la filial (dirección, oficinas, escuelas con coordinaciones de especialidad, personal y docentes ficticios @demo.example, y el catálogo de trámites habituales). Es idempotente y respeta lo cargado desde el panel. En local se entra también como una persona concreta.
+
 ## 2026-10-08 — Numeración desde el panel (pendiente 9)
 
 - **Decisión del usuario: el administrador fija con qué número continúa cada correlativo.** Pantalla Configuración → Numeración (permiso `configuracion.gestionar`): el registro de documentos recibidos y un correlativo por tipo y área de documentos emitidos, por año (el actual y el siguiente). Muestra el último usado, el siguiente y cómo saldrá (`N°00120`, `OFICIO N.º 045-2026-DGA`).

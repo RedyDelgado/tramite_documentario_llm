@@ -110,6 +110,28 @@ class RegistroFisicoTest extends TestCase
             ->assertJsonPath('mismo_archivo', null);
     }
 
+    public function test_un_fut_queda_prellenado_aunque_no_tenga_numero_ni_asunto(): void
+    {
+        $fut = TipoDocumento::create(['nombre' => 'Solicitud (FUT)']);
+        $estudiante = Emisor::create(['nombre' => 'Luz Marina Quispe Ccama', 'tipo' => 'interno']);
+        $escaneo = UploadedFile::fake()->createWithContent('fut.pdf', self::pdf([
+            'UNIVERSIDAD ANDINA DEL CUSCO · FILIAL QUILLABAMBA',
+            'FORMULARIO ÚNICO DE TRÁMITE (FUT)',
+            'Yo, Luz Marina Quispe Ccama, con código 2021400123, estudiante de Enfermería,',
+            'SOLICITO: Constancia de estudios para trámite de beca',
+            'Adjunto voucher de pago N° 0045871.',
+            'Quillabamba, 2 de octubre de 2026',
+        ]));
+
+        $this->prellenar($escaneo)->assertOk()
+            ->assertJsonPath('campos.tipo_documento_id', $fut->id)
+            ->assertJsonPath('campos.asunto', 'Constancia de estudios para trámite de beca')
+            ->assertJsonPath('campos.emisor_id', $estudiante->id)
+            ->assertJsonPath('campos.fecha_documento', '2026-10-02')
+            // El N° del voucher no es el número del documento.
+            ->assertJsonPath('campos.numero_documento_original', null);
+    }
+
     public function test_registrar_asigna_numero_y_conserva_el_hash_del_original(): void
     {
         $sha = $this->prellenar($this->oficio())->json('sha256');

@@ -194,6 +194,12 @@ class DemoSeeder extends Seeder
         ] as [$nombre, $tipo]) {
             Emisor::firstOrCreate(['nombre' => $nombre], ['tipo' => $tipo, 'activo' => true]);
         }
+        // Los docentes también presentan su FUT (licencias, informes): figuran como emisores internos.
+        foreach (self::PERSONAS as [$nombre, $rol]) {
+            if ($rol === 'otros') {
+                Emisor::firstOrCreate(['nombre' => $nombre], ['tipo' => 'interno', 'activo' => true]);
+            }
+        }
 
         foreach (['Atender y responder', 'Para conocimiento y fines', 'Informar a la brevedad', 'Coordinar con el área', 'Emitir constancia',
             'Evaluar y emitir informe', 'Proyectar resolución', 'Archivar'] as $i => $texto) {

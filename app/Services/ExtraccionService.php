@@ -25,17 +25,27 @@ class ExtraccionService
         // El encabezado está en la primera página; el resto del documento confunde las reglas.
         $inicio = Str::before($texto, "\f");
 
+        // El encabezado es la primera línea «TIPO N° …» cuyo tipo está en el catálogo: «Adjunto voucher de pago N° 0045871» no lo es.
         $tipo = $numero = null;
-        if (preg_match(self::ENCABEZADO, $inicio, $m)) {
-            $tipo = $this->tipoDocumento($m[1]);
-            $numero = trim(preg_replace('/\s+/', ' ', $m[0]));
+        preg_match_all(self::ENCABEZADO, $inicio, $encabezados, PREG_SET_ORDER);
+        foreach ($encabezados as $m) {
+            if ($tipo = $this->tipoDocumento($m[1])) {
+                $numero = trim(preg_replace('/\s+/', ' ', $m[0]));
+                break;
+            }
         }
+        // Sin número, el documento puede traer la sigla de su tipo: el FUT dice «FORMULARIO ÚNICO DE TRÁMITE (FUT)».
+        $tipo ??= $this->tipoPorSigla($inicio);
+
+        // «ASUNTO:» en oficios y cartas; «SOLICITO:» en las solicitudes y el FUT.
+        $asunto = preg_match('/^\s*ASUNTO\s*:?\s*(.+)$/mui', $inicio, $a) || preg_match('/^\s*SOLICIT[OA]\s*:\s*(.+)$/mui', $inicio, $a)
+            ? Str::limit(trim($a[1]), 500, '') : null;
 
         return [
             'tipo_documento_id' => $tipo,
             'numero_documento_original' => $numero,
             'fecha_documento' => $this->fecha($inicio),
-            'asunto' => preg_match('/^\s*ASUNTO\s*:?\s*(.+)$/mui', $inicio, $a) ? Str::limit(trim($a[1]), 500, '') : null,
+            'asunto' => $asunto,
             'emisor_id' => $this->emisor($inicio),
         ];
     }
@@ -59,6 +69,13 @@ class ExtraccionService
             ->filter(fn (TipoDocumento $t) => str_ends_with($buscado, Emisor::normalizar($t->nombre)) || $buscado === Emisor::normalizar($t->nombre))
             ->sortByDesc(fn (TipoDocumento $t) => mb_strlen($t->nombre))
             ->first()?->id;
+    }
+
+    /** Tipo del catálogo cuya sigla entre paréntesis («Solicitud (FUT)») aparece como palabra en el texto. */
+    private function tipoPorSigla(string $texto): ?int
+    {
+        return TipoDocumento::where('activo', true)->get(['id', 'nombre'])
+            ->first(fn (TipoDocumento $t) => preg_match('/\(([A-ZÁÉÍÓÚÑ]{2,10})\)/u', $t->nombre, $s) && preg_match('/\b'.$s[1].'\b/u', $texto))?->id;
     }
 
     private function fecha(string $texto): ?string
