@@ -24,7 +24,8 @@ class EnviarResumenDiario extends Command
         $enviados = 0;
 
         User::role('coordinador')->where('activo', true)->each(function (User $coordinador) use ($auditoria, &$enviados) {
-            $expedientes = Expediente::visiblesPara($coordinador)
+            // Solo lo que atiende: lo que tiene en copia no es pendiente suyo.
+            $expedientes = Expediente::visiblesPara($coordinador, copias: false)
                 ->whereIn('estado', [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion])
                 ->orderBy('fecha_limite')
                 ->get()

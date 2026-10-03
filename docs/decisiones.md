@@ -2,6 +2,15 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Áreas en copia
+
+- **`expediente_areas_copia`** (modelo de datos, sección 6): al derivar o reasignar se eligen áreas en copia. Si vienen en la petición, reemplazan a las anteriores; el área responsable nunca queda además en copia.
+- **Ver sí, atender no**: los coordinadores de un área en copia ven el expediente, su historial y sus documentos emitidos (`visiblesPara` y el token `area:N` del índice), pero no lo toman, no comentan ni cierran: la Policy de atención sigue mirando solo el área responsable.
+- **No suman pendientes**: el panel y el resumen diario usan `visiblesPara($user, copias: false)`. Lo que un coordinador tiene en copia no es trabajo suyo.
+- **Historial con nombres**: el movimiento guarda los nombres de las áreas en copia tal como estaban al derivar (`movimientos.areas_copia`), y la línea de tiempo dice «Copia a …».
+- **Fusionar un área** pasa sus copias al destino, salvo donde el destino ya es el responsable.
+- **Sin aviso propio a las áreas en copia** (ni correo ni resumen): lo ven al entrar o al buscar. Se agrega si en el uso se echa en falta.
+
 ## 2026-10-07 — Piloto: adopción
 
 - **Adopción = respondidos desde el sistema** (16.7): de los expedientes atendidos o cerrados en el año que exigían respuesta, los que tienen una respuesta (`es_respuesta`) **enviada** desde el sistema. Cerrar a mano, o con la respuesta aún en borrador, cuenta como respondido por fuera. Lo «solo para conocimiento» no entra. Es una tarjeta más en Inicio, calculada sobre lo que el usuario puede ver, como el resto del panel. El tiempo de atención y las correcciones de la IA ya estaban en Inicio y en `/ia`.

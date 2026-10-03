@@ -21,7 +21,8 @@ class PanelService
     /** @return array<string, mixed> */
     public function indicadores(User $user): array
     {
-        $base = fn (): Builder => Expediente::visiblesPara($user);
+        // Lo que el usuario atiende: un área en copia solo mira, no suma a sus indicadores.
+        $base = fn (): Builder => Expediente::visiblesPara($user, copias: false);
         $anio = now()->startOfYear();
         $diasQuieto = (int) Configuracion::valor('semaforo.dias_sin_movimiento');
 

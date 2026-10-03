@@ -136,6 +136,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                 { etiqueta: 'Origen', valor: ORIGEN[e.origen] },
                                 { etiqueta: 'Área', valor: e.area ?? 'Sin asignar' },
                                 { etiqueta: 'Responsable', valor: e.responsable ?? (e.area ? 'Quien coordina el área' : 'Sin asignar') },
+                                ...(e.areas_copia.length ? [{ etiqueta: 'En copia', valor: e.areas_copia.map((a) => a.nombre).join(', ') }] : []),
                                 { etiqueta: 'Tipo de trámite', valor: e.tipo_tramite ?? 'Sin clasificar' },
                                 {
                                     etiqueta: 'Fecha límite',

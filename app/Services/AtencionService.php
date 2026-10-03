@@ -35,7 +35,9 @@ class AtencionService
     /**
      * Deriva o reasigna. El plazo se copia del tipo al asignarlo (5.1); una fecha explícita del documento manda (8).
      *
-     * @param  array{tipo_tramite_id: int, area_id: int, responsable_id?: ?int, requiere_respuesta: bool, instruccion?: ?string, nota?: ?string, fecha_limite?: ?string}  $datos
+     * Las áreas en copia lo ven sin atenderlo; si vienen, reemplazan a las anteriores.
+     *
+     * @param  array{tipo_tramite_id: int, area_id: int, responsable_id?: ?int, requiere_respuesta: bool, instruccion?: ?string, nota?: ?string, fecha_limite?: ?string, areas_copia?: list<int>}  $datos
      */
     public function derivar(Expediente $expediente, array $datos): Expediente
     {
@@ -61,6 +63,12 @@ class AtencionService
 
             $deArea = $e->area_principal_id;
             $e->forceFill($cambios);
+            if (array_key_exists('areas_copia', $datos)) {
+                // El área responsable no va además en copia.
+                $e->areasCopia()->sync(array_values(array_diff(array_map('intval', $datos['areas_copia']), [$areaId])));
+                $e->unsetRelation('areasCopia');
+            }
+            $copias = $e->areasCopia()->orderBy('nombre')->pluck('nombre')->all();
 
             return [
                 'accion' => 'expediente.derivado',
@@ -72,6 +80,7 @@ class AtencionService
                     'instruccion' => $datos['instruccion'] ?? null,
                     'nota' => $datos['nota'] ?? null,
                     'fecha_limite' => $e->fecha_limite?->toDateString(),
+                    'areas_copia' => $copias ?: null,
                 ],
             ];
         });

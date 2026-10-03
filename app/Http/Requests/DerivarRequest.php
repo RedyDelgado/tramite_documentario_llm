@@ -23,6 +23,8 @@ class DerivarRequest extends FormRequest
             'nota' => ['nullable', 'string', 'max:2000'],
             // Fecha que fija el documento (reunión, entrega); vacía, rige el plazo del tipo (8).
             'fecha_limite' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:today'],
+            'areas_copia' => ['sometimes', 'array', 'max:20'],
+            'areas_copia.*' => ['integer', 'distinct', Rule::exists('areas', 'id')->where('activa', true)->whereNull('deleted_at')],
             // Una serie se deriva una sola vez para todo el lote (7.3.5, punto 6).
             'toda_la_serie' => ['sometimes', 'boolean'],
         ];
@@ -37,6 +39,8 @@ class DerivarRequest extends FormRequest
             'requiere_respuesta' => 'requiere respuesta',
             'instruccion' => 'instrucción',
             'fecha_limite' => 'fecha límite',
+            'areas_copia' => 'áreas en copia',
+            'areas_copia.*' => 'área en copia',
         ];
     }
 }

@@ -54,23 +54,29 @@ class AreaService
             }
         }
 
-        $ids = DB::transaction(function () use ($origen, $destino) {
+        [$ids, $copias] = DB::transaction(function () use ($origen, $destino) {
             $ids = Expediente::where('area_principal_id', $origen->id)->lockForUpdate()->pluck('id')->all();
             Expediente::whereKey($ids)->update(['area_principal_id' => $destino->id]);
+            // Las copias del origen pasan al destino, salvo donde el destino ya es el responsable.
+            $copias = DB::table('expediente_areas_copia')->where('area_id', $origen->id)->pluck('expediente_id')->all();
+            DB::table('expediente_areas_copia')->where('area_id', $origen->id)->delete();
+            DB::table('expediente_areas_copia')->insertOrIgnore(array_map(fn ($id) => ['expediente_id' => $id, 'area_id' => $destino->id], $copias));
+            DB::table('expediente_areas_copia')->where('area_id', $destino->id)
+                ->whereIn('expediente_id', Expediente::where('area_principal_id', $destino->id)->select('id'))->delete();
             $hijas = $origen->hijas()->pluck('id')->all();
             Area::whereKey($hijas)->update(['parent_id' => $destino->id]);
             $origen->update(['activa' => false]);
 
             $this->auditoria->registrar('area.fusionada', $origen,
                 antes: ['activa' => true],
-                despues: ['activa' => false, 'destino_id' => $destino->id, 'expedientes' => $ids, 'areas_dependientes' => $hijas],
+                despues: ['activa' => false, 'destino_id' => $destino->id, 'expedientes' => $ids, 'copias' => $copias, 'areas_dependientes' => $hijas],
             );
 
-            return $ids;
+            return [$ids, $copias];
         });
 
         // El índice guarda las áreas que ven cada expediente: se rehace para los movidos.
-        Expediente::whereKey($ids)->searchable();
+        Expediente::whereKey([...$ids, ...$copias])->searchable();
 
         return count($ids);
     }

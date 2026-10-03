@@ -95,7 +95,7 @@ class ExpedienteController extends Controller
         $auditoria->registrar('expediente.consultado', $expediente);
         $user = $request->user();
         $registrable = $expediente->estado->puedeConfirmarse() && $user->can('registrar', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo']);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo', 'areasCopia:id,nombre']);
         $abierto = in_array($expediente->estado, [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion], true);
         $derivable = ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('derivar', $expediente);
         $custodia = $expediente->codigo !== null && $user->can('custodiar', $expediente);
@@ -123,6 +123,7 @@ class ExpedienteController extends Controller
                 'tipo_tramite_id' => $expediente->tipo_tramite_id,
                 'tipo_tramite' => $expediente->tipoTramite?->nombre,
                 'area_principal_id' => $expediente->area_principal_id,
+                'areas_copia' => $expediente->areasCopia->map(fn (Area $a) => ['id' => $a->id, 'nombre' => $a->nombre])->values(),
                 'responsable_id' => $expediente->responsable_id,
                 'plazo_dias_aplicado' => $expediente->plazo_dias_aplicado,
                 'fecha_limite' => $expediente->fecha_limite?->toDateString(),
@@ -291,6 +292,7 @@ class ExpedienteController extends Controller
     {
         $partes = array_filter([
             $m->aArea ? 'A '.$m->aArea->nombre.($m->aUser ? " ({$m->aUser->name})" : '') : null,
+            $m->areas_copia ? 'Copia a '.implode(', ', $m->areas_copia) : null,
             $m->instruccion,
             $m->fecha_limite ? 'hasta el '.$m->fecha_limite->format('d/m/Y') : null,
             $m->nota,

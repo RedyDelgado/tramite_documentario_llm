@@ -80,6 +80,7 @@ export type ExpedienteDetalle = ExpedienteFila & {
     tipo_tramite_id: number | null;
     tipo_tramite: string | null;
     area_principal_id: number | null;
+    areas_copia: { id: number; nombre: string }[];
     responsable_id: number | null;
     plazo_dias_aplicado: number | null;
     requiere_respuesta: boolean;

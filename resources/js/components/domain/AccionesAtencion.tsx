@@ -33,6 +33,7 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
         instruccion: '',
         fecha_limite: '',
         nota: '',
+        areas_copia: e.areas_copia.map((a) => a.id),
         toda_la_serie: false,
     });
     const nota = useForm({ nota: '', aprobar: true });
@@ -135,6 +136,8 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                                         instruccion: d.instruccion || null,
                                         fecha_limite: d.fecha_limite || null,
                                         nota: d.nota || null,
+                                        // Si el área elegida estaba en copia, deja de estarlo: ya es la responsable.
+                                        areas_copia: d.areas_copia.filter((id) => id !== Number(d.area_id)),
                                     }));
                                     derivar.post(url('derivar'), { preserveScroll: true, onSuccess: () => cerrar() });
                                 }}
@@ -178,6 +181,28 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                                 />
                             )}
                         </FormField>
+                        <fieldset className="flex flex-col gap-1">
+                            <legend className="mb-1 text-base font-semibold text-fg">En copia</legend>
+                            <p className="mb-1 text-sm text-fg-muted">Opcional: estas áreas lo ven para conocimiento, sin atenderlo.</p>
+                            <div className="grid max-h-36 gap-1 overflow-y-auto sm:grid-cols-2">
+                                {derivacion.areas
+                                    .filter((a) => String(a.value) !== derivar.data.area_id)
+                                    .map((a) => (
+                                        <Checkbox
+                                            key={a.value}
+                                            etiqueta={a.label}
+                                            checked={derivar.data.areas_copia.includes(a.value)}
+                                            onChange={(ev) =>
+                                                derivar.setData(
+                                                    'areas_copia',
+                                                    ev.target.checked ? [...derivar.data.areas_copia, a.value] : derivar.data.areas_copia.filter((id) => id !== a.value),
+                                                )
+                                            }
+                                        />
+                                    ))}
+                            </div>
+                            {derivar.errors.areas_copia && <p className="text-sm text-danger">{derivar.errors.areas_copia}</p>}
+                        </fieldset>
                         <FormField etiqueta="Instrucción" error={derivar.errors.instruccion}>
                             {(c) => (
                                 <Select

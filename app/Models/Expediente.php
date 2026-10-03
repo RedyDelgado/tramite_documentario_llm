@@ -14,8 +14,10 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 
@@ -43,7 +45,7 @@ class Expediente extends Model
     /** @return array<string, mixed> */
     public function toSearchableArray(): array
     {
-        $this->loadMissing(['correos', 'documentos']);
+        $this->loadMissing(['correos', 'documentos', 'areasCopia']);
 
         return [
             'id' => $this->id,
@@ -76,7 +78,7 @@ class Expediente extends Model
     /** @param Collection<int, Expediente> $modelos */
     public function makeSearchableUsing(Collection $modelos): Collection
     {
-        return $modelos->load(['correos', 'documentos']);
+        return $modelos->load(['correos', 'documentos', 'areasCopia']);
     }
 
     /** @return list<string> */
@@ -85,6 +87,7 @@ class Expediente extends Model
         return array_values(array_filter([
             $this->area_principal_id ? "area:{$this->area_principal_id}" : null,
             $this->responsable_id ? "usuario:{$this->responsable_id}" : null,
+            ...$this->areasCopia->map(fn (Area $a) => "area:{$a->id}"),
         ]));
     }
 
@@ -153,7 +156,8 @@ class Expediente extends Model
      *
      * @param  Builder<Expediente>  $query
      */
-    public function scopeVisiblesPara(Builder $query, User $user): void
+    /** Con $copias = false, solo lo que el usuario atiende: así cuentan los indicadores del panel. */
+    public function scopeVisiblesPara(Builder $query, User $user, bool $copias = true): void
     {
         if ($user->can('expedientes.ver_todos')) {
             return;
@@ -163,7 +167,15 @@ class Expediente extends Model
 
         $query->where(fn (Builder $q) => $q
             ->where('responsable_id', $user->id)
-            ->when($areas !== [], fn (Builder $q) => $q->orWhereIn('area_principal_id', $areas)));
+            ->when($areas !== [], fn (Builder $q) => $q->orWhereIn('area_principal_id', $areas))
+            ->when($areas !== [] && $copias, fn (Builder $q) => $q->orWhereIn('expedientes.id',
+                DB::table('expediente_areas_copia')->whereIn('area_id', $areas)->select('expediente_id'))));
+    }
+
+    /** @return BelongsToMany<Area, $this> */
+    public function areasCopia(): BelongsToMany
+    {
+        return $this->belongsToMany(Area::class, 'expediente_areas_copia');
     }
 
     /** @return BelongsTo<Area, $this> */
