@@ -41,12 +41,13 @@ class ExpedienteService
      * Confirma como trámite y asigna el número de registro del año en curso (6.2).
      *
      * @param  array{emisor_id?: ?int, tipo_documento_id?: ?int}  $datos  datos del documento (6.1) que se fijan al registrar
+     * @param  int|null  $numeroPapel  trámite en curso que conserva su N° del registro en papel, sin consumir el correlativo
      *
      * @throws ReglaDeNegocio si el estado no admite confirmación.
      */
-    public function confirmar(Expediente $expediente, array $datos = []): Expediente
+    public function confirmar(Expediente $expediente, array $datos = [], ?int $numeroPapel = null): Expediente
     {
-        return DB::transaction(function () use ($expediente, $datos) {
+        return DB::transaction(function () use ($expediente, $datos, $numeroPapel) {
             // Bloqueo de la fila: dos confirmaciones simultáneas no pueden numerar dos veces.
             $expediente = Expediente::lockForUpdate()->findOrFail($expediente->id);
 
@@ -60,7 +61,7 @@ class ExpedienteService
             $expediente->forceFill([
                 ...$documento,
                 'anio' => $anio,
-                'secuencia' => $this->secuencias->siguiente('registro', $anio),
+                'secuencia' => $numeroPapel ?? $this->secuencias->siguiente('registro', $anio),
                 'estado' => EstadoExpediente::Registrado,
                 'registrado_at' => now(),
                 'registrado_por' => Auth::id(),
@@ -68,7 +69,7 @@ class ExpedienteService
 
             $this->auditoria->registrar('registro.asignado', $expediente,
                 antes: ['estado' => $estadoPrevio->value],
-                despues: ['estado' => EstadoExpediente::Registrado->value, 'numero' => $expediente->numero_registro, 'codigo' => $expediente->codigo, ...$documento],
+                despues: ['estado' => EstadoExpediente::Registrado->value, 'numero' => $expediente->numero_registro, 'codigo' => $expediente->codigo, ...$documento, ...($numeroPapel ? ['del_registro_en_papel' => true] : [])],
             );
             // La IA propone en segundo plano; el registro no la espera (10).
             ClasificarExpediente::dispatch($expediente->id)->afterCommit();

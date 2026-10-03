@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Textarea } from '@/components/ui/Textarea';
 import type { Opcion } from '@/types';
 
-type Props = { opcionesEmisor: Opcion<number>[]; opcionesTipoDocumento: Opcion<number>[]; opcionesUbicacion: Opcion<number>[] };
+type Props = { opcionesEmisor: Opcion<number>[]; opcionesTipoDocumento: Opcion<number>[]; opcionesUbicacion: Opcion<number>[]; ultimoNumeroEnPapel: number };
 
 /** RegistroFisicoService::prellenar. */
 type Prellenado = {
@@ -29,7 +29,7 @@ type Prellenado = {
     mismo_archivo: { id: number; numero: string | null } | null;
 };
 
-export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, opcionesUbicacion, onCerrar }: Props & { onCerrar: () => void }) {
+export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, opcionesUbicacion, ultimoNumeroEnPapel, onCerrar }: Props & { onCerrar: () => void }) {
     const [escaneo, setEscaneo] = useState<Prellenado | null>(null);
     const [errorEmisor, setErrorEmisor] = useState<string>();
     const subida = useHttp<{ archivo: File | null }, Prellenado>('post', '/registro/prellenar', { archivo: null });
@@ -45,6 +45,9 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
         requiere_respuesta: true,
         ubicacion_fisica_id: '',
         confirmar_duplicado: false,
+        en_curso: false,
+        numero_papel: '',
+        fecha_ingreso: '',
     });
     const { data, setData, errors } = form;
     // Errores que no son de un campo: duplicados (7.3.5) y escaneo vencido.
@@ -75,7 +78,15 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
     };
 
     const enviar = () => {
-        form.transform((d) => ({ ...d, tipo_documento_id: Number(d.tipo_documento_id) || null, folios: Number(d.folios) || null, motivo_folios: d.motivo_folios || null, ubicacion_fisica_id: Number(d.ubicacion_fisica_id) || null }));
+        form.transform((d) => ({
+            ...d,
+            tipo_documento_id: Number(d.tipo_documento_id) || null,
+            folios: Number(d.folios) || null,
+            motivo_folios: d.motivo_folios || null,
+            ubicacion_fisica_id: Number(d.ubicacion_fisica_id) || null,
+            numero_papel: Number(d.numero_papel) || null,
+            fecha_ingreso: d.fecha_ingreso || null,
+        }));
         form.post('/registro');
     };
 
@@ -174,6 +185,27 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
                     onChange={(e) => setData('requiere_respuesta', e.target.checked)}
                 />
             </FormSection>
+
+            {ultimoNumeroEnPapel > 0 && (
+                <FormSection titulo="Trámite en curso" descripcion="Solo para lo que ya estaba en el registro en papel: conserva su número y su fecha de ingreso.">
+                    <Checkbox
+                        etiqueta="Ya estaba en el registro en papel"
+                        checked={data.en_curso}
+                        onChange={(e) => setData('en_curso', e.target.checked)}
+                        className="md:col-span-2"
+                    />
+                    {data.en_curso && (
+                        <>
+                            <FormField etiqueta="N° en el registro en papel" ayuda={`Del 1 al ${ultimoNumeroEnPapel}.`} requerido error={errors.numero_papel}>
+                                {(c) => <Input {...c} type="number" min={1} max={ultimoNumeroEnPapel} value={data.numero_papel} onChange={(e) => setData('numero_papel', e.target.value)} />}
+                            </FormField>
+                            <FormField etiqueta="Fecha de ingreso" ayuda="La del registro en papel: de ella salen el plazo y el semáforo." requerido error={errors.fecha_ingreso}>
+                                {(c) => <Input {...c} type="date" value={data.fecha_ingreso} onChange={(e) => setData('fecha_ingreso', e.target.value)} />}
+                            </FormField>
+                        </>
+                    )}
+                </FormSection>
+            )}
 
             <FormSection titulo="Original en papel" descripcion="Se conserva siempre; tú quedas como su custodio al registrarlo.">
                 <FormField etiqueta="Ubicación" ayuda="Archivador, caja o estante." error={errors.ubicacion_fisica_id}>

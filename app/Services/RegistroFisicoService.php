@@ -7,6 +7,7 @@ use App\Enums\OrigenExpediente;
 use App\Models\Documento;
 use App\Models\Emisor;
 use App\Models\Expediente;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -91,12 +92,14 @@ class RegistroFisicoService
                 $this->comprobarDuplicados($datos, $numero);
 
                 $emisor = isset($datos['emisor_id']) ? Emisor::find($datos['emisor_id']) : null;
+                $enCurso = (bool) ($datos['en_curso'] ?? false);
                 $expediente = Expediente::create([
                     'origen' => OrigenExpediente::Fisico,
                     'estado' => EstadoExpediente::PorRevisar,
                     'asunto' => $datos['asunto'],
                     'remitente_nombre' => $emisor?->nombre,
-                    'fecha_ingreso' => now(),
+                    // Un trámite en curso entra con su fecha real: de ella salen el plazo y el semáforo (8).
+                    'fecha_ingreso' => $enCurso ? CarbonImmutable::parse($datos['fecha_ingreso'])->startOfDay() : now(),
                     'tipo_documento_id' => $datos['tipo_documento_id'] ?? null,
                     'numero_documento' => $numero,
                     'numero_documento_original' => $datos['numero_documento'] ?? null,
@@ -121,10 +124,15 @@ class RegistroFisicoService
                 ])->forceFill(['texto_por_ocr' => $archivo['por_ocr']])->save();
                 $this->auditoria->registrar('expediente.creado', $expediente, despues: [
                     'origen' => 'fisico', 'sha256' => $datos['sha256'], 'folios' => $datos['folios'],
+                    ...($enCurso ? ['en_curso' => ['numero_papel' => (int) $datos['numero_papel'], 'fecha_ingreso' => $datos['fecha_ingreso']]] : []),
                 ]);
 
-                // Mismo número y auditoría que un correo confirmado (6.2).
-                return $this->expedientes->confirmar($expediente, ['emisor_id' => $datos['emisor_id'] ?? null, 'tipo_documento_id' => $datos['tipo_documento_id'] ?? null]);
+                // Mismo número y auditoría que un correo confirmado (6.2); el trámite en curso conserva el suyo.
+                return $this->expedientes->confirmar(
+                    $expediente,
+                    ['emisor_id' => $datos['emisor_id'] ?? null, 'tipo_documento_id' => $datos['tipo_documento_id'] ?? null],
+                    $enCurso ? (int) $datos['numero_papel'] : null,
+                );
             });
         } catch (UniqueConstraintViolationException) {
             // Dos registros simultáneos del mismo documento: el índice único es la última barrera.
@@ -135,6 +143,12 @@ class RegistroFisicoService
         Cache::forget("registro-fisico:{$datos['sha256']}");
 
         return $expediente;
+    }
+
+    /** Último número del registro en papel del año: los trámites en curso usan del 1 hasta aquí; el sistema sigue desde el siguiente. */
+    public static function ultimoNumeroEnPapel(): int
+    {
+        return (int) (config('tramite.secuencias_inicio.registro.'.now()->year) ?? 1) - 1;
     }
 
     /** Clave de negocio: bloquea. Mismo archivo o mismo emisor, asunto y fecha: avisa hasta que se confirme. */

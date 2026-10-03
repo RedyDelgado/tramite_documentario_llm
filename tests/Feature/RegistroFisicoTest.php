@@ -125,6 +125,34 @@ class RegistroFisicoTest extends TestCase
         $this->assertSame($sha, hash('sha256', Storage::disk('originales')->get($documento->ruta)));
     }
 
+    public function test_un_tramite_en_curso_conserva_su_numero_y_su_fecha_sin_consumir_el_correlativo(): void
+    {
+        $sha = $this->prellenar($this->oficio('012-2026-UNIQ/DGA'))->json('sha256');
+
+        $this->registrar($sha, ['numero_documento' => 'Oficio Múltiple N° 012-2026-UNIQ/DGA', 'fecha_documento' => '2026-08-03', 'en_curso' => true, 'numero_papel' => 12, 'fecha_ingreso' => '2026-08-04'])
+            ->assertSessionHasNoErrors();
+
+        $enCurso = Expediente::sole();
+        $this->assertSame(['N°00012', 'REG-2026-00012', '2026-08-04'], [$enCurso->numero_registro, $enCurso->codigo, $enCurso->fecha_ingreso->toDateString()]);
+        $this->assertDatabaseHas('auditoria', ['accion' => 'registro.asignado', 'entidad_id' => (string) $enCurso->id]);
+
+        // El correlativo del sistema no se movió: lo nuevo sigue desde el N°00038.
+        $this->registrar($this->prellenar($this->oficio())->json('sha256'))->assertSessionHasNoErrors();
+        $this->assertSame('N°00038', Expediente::latest('id')->first()->numero_registro);
+    }
+
+    public function test_un_tramite_en_curso_no_acepta_un_numero_usado_ni_del_sistema_ni_una_fecha_futura(): void
+    {
+        $this->registrar($this->prellenar($this->oficio('012-2026-UNIQ/DGA'))->json('sha256'), ['numero_documento' => 'Oficio 012-2026', 'en_curso' => true, 'numero_papel' => 12, 'fecha_ingreso' => '2026-08-04']);
+        $sha = $this->prellenar($this->oficio())->json('sha256');
+
+        $this->registrar($sha, ['en_curso' => true, 'numero_papel' => 12, 'fecha_ingreso' => '2026-08-04'])->assertSessionHasErrors('numero_papel');
+        $this->registrar($sha, ['en_curso' => true, 'numero_papel' => 38, 'fecha_ingreso' => '2026-08-04'])->assertSessionHasErrors('numero_papel');
+        $this->registrar($sha, ['en_curso' => true, 'numero_papel' => 13, 'fecha_ingreso' => '2026-08-18'])->assertSessionHasErrors('fecha_ingreso');
+        $this->registrar($sha, ['en_curso' => true])->assertSessionHasErrors(['numero_papel', 'fecha_ingreso']);
+        $this->assertSame(1, Expediente::count());
+    }
+
     public function test_registrar_de_nuevo_un_documento_ya_ingresado_se_bloquea_y_muestra_el_numero(): void
     {
         $this->registrar($this->prellenar($this->oficio())->json('sha256'));

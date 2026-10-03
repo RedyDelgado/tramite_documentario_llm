@@ -547,7 +547,7 @@ El archivo trae 218 filas numeradas, **solo 37 con datos** (N°00001 a N°00037,
 7. Cómo se hará cumplir que las **respuestas salgan desde el sistema o con CCO al buzón central** (fase 2 y 5).
 8. **Quién administra la configuración** además del superadmin (permiso delegable).
 9. **Número inicial del correlativo 2026** en la puesta en marcha (por defecto `N°00038`, continuando el registro en papel) y formato de numeración de documentos salientes (fase 1 y 5).
-10. **Migración única del Excel 2026** (37 filas): importarlas, o conservar el archivo como referencia adjunta. Se decide aparte; no hay importación por CSV del catálogo.
+10. **Migración única del Excel 2026** (37 filas): importarlas, o conservar el archivo como referencia adjunta. Se decide aparte; no hay importación por CSV del catálogo. **Decidido (2026-10-08): no se importa.** El sistema empieza vacío y los trámites que siguen en curso se registran a medida que avanzan, con su N° del registro en papel y su fecha de ingreso real.
 11. **Titularidad y condiciones de uso** del código frente a la institución (conviene dejarlo por escrito antes de oficializar).
 12. **Continuidad:** UPS y respaldo fuera del servidor; documentación en `docs/` suficiente para que otra persona pueda operar el sistema.
 

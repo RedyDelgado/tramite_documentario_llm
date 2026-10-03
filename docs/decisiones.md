@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-08 — Sin importación: trámites en curso del registro en papel (pendiente 10)
+
+- **Decisión del usuario: no se importa el Excel 2026.** El sistema empieza vacío; los trámites que siguen en curso se registran cuando se mueven.
+- **Conservan su número**: al registrar papel se marca «Ya estaba en el registro en papel» con su N° del cuaderno y su fecha real de ingreso. Toman ese número (`anio` + `secuencia`) sin pasar por el correlativo, porque los números anteriores al primero del sistema (`REGISTRO_INICIO_NUMERO`, 38 en 2026) son justamente los del papel y no chocan. El índice único `(anio, secuencia)` impide repetir uno y la validación solo admite del 1 al 37.
+- **La fecha de ingreso real** (desde el 1 de enero hasta hoy) es la que usa el plazo al derivar, así que un trámite atrasado aparece en rojo, como corresponde. La hora se desconoce y queda a las 00:00.
+- Si el año no viene de un registro en papel (`secuencias_inicio` sin valor), la opción no aparece.
+
 ## 2026-10-08 — Delegar la configuración (pendiente 8)
 
 - **Un interruptor en la ficha del usuario, no una pantalla de roles y permisos**: «Administra la configuración» da el permiso `configuracion.gestionar` como permiso directo (Spatie), aparte del rol. El rol sigue diciendo qué trámites ve; el permiso, si administra el catálogo (áreas, responsables, plazos, feriados, catálogos, plantillas y notificaciones). Con cinco roles fijos (5), una matriz editable sería más superficie que necesidad.

@@ -73,6 +73,7 @@ Desde el panel, en este orden:
 3. **Tipos de trámite**, **Plazos por área** y **Feriados** del año.
 4. **Tipos de documento** (quién aprueba la salida), **Plantillas**, **Emisores** frecuentes, **Instrucciones** y **Ubicaciones físicas**.
 5. **Inteligencia artificial**: dejarla en **modo sombra** durante el piloto (es el valor inicial). Propone sin actuar, y así se mide su acierto con las decisiones reales.
+6. **Trámites que ya estaban en curso** (no se importa el registro en papel): a medida que se muevan, el administrativo los registra en **Registrar papel** marcando «Ya estaba en el registro en papel», con su N° del cuaderno (del 1 al 37 en 2026) y su fecha real de ingreso. Conservan su número y su plazo corre desde esa fecha; lo nuevo se numera desde el N°00038.
 
 ## 3. Conectar el buzón (solo con la autorización escrita)
 

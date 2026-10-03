@@ -34,6 +34,8 @@ class RegistroFisicoController extends Controller
             'opcionesEmisor' => Emisor::opciones(),
             'opcionesTipoDocumento' => TipoDocumento::opciones(),
             'opcionesUbicacion' => UbicacionFisica::opciones(),
+            // 0 si el año no viene de un registro en papel: no hay trámites en curso que conserven número.
+            'ultimoNumeroEnPapel' => RegistroFisicoService::ultimoNumeroEnPapel(),
         ]);
     }
 
