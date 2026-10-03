@@ -72,7 +72,8 @@ class RespaldoService
             $this->desempaquetar($carpeta.'/modelos.tar.gz', config('tramite.respaldo.modelos'));
         }
 
-        // El índice puede tener expedientes posteriores al respaldo: se rehace desde la base.
+        // El índice puede tener expedientes posteriores al respaldo (o no existir, en un servidor nuevo): se rehace desde la base.
+        Artisan::call('scout:sync-index-settings');
         Artisan::call('scout:flush', ['model' => Expediente::class]);
         Artisan::call('scout:import', ['model' => Expediente::class]);
         // En un servidor nuevo la cola está vacía: lo pendiente según la base vuelve a encolarse.

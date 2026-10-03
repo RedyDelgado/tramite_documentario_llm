@@ -37,6 +37,11 @@ return [
 
     'mailers' => [
 
+        // Gmail API con la cuenta del buzón central (App\Correo\GmailTransport); MAIL_FROM_ADDRESS debe ser esa cuenta.
+        'gmail' => [
+            'transport' => 'gmail',
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),

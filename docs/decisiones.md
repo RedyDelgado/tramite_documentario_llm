@@ -2,6 +2,15 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Piloto: producción
+
+- **Override `docker-compose.prod.yml`** activado con `COMPOSE_FILE` en el `.env`: los comandos siguen siendo `docker compose …` en ambos entornos. Apaga `vite` (perfil `dev`; los assets salen de `npm run build`) y agrega **Caddy** como único servicio expuesto (80/443), con Let's Encrypt automático o el certificado de la institución. nginx sigue escuchando solo en `127.0.0.1`.
+- **Proxies de confianza: solo redes privadas** (`10/8`, `172.16/12`, `192.168/16`, `127.0.0.1`). Así la auditoría guarda la IP real del usuario detrás de Caddy, y desde internet nadie puede suplantarla con `X-Forwarded-For`. La cookie de sesión es `secure` por defecto con `APP_ENV=production`.
+- **`MAIL_MAILER=gmail`** (`GmailTransport`): el resumen diario y los avisos salen por la API de Gmail con el mismo token del buzón; no hace falta SMTP ni otra credencial. Symfony no escribe `Bcc` en el mensaje crudo, así que este transporte no sirve para copias ocultas; ningún correo del sistema las usa. Los documentos emitidos siguen por `SalidaCorreo`: su «copia al buzón central» queda en los Enviados de esa misma cuenta.
+- **Tiempos de los jobs**: Horizon corta a los 60 s, pero el OCR permite 600 s en su llamada HTTP (un escaneo de 80 folios ronda 3 min). `OcrDocumento` (660 s) y `ClasificarExpediente` (180 s) tienen su propio `timeout`, y `retry_after` pasó de 90 a 720 s: con 90, un job largo se entregaba a un segundo worker mientras el primero seguía. Un test fija la relación.
+- **3 workers en producción** (antes 10): cada OCR ocupa un núcleo del servicio de IA y el piloto recibe ≈ 2 documentos por día (14.1).
+- **`respaldo:restaurar` aplica también `scout:sync-index-settings`**: en un servidor nuevo el índice no existe, y sin sus filtros la búsqueda por permisos falla.
+
 ## 2026-10-07 — Piloto: respaldo y restauración
 
 - **`respaldo:crear` a diario (02:30) y `respaldo:restaurar`** (`RespaldoService`), en el mismo contenedor que el resto: no depende de que el servidor sea Ubuntu físico o VM (pendiente 3). Cada respaldo es una carpeta con `base.dump` (`pg_dump -Fc`; la imagen PHP trae `postgresql18-client`, misma versión que el servidor), `originales.tar.gz`, `modelos.tar.gz` (el volumen `modelos_ia` se monta en los contenedores PHP) y `SHA256SUMS`.

@@ -1,0 +1,6 @@
+# HTTPS con certificado automático de Let's Encrypt para DOMINIO (docs/runbook-produccion.md).
+# Con el certificado de la institución, agregar dentro del bloque: tls /certs/certificado.pem /certs/clave.pem
+{$DOMINIO} {
+	encode gzip
+	reverse_proxy nginx:80
+}

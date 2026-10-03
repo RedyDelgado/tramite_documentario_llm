@@ -28,6 +28,7 @@ Los comandos de artisan que escriben en `storage/` se corren con `docker compose
 
 | Runbook | Para qué |
 |---|---|
+| [docs/runbook-produccion.md](docs/runbook-produccion.md) | Instalar en el servidor, preparar el piloto y actualizar |
 | [docs/runbook-respaldos.md](docs/runbook-respaldos.md) | Respaldo diario, copia fuera del servidor y restauración |
 | [docs/runbook-gmail.md](docs/runbook-gmail.md) | Conectar el buzón central |
 | [docs/runbook-google-login.md](docs/runbook-google-login.md) | Inicio de sesión con Google |

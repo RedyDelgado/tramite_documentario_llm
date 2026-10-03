@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Http;
 /** Cliente del OCR del servicio de IA (7.3, 10). */
 class OcrService
 {
+    // Un escaneo largo tarda: ~2 s por página en CPU (80 folios, el máximo de 2026, ≈ 3 min).
+    public const TIMEOUT = 600;
+
     public const MIMES = ['application/pdf', 'image/png', 'image/jpeg', 'image/tiff', 'image/webp'];
 
     /**
@@ -21,8 +24,7 @@ class OcrService
     {
         return Http::baseUrl(config('tramite.ai.url'))
             ->withHeaders(['X-AI-Token' => (string) config('tramite.ai.token')])
-            // Un escaneo largo tarda: ~2 s por página en CPU.
-            ->timeout(600)
+            ->timeout(self::TIMEOUT)
             ->withBody(file_get_contents($rutaAbsoluta), $mime)
             ->post('/ocr')
             ->throw()

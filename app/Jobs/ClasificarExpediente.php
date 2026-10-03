@@ -18,6 +18,9 @@ class ClasificarExpediente implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 6;
 
+    // Lo que permite la llamada a la IA (120 s), más margen; el worker corta a los 60 s.
+    public int $timeout = 180;
+
     public function backoff(): array
     {
         return [60, 300, 900, 3600, 7200];

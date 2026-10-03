@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Correo\DirectorioMailboxDriver;
 use App\Correo\GmailMailboxDriver;
 use App\Correo\GmailSalidaCorreo;
+use App\Correo\GmailTransport;
 use App\Correo\MailboxDriver;
 use App\Correo\MailerSalidaCorreo;
 use App\Correo\SalidaCorreo;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
@@ -34,5 +36,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Un correo por destinatario, a ritmo controlado (7.3.4).
         RateLimiter::for('envios', fn () => Limit::perMinute(config('tramite.salientes.por_minuto')));
+
+        Mail::extend('gmail', fn () => new GmailTransport(new GmailMailboxDriver(config('tramite.correo.gmail'))));
     }
 }

@@ -68,7 +68,8 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Mayor que el job más largo (OCR, 660 s): si no, Redis lo entrega a otro worker mientras el primero sigue.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 720),
             'block_for' => null,
             'after_commit' => false,
         ],

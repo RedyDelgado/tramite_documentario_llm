@@ -23,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
         $middleware->redirectUsersTo(fn () => route('inicio'));
+        // Detrás de Caddy o del proxy HTTPS de la institución: la IP del usuario (auditoría) y el https salen de X-Forwarded-*.
+        // Solo desde redes privadas: desde internet nadie puede suplantarlas, y nginx solo escucha en 127.0.0.1.
+        $middleware->trustProxies(at: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

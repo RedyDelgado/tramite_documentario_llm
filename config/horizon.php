@@ -215,7 +215,8 @@ return [
     'environments' => [
         'production' => [
             'supervisor-1' => [
-                'maxProcesses' => 10,
+                // Pocos: cada OCR ocupa un núcleo del servicio de IA y el volumen del piloto es bajo (14.1).
+                'maxProcesses' => 3,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],

@@ -1,0 +1,25 @@
+# Producción (docs/runbook-produccion.md). Con COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+# en el .env, `docker compose` usa los dos archivos sin escribir -f en cada comando.
+services:
+  # Sin servidor de Vite: los assets se compilan con `npm run build` al instalar o actualizar.
+  vite:
+    profiles: ["dev"]
+
+  # Único servicio expuesto a la red: HTTPS en 443 y redirección desde 80.
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMINIO: ${DOMINIO}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/caddy/certs:/certs:ro
+      - caddy_data:/data
+    depends_on:
+      - nginx
+    restart: unless-stopped
+
+volumes:
+  caddy_data:

@@ -19,6 +19,9 @@ class OcrDocumento implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 6;
 
+    // El worker de Horizon corta a los 60 s; el OCR necesita lo que permite su llamada HTTP.
+    public int $timeout = OcrService::TIMEOUT + 60;
+
     // Hasta ~6 h de espera acumulada: un reinicio del servicio de IA no pierde OCR.
     public function backoff(): array
     {
