@@ -38,7 +38,11 @@ jobs:
           php-version: "8.4"
           extensions: pdo_pgsql, redis, intl, pcntl
           coverage: none
-      - run: sudo apt-get install -y poppler-utils
+      # pg_dump/pg_restore de la misma versión que el servidor (RespaldoTest); el del runner es más viejo.
+      - run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y poppler-utils postgresql-client-18
+          echo /usr/lib/postgresql/18/bin >> "$GITHUB_PATH"
       - run: composer install --no-interaction --no-progress
       - run: cp .env.example .env && php artisan key:generate
       - run: vendor/bin/pint --test
