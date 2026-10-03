@@ -52,6 +52,12 @@ return [
         'token' => env('AI_SERVICE_TOKEN'),
     ],
 
+    // ClamAV (11): sin host no se analiza; con host, un archivo sin analizar no entra.
+    'antivirus' => [
+        'host' => env('ANTIVIRUS_HOST'),
+        'puerto' => (int) env('ANTIVIRUS_PUERTO', 3310),
+    ],
+
     // Respaldos (docs/runbook-respaldos.md). La retención por defecto espera la política del pendiente 6.
     'respaldo' => [
         'directorio' => env('RESPALDO_DIRECTORIO', storage_path('app/respaldos')),

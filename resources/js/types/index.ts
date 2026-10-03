@@ -63,7 +63,7 @@ export type CorreoDetalle = {
     documentos: number[];
 };
 
-export type DocumentoDetalle = { id: number; nombre: string; mime: string; tamano: number; sha256: string; con_texto: boolean };
+export type DocumentoDetalle = { id: number; nombre: string; mime: string; tamano: number; sha256: string; con_texto: boolean; amenaza: string | null };
 
 /** ExpedienteController@show. */
 export type ExpedienteDetalle = ExpedienteFila & {

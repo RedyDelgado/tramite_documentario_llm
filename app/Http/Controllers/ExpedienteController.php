@@ -179,6 +179,7 @@ class ExpedienteController extends Controller
                     'tamano' => $d->tamano,
                     'sha256' => $d->sha256,
                     'con_texto' => $d->texto_extraido !== null,
+                    'amenaza' => $d->amenaza,
                 ]),
             ],
             'historial' => $this->historial($expediente),

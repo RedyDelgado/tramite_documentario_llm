@@ -9,6 +9,7 @@ use App\Models\Expediente;
 use App\Models\PlantillaDocumento;
 use App\Models\TipoDocumento;
 use App\Policies\SalientePolicy;
+use App\Rules\SinAmenazas;
 use App\Services\AuditoriaService;
 use App\Services\EnvioService;
 use App\Services\GeneradorDocumentoService;
@@ -183,7 +184,7 @@ class SalienteController extends Controller
     public function firmado(Request $request, DocumentoSaliente $saliente, EnvioService $envios): RedirectResponse
     {
         Gate::authorize('firmar', $saliente);
-        $archivo = $request->validate(['archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf']], attributes: ['archivo' => 'PDF firmado'])['archivo'];
+        $archivo = $request->validate(['archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf', new SinAmenazas]], attributes: ['archivo' => 'PDF firmado'])['archivo'];
         $envios->subirFirmado($saliente, $archivo->getContent());
 
         return $this->listo($saliente->esperar_firma ? 'PDF firmado adjuntado: el documento se está enviando.' : 'PDF firmado adjuntado como versión final.');

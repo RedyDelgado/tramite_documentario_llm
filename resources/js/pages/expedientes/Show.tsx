@@ -1,4 +1,4 @@
-import { ArrowDownload16Regular, Attach16Regular, Mail20Regular, Send20Regular } from '@fluentui/react-icons';
+import { ArrowDownload16Regular, Attach16Regular, Mail20Regular, Send20Regular, ShieldError16Regular } from '@fluentui/react-icons';
 import { Link } from '@inertiajs/react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
@@ -20,6 +20,19 @@ import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetall
 const ORIGEN = { correo: 'Correo', fisico: 'Documento físico', pdf: 'PDF subido' };
 
 function EnlaceDocumento({ d }: { d: DocumentoDetalle }) {
+    // En cuarentena (11): se ve que llegó, pero no se ofrece abrirlo.
+    if (d.amenaza) {
+        return (
+            <span className="inline-flex flex-wrap items-center gap-1 text-base text-fg">
+                <Attach16Regular aria-hidden />
+                {d.nombre}
+                <Badge tono="peligro" icono={<ShieldError16Regular aria-hidden />}>
+                    En cuarentena: {d.amenaza}
+                </Badge>
+            </span>
+        );
+    }
+
     return (
         <a
             href={`/documentos/${d.id}/descargar`}
@@ -57,10 +70,14 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
                 {adjuntos.map((d) => (
                     <EnlaceDocumento key={d.id} d={d} />
                 ))}
-                <a href={`/correos/${c.id}/eml`} className="ml-auto inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline">
-                    <ArrowDownload16Regular aria-hidden />
-                    Correo original (.eml)
-                </a>
+                {adjuntos.some((d) => d.amenaza) ? (
+                    <span className="ml-auto text-sm text-fg-muted">Correo original en cuarentena</span>
+                ) : (
+                    <a href={`/correos/${c.id}/eml`} className="ml-auto inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline">
+                        <ArrowDownload16Regular aria-hidden />
+                        Correo original (.eml)
+                    </a>
+                )}
             </footer>
         </article>
     );
@@ -168,7 +185,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                     <li key={d.id}>
                                         <EnlaceDocumento d={d} />
                                         <p className="text-sm text-fg-muted">
-                                            {formatearBytes(d.tamano)} · {d.con_texto ? 'texto buscable' : 'sin texto extraído'} ·{' '}
+                                            {formatearBytes(d.tamano)} · {d.amenaza ? 'no se procesa' : d.con_texto ? 'texto buscable' : 'sin texto extraído'} ·{' '}
                                             <span title={`SHA-256 ${d.sha256}`}>SHA-256 {d.sha256.slice(0, 12)}…</span>
                                         </p>
                                     </li>

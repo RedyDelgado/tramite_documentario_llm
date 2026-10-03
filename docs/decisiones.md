@@ -2,6 +2,16 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Antivirus (ClamAV)
+
+- **Se analiza lo que llega de fuera, antes de procesarlo** (11): adjuntos de correo y subidas (escaneo de papel, cargo firmado, PDF firmado). Lo que genera el sistema (PDF de documentos emitidos) no se analiza: así aprobar un documento no depende del antivirus.
+- **clamd por TCP con INSTREAM** (`AntivirusService`, ~40 líneas sin librería). Sin `ANTIVIRUS_HOST` no analiza, y los tests lo fijan vacío en `phpunit.xml`. Un test habla con el clamd real usando la firma EICAR (se salta si el contenedor no está).
+- **Adjunto infectado → cuarentena, no se descarta**: se guarda en `cuarentena/` (el original no se destruye), con `documentos.amenaza`, sin extraer texto ni OCR, sin descarga. Tampoco se descarga el `.eml` que lo trae. Queda en la auditoría (`documento.en_cuarentena`) y el detalle lo muestra con una etiqueta roja.
+- **Subida infectada → se rechaza** con el nombre de la amenaza (regla `SinAmenazas`), y no se guarda nada.
+- **Antivirus caído: no pasa nada sin analizar.** El correo falla y se reintenta en la próxima pasada (cada minuto); a la subida se le pide reintentar en unos minutos.
+- **`StreamMaxLength` en 50 MB** (por defecto 25 MB): por encima del máximo de subida (40 MB), para que un archivo grande no quede rechazado para siempre.
+- **En local está encendido** (`COMPOSE_PROFILES=clamav` y `ANTIVIRUS_HOST=clamav` en `.env`): ~1 GB de RAM, que entra en la VM de 3,8 GB.
+
 ## 2026-10-07 — Tendencia mensual
 
 - **Recharts llega con la primera serie de tiempo** (como se dejó en la fase 2): registrados y atendidos por mes, últimos 12 meses con el actual, en Inicio. Cada trámite cuenta en su mes según la hora de Lima (`to_char(... AT TIME ZONE 'America/Lima')`); los meses vacíos van en cero para que el eje no salte.

@@ -7,6 +7,7 @@ use App\Models\Emisor;
 use App\Models\Expediente;
 use App\Models\TipoDocumento;
 use App\Models\UbicacionFisica;
+use App\Rules\SinAmenazas;
 use App\Services\RegistroFisicoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,7 @@ class RegistroFisicoController extends Controller
     {
         Gate::authorize('create', Expediente::class);
         $archivo = $request->validate([
-            'archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf,image/png,image/jpeg,image/tiff,image/webp'],
+            'archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf,image/png,image/jpeg,image/tiff,image/webp', new SinAmenazas],
         ], attributes: ['archivo' => 'escaneo'])['archivo'];
 
         return response()->json($this->registro->prellenar($archivo));

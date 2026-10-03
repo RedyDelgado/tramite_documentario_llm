@@ -28,5 +28,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="SCOUT_DRIVER" value="null"/>
+        <!-- Sin antivirus en los tests: AntivirusTest lo reemplaza o habla con clamd directamente. -->
+        <env name="ANTIVIRUS_HOST" value="" force="true"/>
     </php>
 </phpunit>

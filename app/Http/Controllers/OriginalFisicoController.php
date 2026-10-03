@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Expediente;
 use App\Models\Movimiento;
+use App\Rules\SinAmenazas;
 use App\Services\AuditoriaService;
 use App\Services\OriginalService;
 use Illuminate\Contracts\View\View;
@@ -55,7 +56,7 @@ class OriginalFisicoController extends Controller
     {
         Gate::authorize('custodiar', $movimiento->expediente);
         $archivo = $request->validate([
-            'archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf,image/png,image/jpeg,image/tiff,image/webp'],
+            'archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf,image/png,image/jpeg,image/tiff,image/webp', new SinAmenazas],
         ], attributes: ['archivo' => 'cargo firmado'])['archivo'];
         $this->originales->adjuntarCargo($movimiento, $archivo);
 

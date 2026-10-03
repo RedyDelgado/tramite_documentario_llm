@@ -118,10 +118,13 @@ services:
       retries: 6
     restart: unless-stopped
 
-  # Usa ~1,5 GB de RAM: se activa con `--profile clamav` cuando la fase 1 analice adjuntos.
+  # Antivirus de adjuntos y subidas (11). Usa ~1,5 GB de RAM: se activa con `--profile clamav` y ANTIVIRUS_HOST=clamav.
   clamav:
     image: clamav/clamav:stable
     profiles: ["clamav"]
+    environment:
+      # Por encima del máximo de subida (40 MB): uno mayor que el límite quedaría rechazado para siempre.
+      CLAMD_CONF_StreamMaxLength: 50M
     volumes:
       - clamav_data:/var/lib/clamav
     restart: unless-stopped

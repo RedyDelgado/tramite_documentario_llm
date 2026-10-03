@@ -36,6 +36,7 @@ Editar `.env` (nunca va al repositorio):
 | `REGISTRO_INICIO_NUMERO` | Siguiente número del registro en papel (pendiente 9) |
 | `MAIL_MAILER` | `log` hasta tener el buzón autorizado; después `gmail` (el resumen diario y los avisos salen por la cuenta del buzón central, sin SMTP) |
 | `MAIL_FROM_ADDRESS` | La cuenta del buzón central |
+| `COMPOSE_PROFILES` / `ANTIVIRUS_HOST` | `clamav` / `clamav`: los adjuntos y las subidas se analizan con ClamAV (~1 GB de RAM) |
 
 Con el certificado de la institución (servidor solo interno): copiar `certificado.pem` y `clave.pem` a `docker/caddy/certs/` y agregar en `docker/caddy/Caddyfile`, dentro del bloque, `tls /certs/certificado.pem /certs/clave.pem`. Los certificados no se suben al repositorio.
 
@@ -59,7 +60,7 @@ Comprobar:
 - `https://<DOMINIO>/up` responde «Application up».
 - El superadmin entra con Google; una cuenta del dominio que no está registrada no entra.
 - `https://<DOMINIO>/ui` y el botón «Entrar como…» **no existen** (solo en desarrollo).
-- `docker compose ps`: todos los servicios `Up`, sin `vite`.
+- `docker compose ps`: todos los servicios `Up`, sin `vite` y con `clamav` (tarda unos minutos en quedar `healthy` mientras carga las firmas).
 
 ## 2. Preparar el piloto (superadmin)
 

@@ -31,6 +31,7 @@ class IngestaCorreoService
         private readonly TextoDocumentoService $texto,
         private readonly EntregaService $entregas,
         private readonly AuditoriaService $auditoria,
+        private readonly AntivirusService $antivirus,
     ) {}
 
     /**
@@ -126,7 +127,7 @@ class IngestaCorreoService
         ]);
 
         foreach ($adjuntos as $a) {
-            Documento::create([
+            $documento = Documento::create([
                 'expediente_id' => $expediente->id,
                 'correo_id' => $correo->id,
                 'nombre_original' => Str::limit($a['adjunto']->nombre, 250, ''),
@@ -135,7 +136,11 @@ class IngestaCorreoService
                 'tamano' => strlen($a['adjunto']->contenido),
                 'sha256' => $a['sha256'],
                 'texto_extraido' => $a['texto'],
+                'amenaza' => $a['amenaza'],
             ]);
+            if ($a['amenaza'] !== null) {
+                $this->auditoria->registrar('documento.en_cuarentena', $documento, despues: ['amenaza' => $a['amenaza'], 'sha256' => $a['sha256']]);
+            }
         }
 
         if ($nuevo) {
@@ -208,16 +213,23 @@ class IngestaCorreoService
         return [$mensaje->deEmail, $mensaje->deNombre, true];
     }
 
-    /** @return array{adjunto: Adjunto, ruta: string, sha256: string, texto: ?string} */
+    /**
+     * Analiza antes de procesar (11): un adjunto infectado se guarda aparte, sin extraer su texto.
+     * Si el antivirus no responde, la excepción deja el correo sin marcar y se reintenta en la próxima pasada.
+     *
+     * @return array{adjunto: Adjunto, ruta: string, sha256: string, texto: ?string, amenaza: ?string}
+     */
     private function guardarAdjunto(Adjunto $adjunto): array
     {
-        ['ruta' => $ruta, 'sha256' => $sha256] = Documento::guardarArchivo($adjunto->contenido);
+        $amenaza = $this->antivirus->amenaza($adjunto->contenido);
+        ['ruta' => $ruta, 'sha256' => $sha256] = Documento::guardarArchivo($adjunto->contenido, $amenaza === null ? 'adjuntos' : 'cuarentena');
 
         return [
             'adjunto' => $adjunto,
             'ruta' => $ruta,
             'sha256' => $sha256,
-            'texto' => $this->texto->extraer(Storage::disk('originales')->path($ruta), $adjunto->mime),
+            'texto' => $amenaza === null ? $this->texto->extraer(Storage::disk('originales')->path($ruta), $adjunto->mime) : null,
+            'amenaza' => $amenaza,
         ];
     }
 
