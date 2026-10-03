@@ -1,4 +1,4 @@
-import { ErrorCircle20Regular } from '@fluentui/react-icons';
+import { IcoAlerta } from '@/components/ui/iconos';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button, botonClases } from '@/components/ui/Button';
@@ -25,13 +25,13 @@ export default function Login({ google, rolesDesarrollo, personasDesarrollo }: P
         <>
             <Head title="Iniciar sesión" />
             <main className="flex min-h-screen items-center justify-center bg-app p-4">
-                <section className="w-full max-w-sm rounded-card border border-border bg-surface p-6 shadow-card">
-                    <h1 className="text-lg font-semibold text-fg">{props.app.nombre}</h1>
+                <section className="w-full max-w-sm rounded-hoja bg-surface p-8 shadow-flotante">
+                    <h1 className="text-xl font-bold tracking-tight text-fg">{props.app.nombre}</h1>
                     <p className="mt-1 text-base text-fg-muted">Ingresa con tu cuenta institucional de Google.</p>
 
                     {error && (
                         <p role="alert" className="mt-4 flex items-start gap-2 text-base text-danger">
-                            <ErrorCircle20Regular className="shrink-0" />
+                            <IcoAlerta className="shrink-0" />
                             {error}
                         </p>
                     )}
@@ -51,7 +51,7 @@ export default function Login({ google, rolesDesarrollo, personasDesarrollo }: P
                     )}
 
                     {rolesDesarrollo.length > 0 && (
-                        <div className="mt-6 border-t border-border pt-4">
+                        <div className="mt-6 border-t border-separador pt-5">
                             <p className="mb-2 text-sm font-semibold text-fg-muted">Solo desarrollo: entrar como</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {rolesDesarrollo.map((rol) => (

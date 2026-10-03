@@ -25,7 +25,7 @@ export function ListPage<T>({ titulo, descripcion, acciones, filtros, tabla, pag
         <AppShell>
             <PageHeader titulo={titulo} descripcion={descripcion} />
             {aviso && <div className="mb-4">{aviso}</div>}
-            <section className="overflow-hidden rounded-card border border-border bg-surface shadow-card">
+            <section className="overflow-hidden rounded-card bg-surface shadow-card">
                 <CommandBar acciones={acciones} filtros={filtros} />
                 <div className="max-h-[calc(100vh-16rem)] overflow-auto">
                     <DataTable {...tabla} />

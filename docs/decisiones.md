@@ -2,6 +2,16 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-09 — Diseño al estilo de Apple con los colores de Google (decisión del usuario)
+
+- **Se reemplaza el estilo Fluent / Microsoft 365 por los principios de diseño de Apple (HIG, escritorio)**, aplicados con la skill de revisión de diseño, y **se mantienen los colores de Google** (ningún HEX cambió; solo se agregó `--border-campo`, el gris 600 de Google, para campos más livianos con 3,7:1).
+- **Capas en vez de bordes**: barra superior y navegación translúcidas con desenfoque (`--material`); tarjetas sin borde con sombra en capas; modales como hojas (`--radio-hoja`, velo desenfocado, entrada breve con `motion-safe`, que respeta «reducir movimiento»). Las transparencias son colores existentes con alfa (`--relleno`, `--separador`), no colores nuevos.
+- **Tipografía con jerarquía por peso**: pesos 500 y 700, títulos en la variante Display con interletrado cerrado y título de página en negrita. La fuente sigue siendo la del sistema (SF en Apple, Segoe UI Variable en Windows), sin CDN.
+- **Controles**: botón secundario relleno de gris; deshabilitado al 40 %; campos de 36 px con halo azul al enfocar (el foco sigue siendo visible: borde y halo); interruptor de pista gris y perilla blanca; etiquetas en cápsula; menús y autocompletado con la selección en el color de acento.
+- **Listas**: tablas sin franja gris en la cabecera, filas de 44 px con separadores finos; el detalle es una lista agrupada etiqueta | valor (como Ajustes). Columna `sinCorte` para fechas.
+- **Iconos Lucide** en lugar de `@fluentui/react-icons` (trazo redondeado, como SF Symbols), todos desde `components/ui/iconos.tsx` con tamaño y trazo comunes y nombres en español (`IcoAgregar`, `IcoCerrar16`…).
+- La barra lateral arranca colapsada en ventanas de menos de 1024 px si la persona no eligió otra cosa. **Pendiente**: en móvil las tablas se desplazan de lado (no hay vista de tarjetas); el uso previsto es de escritorio.
+
 ## 2026-10-09 — Recorrido con datos de prueba de la Filial Quillabamba
 
 Se cargó una filial de prueba (DemoSeeder) y se recorrió el flujo por HTTP rol por rol, como lo usaría cada persona. Lo que se corrigió:

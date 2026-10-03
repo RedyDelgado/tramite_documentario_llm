@@ -8,11 +8,11 @@ export function LineaTiempo({ eventos }: { eventos: EventoHistorial[] }) {
     }
 
     return (
-        <ol className="relative flex flex-col gap-4 border-l border-border pl-4">
+        <ol className="relative ml-1 flex flex-col gap-5 border-l-2 border-primary-100 pl-5">
             {eventos.map((e) => (
                 <li key={e.id} className="relative">
-                    <span aria-hidden className="absolute top-1.5 -left-[21px] size-2.5 rounded-full border-2 border-surface bg-primary-600" />
-                    <p className="text-base font-semibold text-fg">{e.accion}</p>
+                    <span aria-hidden className="absolute top-1.5 -left-[27px] size-3 rounded-full border-2 border-surface bg-primary-600" />
+                    <p className="text-base font-medium text-fg">{e.accion}</p>
                     {e.detalle && <p className="text-base text-fg">{e.detalle}</p>}
                     <p className="text-sm text-fg-muted">
                         <time dateTime={e.fecha}>{formatearFechaHora(e.fecha)}</time> · {e.usuario}

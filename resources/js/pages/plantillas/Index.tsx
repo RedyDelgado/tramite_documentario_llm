@@ -1,4 +1,4 @@
-import { Add20Regular, DocumentText20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoDocumento } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import type { Columna } from '@/components/data/DataTable';
 import { ActivoBadge } from '@/components/domain/ActivoBadge';
@@ -14,7 +14,7 @@ import Formulario from './Form';
 const columnas: Columna<Plantilla>[] = [
     { clave: 'nombre', titulo: 'Plantilla', celda: (p) => <span className="font-semibold">{p.nombre}</span> },
     { clave: 'tipo', titulo: 'Tipo de documento', celda: (p) => p.tipo },
-    { clave: 'actualizado', titulo: 'Última actualización', celda: (p) => formatearFechaHora(p.actualizado) },
+    { clave: 'actualizado', titulo: 'Última actualización', sinCorte: true, celda: (p) => formatearFechaHora(p.actualizado) },
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (p) => <ActivoBadge activo={p.activa} femenino /> },
 ];
 
@@ -27,7 +27,7 @@ export default function PlantillasIndex({ plantillas, formulario }: { plantillas
                 descripcion="Modelos de oficios, cartas e informes que emite la institución. Se llenan con los datos del expediente al redactar."
                 acciones={
                     <Link href={rutaModal('/plantillas/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nueva plantilla
                     </Link>
                 }
@@ -39,7 +39,7 @@ export default function PlantillasIndex({ plantillas, formulario }: { plantillas
                     onElegirFila: (p) => router.visit(rutaModal(`/plantillas/${p.id}/edit`), { preserveScroll: true }),
                     vacio: (
                         <EmptyState
-                            icono={<DocumentText20Regular />}
+                            icono={<IcoDocumento />}
                             titulo="Aún no hay plantillas"
                             descripcion="Por ejemplo: respuesta a requerimiento de información, oficio de invitación."
                         />

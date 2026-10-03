@@ -1,4 +1,4 @@
-import { Dismiss12Regular } from '@fluentui/react-icons';
+import { IcoCerrar12 } from '@/components/ui/iconos';
 import { useState, type KeyboardEvent } from 'react';
 import { cn } from '@/lib/cn';
 import { campoClases } from './campo';
@@ -48,21 +48,21 @@ export function TagsInput({ valor, onCambiar, id, placeholder, disabled, ...aria
             aria-invalid={aria['aria-invalid']}
             className={cn(
                 campoClases,
-                'flex min-h-8 flex-wrap items-center gap-1 py-1 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary-600',
+                'flex min-h-9 flex-wrap items-center gap-1 py-1 focus-within:border-primary-600 focus-within:shadow-[0_0_0_3px_var(--primary-200)]',
                 disabled && 'border-border bg-surface-subtle',
             )}
         >
             {valor.map((v) => (
-                <span key={v} className="inline-flex h-5 items-center gap-1 rounded-control bg-primary-50 pr-0.5 pl-1.5 text-sm font-semibold text-primary-700">
+                <span key={v} className="inline-flex h-6 items-center gap-1 rounded-full bg-primary-100 pr-1 pl-2.5 text-sm font-medium text-primary-800">
                     {v}
                     {!disabled && (
                         <button
                             type="button"
                             aria-label={`Quitar ${v}`}
                             onClick={() => onCambiar(valor.filter((x) => x !== v))}
-                            className="cursor-pointer rounded-control p-0.5 hover:bg-primary-100"
+                            className="cursor-pointer rounded-full p-0.5 hover:bg-primary-200"
                         >
-                            <Dismiss12Regular />
+                            <IcoCerrar12 />
                         </button>
                     )}
                 </span>

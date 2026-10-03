@@ -1,4 +1,4 @@
-import { ArrowSwap20Regular, Print20Regular, QrCode20Regular } from '@fluentui/react-icons';
+import { IcoImprimir, IcoIntercambiar, IcoQr } from '@/components/ui/iconos';
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
@@ -57,15 +57,15 @@ export function OriginalPapel({ expediente: e, custodia }: Props) {
                     {e.permisos.custodiar && (
                         <div className="mt-3 flex flex-wrap gap-2">
                             <a href={`/expedientes/${e.id}/constancia`} target="_blank" rel="noreferrer" className={botonClases()}>
-                                <Print20Regular />
+                                <IcoImprimir />
                                 Constancia
                             </a>
                             <a href={`/expedientes/${e.id}/etiqueta`} target="_blank" rel="noreferrer" className={botonClases()}>
-                                <QrCode20Regular />
+                                <IcoQr />
                                 Etiqueta QR
                             </a>
                             {custodia && (
-                                <Button icono={<ArrowSwap20Regular />} onClick={() => setMoviendo(true)}>
+                                <Button icono={<IcoIntercambiar />} onClick={() => setMoviendo(true)}>
                                     Mover original
                                 </Button>
                             )}
@@ -75,7 +75,7 @@ export function OriginalPapel({ expediente: e, custodia }: Props) {
             )}
 
             {e.cargos.length > 0 && (
-                <ul className={`flex flex-col gap-2 ${original ? 'mt-4 border-t border-border pt-3' : ''}`}>
+                <ul className={`flex flex-col gap-2 ${original ? 'mt-4 border-t border-separador pt-3' : ''}`}>
                     {e.cargos.map((c) => (
                         <li key={c.id} className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-base">

@@ -1,28 +1,18 @@
-import {
-    Archive16Regular,
-    ArrowForward16Regular,
-    Checkmark16Regular,
-    CheckmarkCircle16Regular,
-    Clock16Regular,
-    DocumentSearch16Regular,
-    History16Regular,
-    LockClosed16Regular,
-    Prohibited16Regular,
-} from '@fluentui/react-icons';
+import { IcoArchivo16, IcoBuscarDocumento16, IcoCandado16, IcoCheck16, IcoCorrecto16, IcoDerivar16, IcoHistorial16, IcoProhibido16, IcoReloj16 } from '@/components/ui/iconos';
 import type { ReactElement } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import type { EstadoExpediente } from '@/types';
 
 const ICONOS: Record<EstadoExpediente, ReactElement> = {
-    por_revisar: <DocumentSearch16Regular />,
-    registrado: <CheckmarkCircle16Regular />,
-    derivado: <ArrowForward16Regular />,
-    en_atencion: <Clock16Regular />,
-    atendido: <Checkmark16Regular />,
-    cerrado: <LockClosed16Regular />,
-    no_tramite: <Archive16Regular />,
-    historico: <History16Regular />,
-    anulado: <Prohibited16Regular />,
+    por_revisar: <IcoBuscarDocumento16 />,
+    registrado: <IcoCorrecto16 />,
+    derivado: <IcoDerivar16 />,
+    en_atencion: <IcoReloj16 />,
+    atendido: <IcoCheck16 />,
+    cerrado: <IcoCandado16 />,
+    no_tramite: <IcoArchivo16 />,
+    historico: <IcoHistorial16 />,
+    anulado: <IcoProhibido16 />,
 };
 
 // Trámites vivos con la marca; el resto en neutro. Los colores semánticos son solo del semáforo (5.3).

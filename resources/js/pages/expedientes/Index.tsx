@@ -1,4 +1,4 @@
-import { Attach16Regular, DocumentBulletList20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAdjunto16, IcoBuscar, IcoExpedientes } from '@/components/ui/iconos';
 import { router } from '@inertiajs/react';
 import type { ComponentProps } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -46,7 +46,7 @@ const columnas: Columna<ExpedienteFila>[] = [
             </div>
         ),
     },
-    { clave: 'fecha', titulo: 'Ingreso', ordenable: true, ancho: '11rem', celda: (e) => formatearFechaHora(e.fecha_ingreso) },
+    { clave: 'fecha', titulo: 'Ingreso', sinCorte: true, ordenable: true, ancho: '11rem', celda: (e) => formatearFechaHora(e.fecha_ingreso) },
     { clave: 'area', titulo: 'Área', ancho: '12rem', celda: (e) => e.area ?? <span className="text-fg-muted">Sin asignar</span> },
     {
         clave: 'adjuntos',
@@ -56,7 +56,7 @@ const columnas: Columna<ExpedienteFila>[] = [
         celda: (e) =>
             e.documentos_count ? (
                 <span className="inline-flex items-center gap-1">
-                    <Attach16Regular aria-hidden />
+                    <IcoAdjunto16 aria-hidden />
                     {e.documentos_count}
                 </span>
             ) : (
@@ -108,7 +108,7 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, esta
                             type="search"
                             aria-label="Filtrar la lista"
                             placeholder="Asunto, remitente, código o texto"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-72"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -128,7 +128,7 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, esta
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<DocumentBulletList20Regular />}
+                            icono={<IcoExpedientes />}
                             titulo={hayFiltros ? 'Ningún expediente coincide' : 'Aún no hay expedientes'}
                             descripcion={hayFiltros ? 'Prueba con otras palabras o quita el filtro de estado.' : 'Los correos del buzón central aparecerán aquí al ingresar.'}
                         />

@@ -1,4 +1,4 @@
-import { Circle16Regular, CheckmarkCircle16Regular } from '@fluentui/react-icons';
+import { IcoCirculo16, IcoCorrecto16 } from '@/components/ui/iconos';
 import { Badge } from '@/components/ui/Badge';
 
 /** Estado de un registro de catálogo; usa la marca y no los colores de semáforo (5.3). */
@@ -6,10 +6,10 @@ export function ActivoBadge({ activo, femenino = false }: { activo: boolean; fem
     const fin = femenino ? 'a' : 'o';
 
     return activo ? (
-        <Badge tono="marca" icono={<CheckmarkCircle16Regular />}>
+        <Badge tono="marca" icono={<IcoCorrecto16 />}>
             Activ{fin}
         </Badge>
     ) : (
-        <Badge icono={<Circle16Regular />}>Inactiv{fin}</Badge>
+        <Badge icono={<IcoCirculo16 />}>Inactiv{fin}</Badge>
     );
 }

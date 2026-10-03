@@ -1,4 +1,4 @@
-import { Add20Regular, DocumentText20Regular, Edit20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoDocumento, IcoEditar } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -72,7 +72,7 @@ export default function TiposTramiteIndex({ tipos, filtros: iniciales, formulari
                 descripcion="La naturaleza del trámite define su plazo. Cambiar un plazo no altera los expedientes ya ingresados."
                 acciones={
                     <Link href={rutaModal('/tipos-tramite/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nuevo tipo
                     </Link>
                 }
@@ -93,7 +93,7 @@ export default function TiposTramiteIndex({ tipos, filtros: iniciales, formulari
                             type="search"
                             aria-label="Buscar por nombre"
                             placeholder="Buscar por nombre"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -112,7 +112,7 @@ export default function TiposTramiteIndex({ tipos, filtros: iniciales, formulari
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<DocumentText20Regular />}
+                            icono={<IcoDocumento />}
                             titulo={hayFiltros ? 'No hay tipos que coincidan con los filtros' : 'Aún no hay tipos de trámite'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda o el estado.' : 'Por ejemplo: invitación, requerimiento de información, solicitud de recursos.'}
                         />
@@ -129,7 +129,7 @@ export default function TiposTramiteIndex({ tipos, filtros: iniciales, formulari
                             acciones={
                                 <>
                                     <Link href={rutaModal(`/tipos-tramite/${elegido.id}/edit`)} preserveScroll className={botonClases()}>
-                                        <Edit20Regular />
+                                        <IcoEditar />
                                         Editar
                                     </Link>
                                     {elegido.activo ? (

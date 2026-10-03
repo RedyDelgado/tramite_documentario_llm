@@ -9,12 +9,12 @@ export function Switch({ etiqueta, className, id, ...props }: Props) {
         <S.Root
             id={id}
             className={cn(
-                'relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full border border-fg-muted bg-surface transition-colors data-[state=checked]:border-primary-600 data-[state=checked]:bg-primary-600 disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-subtle disabled:data-[state=checked]:border-fg-disabled disabled:data-[state=checked]:bg-fg-disabled',
+                'relative inline-flex h-6 w-10 shrink-0 cursor-pointer items-center rounded-full bg-border-campo/60 transition-colors data-[state=checked]:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-40',
                 !etiqueta && className,
             )}
             {...props}
         >
-            <S.Thumb className="block size-3 translate-x-[3px] rounded-full bg-fg-muted transition-transform data-[state=checked]:translate-x-[23px] data-[state=checked]:bg-on-primary" />
+            <S.Thumb className="block size-5 translate-x-0.5 rounded-full bg-surface shadow-card transition-transform data-[state=checked]:translate-x-[18px]" />
         </S.Root>
     );
 

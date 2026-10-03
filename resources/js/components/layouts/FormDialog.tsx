@@ -55,7 +55,7 @@ export function FormDialog({ titulo, descripcion, onCerrar, onEnviar, procesando
                     e.preventDefault();
                     onEnviar();
                 }}
-                className="flex flex-col gap-5"
+                className="flex flex-col gap-4"
             >
                 {children}
             </form>

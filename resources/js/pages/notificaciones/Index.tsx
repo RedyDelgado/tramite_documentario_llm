@@ -1,4 +1,4 @@
-import { MailAlert20Regular } from '@fluentui/react-icons';
+import { IcoCorreoAviso } from '@/components/ui/iconos';
 import type { Columna } from '@/components/data/DataTable';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Badge } from '@/components/ui/Badge';
@@ -23,7 +23,7 @@ const ESTADO: Record<Estado, { texto: string; tono: 'neutro' | 'ok' | 'peligro' 
 };
 
 const columnas: Columna<Notificacion>[] = [
-    { clave: 'fecha', titulo: 'Fecha', ancho: '11rem', celda: (n) => formatearFechaHora(n.fecha) },
+    { clave: 'fecha', titulo: 'Fecha', sinCorte: true, ancho: '11rem', celda: (n) => formatearFechaHora(n.fecha) },
     { clave: 'email', titulo: 'Destinatario', celda: (n) => n.email },
     { clave: 'tipo', titulo: 'Tipo', ancho: '10rem', celda: (n) => `${n.tipo} (${n.expedientes})` },
     { clave: 'estado', titulo: 'Estado', ancho: '7rem', celda: (n) => <Badge tono={ESTADO[n.estado].tono}>{ESTADO[n.estado].texto}</Badge> },
@@ -55,7 +55,7 @@ export default function NotificacionesIndex({ notificaciones, filtros: iniciales
                 filas: notificaciones.data,
                 claveFila: (n) => n.id,
                 cargando,
-                vacio: <EmptyState icono={<MailAlert20Regular />} titulo="Aún no se envió ninguna notificación" descripcion="El resumen diario sale los días laborables a las 07:30, solo a coordinadores con pendientes." />,
+                vacio: <EmptyState icono={<IcoCorreoAviso />} titulo="Aún no se envió ninguna notificación" descripcion="El resumen diario sale los días laborables a las 07:30, solo a coordinadores con pendientes." />,
             }}
             paginacion={notificaciones}
         />

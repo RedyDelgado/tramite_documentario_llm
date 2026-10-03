@@ -1,4 +1,4 @@
-import { Add20Regular, BuildingGovernment20Regular, Edit20Regular, Merge20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoEditar, IcoFusionar, IcoInstitucion } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -66,7 +66,7 @@ export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados
                 descripcion="Dependencias internas y externas que envían documentos. Un duplicado se fusiona: sus expedientes pasan al emisor que queda."
                 acciones={
                     <Link href={rutaModal('/emisores/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nuevo emisor
                     </Link>
                 }
@@ -79,7 +79,7 @@ export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados
                                         <span>
                                             «{a.nombre}» y «{b.nombre}»
                                         </span>
-                                        <Button icono={<Merge20Regular />} onClick={() => setFusion({ id: b.id, nombre: b.nombre, destino: String(a.id) })}>
+                                        <Button icono={<IcoFusionar />} onClick={() => setFusion({ id: b.id, nombre: b.nombre, destino: String(a.id) })}>
                                             Revisar y fusionar
                                         </Button>
                                     </li>
@@ -116,7 +116,7 @@ export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados
                             type="search"
                             aria-label="Buscar por nombre"
                             placeholder="Buscar por nombre"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -133,7 +133,7 @@ export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<BuildingGovernment20Regular />}
+                            icono={<IcoInstitucion />}
                             titulo={hayFiltros ? 'No hay emisores que coincidan con los filtros' : 'Aún no hay emisores'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda, el tipo o el estado.' : 'También se crean al registrar un documento, sin salir del formulario.'}
                         />
@@ -151,10 +151,10 @@ export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados
                                 acciones={
                                     <>
                                         <Link href={rutaModal(`/emisores/${elegido.id}/edit`)} preserveScroll className={botonClases()}>
-                                            <Edit20Regular />
+                                            <IcoEditar />
                                             Editar
                                         </Link>
-                                        <Button icono={<Merge20Regular />} onClick={() => setFusion({ id: elegido.id, nombre: elegido.nombre, destino: '' })}>
+                                        <Button icono={<IcoFusionar />} onClick={() => setFusion({ id: elegido.id, nombre: elegido.nombre, destino: '' })}>
                                             Fusionar
                                         </Button>
                                     </>

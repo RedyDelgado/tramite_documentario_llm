@@ -1,4 +1,4 @@
-import { Board20Regular } from '@fluentui/react-icons';
+import { IcoTablero } from '@/components/ui/iconos';
 import { Link } from '@inertiajs/react';
 import { DataTable } from '@/components/data/DataTable';
 import { GraficoMensual } from '@/components/data/GraficoMensual';
@@ -32,8 +32,8 @@ const ORDEN_SEMAFORO: Semaforo[] = ['rojo', 'amarillo', 'verde', 'gris'];
 function Cifra({ titulo, valor, detalle, href }: { titulo: string; valor: string | number; detalle?: string; href?: string }) {
     const contenido = (
         <>
-            <p className="text-sm text-fg-muted">{titulo}</p>
-            <p className="text-xl font-semibold text-fg tabular-nums">{valor}</p>
+            <p className="text-sm font-medium text-fg-muted">{titulo}</p>
+            <p className="mt-1 text-xl font-bold tracking-tight text-fg tabular-nums">{valor}</p>
             {detalle && <p className="text-sm text-fg-muted">{detalle}</p>}
         </>
     );
@@ -51,7 +51,7 @@ function Barras({ filas, href }: { filas: { clave: string; etiqueta: string; tot
                 <li key={f.clave}>
                     <Link href={href(f.clave)} className="grid grid-cols-[9rem_1fr_3rem] items-center gap-2 text-base text-fg hover:underline">
                         <span className="truncate">{f.etiqueta}</span>
-                        <span className="h-2 rounded-r-full bg-primary-600" style={{ width: `${(f.total / max) * 100}%` }} aria-hidden />
+                        <span className="h-2 rounded-full bg-primary-600" style={{ width: `${(f.total / max) * 100}%` }} aria-hidden />
                         <span className="text-right tabular-nums">{f.total}</span>
                     </Link>
                 </li>
@@ -80,7 +80,7 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
                 <PageHeader titulo="Inicio" />
                 <Card>
                     <EmptyState
-                        icono={<Board20Regular />}
+                        icono={<IcoTablero />}
                         titulo="Sin indicadores de trámites"
                         descripcion="Tu rol administra la configuración; el contenido de los trámites lo ven director, administrativo y coordinadores."
                     />
@@ -144,7 +144,7 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
                             ]}
                         />
                     ) : (
-                        <EmptyState icono={<Board20Regular />} titulo="Aún no hay trámites registrados" />
+                        <EmptyState icono={<IcoTablero />} titulo="Aún no hay trámites registrados" />
                     )}
                 </Card>
 
@@ -154,16 +154,16 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
                         columnas={columnasCarga}
                         filas={i.carga}
                         claveFila={(c) => `${c.area}-${c.responsable ?? ''}`}
-                        vacio={<EmptyState icono={<Board20Regular />} titulo="No hay expedientes abiertos" />}
+                        vacio={<EmptyState icono={<IcoTablero />} titulo="No hay expedientes abiertos" />}
                     />
                 </Card>
 
                 <div className="grid items-start gap-4 lg:grid-cols-2">
                     <Card titulo="Tiempo de atención por área" sinRelleno>
-                        <DataTable titulo="Tiempo de atención por área" columnas={columnasTiempo} filas={i.tiempo_por_area} claveFila={(t) => t.nombre} vacio={<EmptyState icono={<Board20Regular />} titulo="Sin atendidos este año" />} />
+                        <DataTable titulo="Tiempo de atención por área" columnas={columnasTiempo} filas={i.tiempo_por_area} claveFila={(t) => t.nombre} vacio={<EmptyState icono={<IcoTablero />} titulo="Sin atendidos este año" />} />
                     </Card>
                     <Card titulo="Tiempo de atención por tipo" sinRelleno>
-                        <DataTable titulo="Tiempo de atención por tipo" columnas={columnasTiempo} filas={i.tiempo_por_tipo} claveFila={(t) => t.nombre} vacio={<EmptyState icono={<Board20Regular />} titulo="Sin atendidos este año" />} />
+                        <DataTable titulo="Tiempo de atención por tipo" columnas={columnasTiempo} filas={i.tiempo_por_tipo} claveFila={(t) => t.nombre} vacio={<EmptyState icono={<IcoTablero />} titulo="Sin atendidos este año" />} />
                     </Card>
                 </div>
             </div>

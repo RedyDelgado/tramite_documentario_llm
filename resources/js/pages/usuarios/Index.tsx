@@ -1,4 +1,4 @@
-import { Add20Regular, Edit20Regular, People20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoEditar, IcoUsuarios } from '@/components/ui/iconos';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -74,7 +74,7 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
                 descripcion="Solo ingresan con Google las cuentas registradas aquí y activas; el rol define qué ven y qué pueden hacer."
                 acciones={
                     <Link href={rutaModal('/usuarios/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nuevo usuario
                     </Link>
                 }
@@ -103,7 +103,7 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
                             type="search"
                             aria-label="Buscar por nombre o correo"
                             placeholder="Buscar por nombre o correo"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -122,7 +122,7 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<People20Regular />}
+                            icono={<IcoUsuarios />}
                             titulo={hayFiltros ? 'No hay usuarios que coincidan con los filtros' : 'Aún no hay usuarios'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda, el rol o el estado.' : 'Registra a las personas que usarán el sistema.'}
                         />
@@ -139,7 +139,7 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
                             acciones={
                                 <>
                                     <Link href={rutaModal(`/usuarios/${elegido.id}/edit`)} preserveScroll className={botonClases()}>
-                                        <Edit20Regular />
+                                        <IcoEditar />
                                         Editar
                                     </Link>
                                     {/* Nadie se desactiva a sí mismo; el servidor también lo impide. */}

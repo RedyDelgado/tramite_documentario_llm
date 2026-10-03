@@ -34,6 +34,11 @@
     --color-fg-disabled: var(--text-disabled);
     --color-on-primary: var(--surface);
     --color-overlay: var(--overlay);
+    --color-material: var(--material);
+    --color-relleno: var(--relleno);
+    --color-relleno-fuerte: var(--relleno-fuerte);
+    --color-separador: var(--separador);
+    --color-border-campo: var(--border-campo);
 
     --color-ok: var(--status-ok);
     --color-ok-soft: var(--status-ok-bg);
@@ -45,8 +50,9 @@
     --color-neutral-soft: var(--status-neutral-bg);
 
     --font-sans: var(--fuente-base);
+    --font-titulos: var(--fuente-titulos);
 
-    /* Escala 12 / 14 / 16 / 20 / 28; la base del sistema es 14 px. */
+    /* Escala 12 / 14 / 16 / 20 / 28; la base del sistema es 14 px (HIG escritorio: 13 pt por defecto, mínimo 10). */
     --text-sm: 12px;
     --text-sm--line-height: 16px;
     --text-base: 14px;
@@ -56,16 +62,21 @@
     --text-lg: 20px;
     --text-lg--line-height: 28px;
     --text-xl: 28px;
-    --text-xl--line-height: 36px;
+    --text-xl--line-height: 34px;
 
+    /* Jerarquía por peso (HIG, Typography): nunca pesos finos. */
     --font-weight-normal: 400;
+    --font-weight-medium: 500;
     --font-weight-semibold: 600;
+    --font-weight-bold: 700;
 
     --radius-control: var(--radio-control);
     --radius-card: var(--radio-tarjeta);
+    --radius-hoja: var(--radio-hoja);
     --radius-full: 9999px;
 
     --shadow-card: var(--sombra);
+    --shadow-flotante: var(--sombra-flotante);
 }
 
 @layer base {
@@ -78,6 +89,14 @@
         -webkit-font-smoothing: antialiased;
     }
 
+    /* Títulos con la variante «Display» de la fuente del sistema y el interletrado algo cerrado de Apple. */
+    h1,
+    h2,
+    h3 {
+        font-family: var(--fuente-titulos);
+        letter-spacing: -0.01em;
+    }
+
     /* Anillo de foco único: 2 px en primary-600 con 2 px de separación. */
     :focus-visible {
         outline: 2px solid var(--primary-600);
@@ -86,5 +105,19 @@
 
     ::selection {
         background-color: var(--primary-100);
+    }
+}
+
+/* Entrada de hojas y avisos: breve y sin rebote (HIG, Motion); solo con motion-safe, se respeta «reducir movimiento». */
+@keyframes velo {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes hoja {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
     }
 }

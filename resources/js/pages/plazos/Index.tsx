@@ -1,4 +1,4 @@
-import { Add20Regular, Delete20Regular, Edit20Regular, Timer20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoEditar, IcoEliminar, IcoPlazo } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -54,7 +54,7 @@ export default function PlazosIndex({ plazos, filtros: iniciales, opcionesTipo, 
                 descripcion="Un tipo de trámite puede tener otro plazo en un área concreta; si no hay uno aquí, se usa el del tipo."
                 acciones={
                     <Link href={rutaModal('/plazos/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nuevo plazo por área
                     </Link>
                 }
@@ -88,7 +88,7 @@ export default function PlazosIndex({ plazos, filtros: iniciales, opcionesTipo, 
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<Timer20Regular />}
+                            icono={<IcoPlazo />}
                             titulo={hayFiltros ? 'No hay plazos que coincidan con los filtros' : 'Ningún área tiene un plazo propio'}
                             descripcion={hayFiltros ? 'Cambia el tipo o el área.' : 'Todas usan el plazo de cada tipo de trámite.'}
                         />
@@ -105,10 +105,10 @@ export default function PlazosIndex({ plazos, filtros: iniciales, opcionesTipo, 
                             acciones={
                                 <>
                                     <Link href={rutaModal(`/plazos/${elegido.id}/edit`)} preserveScroll className={botonClases()}>
-                                        <Edit20Regular />
+                                        <IcoEditar />
                                         Editar
                                     </Link>
-                                    <Button icono={<Delete20Regular />} onClick={() => setConfirmando(true)}>
+                                    <Button icono={<IcoEliminar />} onClick={() => setConfirmando(true)}>
                                         Quitar
                                     </Button>
                                 </>

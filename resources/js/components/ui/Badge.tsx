@@ -2,7 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-const badgeClases = cva('inline-flex h-5 items-center gap-1 rounded-control px-1.5 text-sm font-semibold whitespace-nowrap', {
+const badgeClases = cva('inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-sm font-medium whitespace-nowrap', {
     variants: {
         tono: {
             neutro: 'bg-neutral-soft text-fg-muted',

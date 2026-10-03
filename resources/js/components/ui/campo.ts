@@ -1,3 +1,4 @@
-// Aspecto común de todo control de formulario (Input, Select, Textarea, TagsInput).
+// Aspecto común de todo control de formulario (Input, Select, Textarea, TagsInput): esquinas redondeadas, borde liviano
+// con el 3:1 de WCAG 1.4.11 y, al enfocar, un halo azul suave en lugar del contorno (como los campos de Apple).
 export const campoClases =
-    'w-full rounded-control border border-border-strong bg-surface px-2 text-base text-fg placeholder:text-fg-disabled hover:border-fg-muted disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-subtle disabled:text-fg-disabled aria-invalid:border-danger';
+    'w-full rounded-control border border-border-campo bg-surface px-3 text-base text-fg transition-[border-color,box-shadow] placeholder:text-fg-muted/70 hover:border-fg-muted focus:border-primary-600 focus:shadow-[0_0_0_3px_var(--primary-200)] focus:outline-none disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-subtle disabled:text-fg-disabled aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_3px_var(--status-danger-bg)] file:mr-3 file:h-7 file:cursor-pointer file:rounded-[6px] file:border-0 file:bg-relleno file:px-3 file:text-base file:font-medium file:text-fg hover:file:bg-relleno-fuerte';

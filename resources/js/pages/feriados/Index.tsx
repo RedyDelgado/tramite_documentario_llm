@@ -1,4 +1,4 @@
-import { Add20Regular, CalendarCancel20Regular, Delete20Regular, Edit20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoEditar, IcoEliminar, IcoFeriado } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -55,7 +55,7 @@ export default function FeriadosIndex({ feriados, filtros: iniciales, opcionesAr
                 descripcion="Días no hábiles para el cálculo de plazos, además de sábados y domingos."
                 acciones={
                     <Link href={rutaModal('/feriados/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nuevo feriado
                     </Link>
                 }
@@ -90,7 +90,7 @@ export default function FeriadosIndex({ feriados, filtros: iniciales, opcionesAr
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<CalendarCancel20Regular />}
+                            icono={<IcoFeriado />}
                             titulo={`No hay feriados registrados en ${filtros.anio ?? 'este año'}`}
                             descripcion="Registra los feriados nacionales y los días no laborables de la institución."
                         />
@@ -107,10 +107,10 @@ export default function FeriadosIndex({ feriados, filtros: iniciales, opcionesAr
                             acciones={
                                 <>
                                     <Link href={rutaModal(`/feriados/${elegido.id}/edit`)} preserveScroll className={botonClases()}>
-                                        <Edit20Regular />
+                                        <IcoEditar />
                                         Editar
                                     </Link>
-                                    <Button icono={<Delete20Regular />} onClick={() => setConfirmando(true)}>
+                                    <Button icono={<IcoEliminar />} onClick={() => setConfirmando(true)}>
                                         Quitar
                                     </Button>
                                 </>

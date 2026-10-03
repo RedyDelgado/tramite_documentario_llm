@@ -1,4 +1,4 @@
-import { Add20Regular, MailProhibited20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoCorreoBloqueado } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import type { Columna } from '@/components/data/DataTable';
 import { ActivoBadge } from '@/components/domain/ActivoBadge';
@@ -43,7 +43,7 @@ export default function ReglasNoTramiteIndex({ reglas, filtros: iniciales, opcio
                 descripcion="El correo que cumple una regla activa entra archivado como no trámite: sin número ni semáforo, recuperable. Aplica a los correos que lleguen desde ahora."
                 acciones={
                     <Link href={rutaModal('/reglas-no-tramite/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nueva regla
                     </Link>
                 }
@@ -72,7 +72,7 @@ export default function ReglasNoTramiteIndex({ reglas, filtros: iniciales, opcio
                             type="search"
                             aria-label="Buscar"
                             placeholder="Buscar por nombre o valor"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -88,7 +88,7 @@ export default function ReglasNoTramiteIndex({ reglas, filtros: iniciales, opcio
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<MailProhibited20Regular />}
+                            icono={<IcoCorreoBloqueado />}
                             titulo={hayFiltros ? 'No hay reglas que coincidan con los filtros' : 'Aún no hay reglas'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda, el campo o el estado.' : 'Por ejemplo: remitentes noreply o boletines con enlace de baja.'}
                         />

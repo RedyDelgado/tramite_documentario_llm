@@ -1,4 +1,4 @@
-import { Add20Regular, Edit20Regular, PersonAccounts20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoEditar, IcoResponsables } from '@/components/ui/iconos';
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -54,7 +54,7 @@ export default function ResponsablesIndex({ responsables, filtros: iniciales, op
                 descripcion="Titular y suplentes de cada área. Ven los expedientes de su área mientras su vigencia esté en curso."
                 acciones={
                     <Link href={rutaModal('/responsables/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Asignar responsable
                     </Link>
                 }
@@ -90,7 +90,7 @@ export default function ResponsablesIndex({ responsables, filtros: iniciales, op
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<PersonAccounts20Regular />}
+                            icono={<IcoResponsables />}
                             titulo="No hay responsables que coincidan"
                             descripcion="Asigna un titular a cada área para que alguien atienda sus expedientes."
                         />
@@ -106,7 +106,7 @@ export default function ResponsablesIndex({ responsables, filtros: iniciales, op
                             subtitulo={`${TIPOS[elegido.tipo]} de ${elegido.area}`}
                             acciones={
                                 <Link href={rutaModal(`/responsables/${elegido.id}/edit`)} preserveScroll className={botonClases()}>
-                                    <Edit20Regular />
+                                    <IcoEditar />
                                     Editar
                                 </Link>
                             }

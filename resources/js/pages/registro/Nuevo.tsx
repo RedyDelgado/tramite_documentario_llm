@@ -109,7 +109,7 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
                             {...c}
                             type="file"
                             accept="application/pdf,image/png,image/jpeg,image/tiff,image/webp"
-                            className="py-1"
+                            className="py-0.5 pl-1"
                             onChange={(e) => subir(e.target.files?.[0])}
                         />
                     )}

@@ -1,4 +1,4 @@
-import { Dismiss20Regular } from '@fluentui/react-icons';
+import { IcoCerrar16 } from '@/components/ui/iconos';
 import { Dialog as D } from 'radix-ui';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
@@ -28,17 +28,17 @@ export function Dialog({ abierto, onCambiar, titulo, descripcion, acciones, chil
     return (
         <D.Root open={abierto} onOpenChange={onCambiar}>
             <D.Portal>
-                <D.Overlay className="fixed inset-0 z-40 bg-overlay" />
+                <D.Overlay className="fixed inset-0 z-40 bg-overlay backdrop-blur-sm motion-safe:animate-[velo_180ms_ease-out]" />
                 <D.Content
                     onInteractOutside={(e) => e.preventDefault()}
                     className={cn(
-                        'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] -translate-x-1/2 -translate-y-1/2 flex-col rounded-card border border-border bg-surface shadow-card',
+                        'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-hoja bg-surface shadow-flotante motion-safe:animate-[hoja_220ms_cubic-bezier(0.2,0.9,0.3,1)]',
                         ANCHO[tamano],
                     )}
                 >
-                    <header className="flex items-start justify-between gap-4 px-5 pt-4">
+                    <header className="flex items-start justify-between gap-4 px-6 pt-5">
                         <div className="min-w-0">
-                            <D.Title className="text-lg font-semibold text-fg">{titulo}</D.Title>
+                            <D.Title className="text-lg font-bold tracking-tight text-fg">{titulo}</D.Title>
                             {descripcion ? (
                                 <D.Description asChild>
                                     <div className="mt-1 text-base text-fg-muted">{descripcion}</div>
@@ -50,12 +50,12 @@ export function Dialog({ abierto, onCambiar, titulo, descripcion, acciones, chil
                         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                             {acciones}
                             <D.Close asChild>
-                                <IconButton icono={<Dismiss20Regular />} etiqueta="Cerrar" />
+                                <IconButton icono={<IcoCerrar16 />} etiqueta="Cerrar" tamano="sm" className="rounded-full bg-relleno text-fg-muted hover:bg-relleno-fuerte" />
                             </D.Close>
                         </div>
                     </header>
-                    {children && <div className="overflow-y-auto px-5 py-4">{children}</div>}
-                    {pie && <footer className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">{pie}</footer>}
+                    {children && <div className="overflow-y-auto px-6 py-5">{children}</div>}
+                    {pie && <footer className="flex items-center justify-end gap-2 border-t border-separador bg-surface-subtle/60 px-6 py-3.5">{pie}</footer>}
                 </D.Content>
             </D.Portal>
         </D.Root>

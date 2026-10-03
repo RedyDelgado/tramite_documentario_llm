@@ -1,5 +1,5 @@
 /* Única fuente de color, tipografía y forma (PLAN 5.3). Ningún otro archivo escribe HEX. */
-/* Paleta al estilo de Gmail (Material 3 de Google), por decisión del usuario. */
+/* Colores al estilo de Gmail (Material 3 de Google); forma, tipografía y capas al estilo de Apple (HIG). Decisiones del usuario. */
 :root {
     --primary-50: #ECF3FE;
     --primary-100: #D3E3FD;
@@ -17,8 +17,10 @@
     --surface: #FFFFFF;
     --surface-subtle: #F2F6FC;
     --border: #E1E3E1;
-    /* Bordes de campos: 4.6:1 sobre blanco, cumple el 3:1 de componentes (WCAG 1.4.11). */
+    /* Texto y contornos que deben distinguirse con claridad (4,6:1 sobre blanco). */
     --border-strong: #747775;
+    /* Borde de campos: el gris 600 de Google, 3,7:1 sobre blanco (WCAG 1.4.11 pide 3:1), más liviano que border-strong. */
+    --border-campo: #80868B;
     --text-primary: #1F1F1F;
     --text-secondary: #444746;
     --text-disabled: #9AA0A6;
@@ -32,11 +34,27 @@
     --status-neutral: #5F6368;
     --status-neutral-bg: #F1F3F4;
 
-    /* Velo de diálogos: text-primary al 40 %, no es un color nuevo. */
-    --overlay: rgb(31 31 31 / 0.4);
+    /* Capas (HIG, Materials): transparencias de colores ya existentes, no colores nuevos. */
+    /* Velo de diálogos: text-primary al 24 %, con desenfoque del fondo. */
+    --overlay: rgb(31 31 31 / 0.24);
+    /* Barra superior y navegación: surface al 78 % sobre el contenido, desenfocado. */
+    --material: rgb(255 255 255 / 0.78);
+    /* Relleno de botones secundarios y controles en reposo: text-primary al 6 %. */
+    --relleno: rgb(31 31 31 / 0.06);
+    --relleno-fuerte: rgb(31 31 31 / 0.1);
+    /* Separadores finos de listas: text-primary al 8 %. */
+    --separador: rgb(31 31 31 / 0.08);
 
-    --fuente-base: "Segoe UI", "Segoe UI Variable", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
-    --radio-control: 4px;
-    --radio-tarjeta: 8px;
-    --sombra: 0 1px 2px rgba(0, 0, 0, 0.12);
+    /* Fuente del sistema: SF en Apple, Segoe UI Variable en Windows, Roboto en Android. Sin CDN. */
+    --fuente-base: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --fuente-titulos: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Esquinas redondeadas y continuas: controles, tarjetas y hojas (modales). */
+    --radio-control: 8px;
+    --radio-tarjeta: 14px;
+    --radio-hoja: 18px;
+
+    /* Sombras en capas: un contorno casi invisible más una sombra difusa. */
+    --sombra: 0 0 0 1px rgb(31 31 31 / 0.04), 0 1px 2px rgb(31 31 31 / 0.04), 0 4px 14px rgb(31 31 31 / 0.05);
+    --sombra-flotante: 0 0 0 1px rgb(31 31 31 / 0.06), 0 2px 6px rgb(31 31 31 / 0.06), 0 16px 40px rgb(31 31 31 / 0.14);
 }

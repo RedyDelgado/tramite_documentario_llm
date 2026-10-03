@@ -1,4 +1,4 @@
-import { ArrowForward20Regular, CheckmarkCircle20Regular, Comment20Regular, LockClosed20Regular, PersonArrowRight20Regular } from '@fluentui/react-icons';
+import { IcoCandado, IcoComentario, IcoCorrecto, IcoDerivar, IcoTomar } from '@/components/ui/iconos';
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { FormField } from '@/components/forms/FormField';
@@ -68,14 +68,14 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
     return (
         <>
             {e.permisos.derivar && (
-                <Button variante={e.estado.valor === 'registrado' ? 'primario' : 'secundario'} icono={<ArrowForward20Regular />} onClick={() => setAbierto('derivar')}>
+                <Button variante={e.estado.valor === 'registrado' ? 'primario' : 'secundario'} icono={<IcoDerivar />} onClick={() => setAbierto('derivar')}>
                     {e.estado.valor === 'registrado' ? 'Derivar' : 'Reasignar'}
                 </Button>
             )}
             {e.permisos.tomar && (
                 <BotonConfirmado
                     variante="primario"
-                    icono={<PersonArrowRight20Regular />}
+                    icono={<IcoTomar />}
                     titulo={soloConocimiento ? '¿Tomar conocimiento?' : '¿Tomar en atención?'}
                     descripcion={
                         soloConocimiento
@@ -92,17 +92,17 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                 </BotonConfirmado>
             )}
             {e.permisos.solicitar_cierre && (
-                <Button icono={<LockClosed20Regular />} onClick={() => setAbierto('cierre')}>
+                <Button icono={<IcoCandado />} onClick={() => setAbierto('cierre')}>
                     Solicitar cierre
                 </Button>
             )}
             {e.permisos.resolver_cierre && (
-                <Button variante="primario" icono={<CheckmarkCircle20Regular />} onClick={() => setAbierto('resolver')}>
+                <Button variante="primario" icono={<IcoCorrecto />} onClick={() => setAbierto('resolver')}>
                     Resolver cierre
                 </Button>
             )}
             {e.permisos.comentar && (
-                <Button icono={<Comment20Regular />} onClick={() => setAbierto('comentar')}>
+                <Button icono={<IcoComentario />} onClick={() => setAbierto('comentar')}>
                     Comentar
                 </Button>
             )}

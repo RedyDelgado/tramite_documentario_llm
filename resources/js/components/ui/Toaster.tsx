@@ -1,4 +1,4 @@
-import { CheckmarkCircle20Filled, Dismiss16Regular, ErrorCircle20Filled, Info20Filled } from '@fluentui/react-icons';
+import { IcoAlerta, IcoCerrar16, IcoCorrecto, IcoInfo } from '@/components/ui/iconos';
 import { usePage } from '@inertiajs/react';
 import { Toast as T } from 'radix-ui';
 import { useEffect, useState } from 'react';
@@ -12,9 +12,9 @@ export function avisar(toast: Toast) {
 }
 
 const ICONOS = {
-    ok: <CheckmarkCircle20Filled className="shrink-0 text-ok" />,
-    error: <ErrorCircle20Filled className="shrink-0 text-danger" />,
-    info: <Info20Filled className="shrink-0 text-primary-600" />,
+    ok: <IcoCorrecto className="shrink-0 text-ok" />,
+    error: <IcoAlerta className="shrink-0 text-danger" />,
+    info: <IcoInfo className="shrink-0 text-primary-600" />,
 };
 
 let siguienteId = 0;
@@ -42,16 +42,16 @@ export function Toaster() {
                     key={a.id}
                     duration={a.tipo === 'error' ? 10000 : undefined}
                     onOpenChange={(abierto) => !abierto && setAvisos((previos) => previos.filter((p) => p.id !== a.id))}
-                    className="flex items-start gap-2 rounded-card border border-border bg-surface px-3 py-2.5 shadow-card"
+                    className="flex items-start gap-2.5 rounded-card bg-material px-4 py-3 shadow-flotante backdrop-blur-xl motion-safe:animate-[hoja_220ms_cubic-bezier(0.2,0.9,0.3,1)]"
                 >
                     {ICONOS[a.tipo]}
                     <T.Title className="flex-1 text-base text-fg">{a.mensaje}</T.Title>
-                    <T.Close aria-label="Cerrar aviso" className="cursor-pointer rounded-control p-0.5 text-fg-muted hover:bg-surface-subtle">
-                        <Dismiss16Regular />
+                    <T.Close aria-label="Cerrar aviso" className="cursor-pointer rounded-full p-0.5 text-fg-muted hover:bg-relleno">
+                        <IcoCerrar16 />
                     </T.Close>
                 </T.Root>
             ))}
-            <T.Viewport className="fixed right-4 bottom-4 z-50 flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2 outline-none" />
+            <T.Viewport className="fixed top-16 right-4 z-50 flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2 outline-none" />
         </T.Provider>
     );
 }

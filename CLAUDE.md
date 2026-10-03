@@ -9,6 +9,7 @@ Lee primero `PLAN_SISTEMA_TRAMITE_DOCUMENTARIO.md`: es la fuente de verdad. Trab
 - **Confirmación antes de actuar**: todo botón que cambia algo (activar, desactivar, aprobar, enviar, derivar, registrar, anular, quitar, fusionar…) pide confirmación con `ConfirmDialog`, que dice en una frase qué va a pasar. No hace falta para abrir, filtrar, buscar, descargar ni cancelar.
 - **Colores solo desde `resources/css/tokens.css`** (5.3). Tailwind no tiene su paleta por defecto; `npm test` falla con un HEX fuera de tokens.
 - **Paleta al estilo de Gmail** (Material 3 de Google, decisión del usuario): marca `#0B57D0`, fondo `#F6F8FC`, selección `#D3E3FD`, texto `#1F1F1F`/`#444746`; estados verde `#137333`, amarillo `#F9AB00`, rojo `#B3261E`, gris `#5F6368`. Solo los colores: ni nombre, ni logo, ni tipografía de Google. Un cambio de color se hace en 5.3 y en `tokens.css`, con contraste AA.
+- **Forma al estilo de Apple (HIG)**, decisión del usuario: capas y sombras en vez de bordes, esquinas redondeadas, títulos en negrita, materiales translúcidos. Iconos solo desde `resources/js/components/ui/iconos.tsx` (Lucide), nunca otro set.
 - **Sin `tailwind-merge`**: no pases clases que choquen con las del componente (`px-*`, `bg-*`); usa una variante.
 - **Escritura por Services** (`app/Services`), nunca desde el controlador: ahí se engancha la auditoría.
 - **Permisos en Policies**; ocultar algo en React no es seguridad.

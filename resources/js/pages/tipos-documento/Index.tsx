@@ -1,4 +1,4 @@
-import { Add20Regular, DocumentCopy20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoDocumentos } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import type { Columna } from '@/components/data/DataTable';
 import { ActivoBadge } from '@/components/domain/ActivoBadge';
@@ -18,7 +18,7 @@ type Filtros = { q?: string; estado?: string };
 
 const columnas: Columna<TipoDocumento>[] = [
     { clave: 'nombre', titulo: 'Nombre', celda: (t) => <span className="font-semibold">{t.nombre}</span> },
-    { clave: 'actualizado', titulo: 'Última actualización', celda: (t) => formatearFechaHora(t.actualizado) },
+    { clave: 'actualizado', titulo: 'Última actualización', sinCorte: true, celda: (t) => formatearFechaHora(t.actualizado) },
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (t) => <ActivoBadge activo={t.activo} /> },
 ];
 
@@ -34,7 +34,7 @@ export default function TiposDocumentoIndex({ tipos, filtros: iniciales, formula
                 descripcion="La forma del documento (oficio, carta, informe). La naturaleza y el plazo los da el tipo de trámite."
                 acciones={
                     <Link href={rutaModal('/tipos-documento/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nuevo tipo
                     </Link>
                 }
@@ -55,7 +55,7 @@ export default function TiposDocumentoIndex({ tipos, filtros: iniciales, formula
                             type="search"
                             aria-label="Buscar por nombre"
                             placeholder="Buscar por nombre"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -71,7 +71,7 @@ export default function TiposDocumentoIndex({ tipos, filtros: iniciales, formula
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<DocumentCopy20Regular />}
+                            icono={<IcoDocumentos />}
                             titulo={hayFiltros ? 'No hay tipos que coincidan con los filtros' : 'Aún no hay tipos de documento'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda o el estado.' : 'Por ejemplo: oficio, oficio circular, oficio múltiple, carta circular, informe, solicitud.'}
                         />

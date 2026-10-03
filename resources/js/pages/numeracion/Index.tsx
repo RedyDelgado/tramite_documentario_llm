@@ -1,4 +1,4 @@
-import { NumberSymbol20Regular, Settings20Regular } from '@fluentui/react-icons';
+import { IcoAjustes, IcoNumeral } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import type { ComponentProps } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -44,7 +44,7 @@ export default function NumeracionIndex({ correlativos, filtros: iniciales, form
                 descripcion="Con qué número continúa cada correlativo. Los documentos emitidos llevan uno por tipo y área; aparecen aquí al emitir el primero o al ajustarlo."
                 acciones={
                     <Link href={rutaModal('/numeracion/ajustar')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Settings20Regular />
+                        <IcoAjustes />
                         Ajustar numeración
                     </Link>
                 }
@@ -66,7 +66,7 @@ export default function NumeracionIndex({ correlativos, filtros: iniciales, form
                     claveFila: (c) => c.clave,
                     onElegirFila: (c) => ajustar(c, anio),
                     cargando,
-                    vacio: <EmptyState icono={<NumberSymbol20Regular />} titulo="Sin correlativos" />,
+                    vacio: <EmptyState icono={<IcoNumeral />} titulo="Sin correlativos" />,
                 }}
             />
         </>

@@ -1,4 +1,4 @@
-import { Add20Regular, Delete20Regular, Edit20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoEditar, IcoEliminar } from '@/components/ui/iconos';
 import { useEffect, useState, type ReactNode } from 'react';
 import { DataTable, type Columna, type Orden } from '@/components/data/DataTable';
 import { Pagination } from '@/components/data/Pagination';
@@ -128,12 +128,12 @@ export default function Catalogo() {
 
                 <Bloque titulo="Botones">
                     <Fila etiqueta="Variantes">
-                        <Button variante="primario" icono={<Add20Regular />}>
+                        <Button variante="primario" icono={<IcoAgregar />}>
                             Primario
                         </Button>
                         <Button>Secundario</Button>
                         <Button variante="sutil">Sutil</Button>
-                        <Button variante="peligro" icono={<Delete20Regular />}>
+                        <Button variante="peligro" icono={<IcoEliminar />}>
                             Peligro
                         </Button>
                     </Fila>
@@ -156,8 +156,8 @@ export default function Catalogo() {
                         <Button disabled>Deshabilitado</Button>
                     </Fila>
                     <Fila etiqueta="Solo icono">
-                        <IconButton icono={<Edit20Regular />} etiqueta="Editar" />
-                        <IconButton icono={<Delete20Regular />} etiqueta="Eliminar" tamano="sm" />
+                        <IconButton icono={<IcoEditar />} etiqueta="Editar" />
+                        <IconButton icono={<IcoEliminar />} etiqueta="Eliminar" tamano="sm" />
                     </Fila>
                 </Bloque>
 
@@ -169,7 +169,7 @@ export default function Catalogo() {
                         {(c) => <Input {...c} defaultValue="Dirección" />}
                     </FormField>
                     <FormField etiqueta="Con icono">
-                        {(c) => <Input {...c} iconoInicio={<Search20Regular />} placeholder="Buscar" />}
+                        {(c) => <Input {...c} iconoInicio={<IcoBuscar />} placeholder="Buscar" />}
                     </FormField>
                     <FormField etiqueta="Deshabilitado">
                         {(c) => <Input {...c} disabled defaultValue="Asignado por el sistema" />}
@@ -233,14 +233,14 @@ export default function Catalogo() {
                     </Fila>
                 </Bloque>
 
-                <section className="overflow-hidden rounded-card border border-border bg-surface shadow-card">
+                <section className="overflow-hidden rounded-card bg-surface shadow-card">
                     <CommandBar
                         acciones={
-                            <Button variante="primario" icono={<Add20Regular />}>
+                            <Button variante="primario" icono={<IcoAgregar />}>
                                 Registrar
                             </Button>
                         }
-                        filtros={<Input iconoInicio={<Search20Regular />} placeholder="Buscar" aria-label="Buscar" className="w-56" />}
+                        filtros={<Input iconoInicio={<IcoBuscar />} placeholder="Buscar" aria-label="Buscar" className="w-56" />}
                     />
                     <DataTable
                         titulo="Tabla de ejemplo"
@@ -281,7 +281,7 @@ export default function Catalogo() {
                         </div>
                     </Fila>
                     <EmptyState
-                        icono={<Search20Regular />}
+                        icono={<IcoBuscar />}
                         titulo="Sin resultados"
                         descripcion="Ningún expediente coincide con la búsqueda."
                         accion={<Button>Limpiar filtros</Button>}

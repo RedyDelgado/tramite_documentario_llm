@@ -1,4 +1,4 @@
-import { Add20Regular, Send20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoEnviar } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import type { Columna } from '@/components/data/DataTable';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
@@ -56,7 +56,7 @@ const columnas: Columna<Saliente>[] = [
                 <span className="text-fg-muted">—</span>
             ),
     },
-    { clave: 'actualizado', titulo: 'Actualizado', ancho: '11rem', celda: (s) => formatearFechaHora(s.actualizado) },
+    { clave: 'actualizado', titulo: 'Actualizado', sinCorte: true, ancho: '11rem', celda: (s) => formatearFechaHora(s.actualizado) },
 ];
 
 type Props = {
@@ -79,7 +79,7 @@ export default function SalientesIndex({ salientes, filtros: iniciales, estados,
                 descripcion="Oficios, cartas e informes que emite la institución. Ninguno sale sin aprobación; el número se asigna al aprobar."
                 acciones={
                     <Link href={rutaModal('/salientes/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Redactar documento
                     </Link>
                 }
@@ -102,7 +102,7 @@ export default function SalientesIndex({ salientes, filtros: iniciales, estados,
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<Send20Regular />}
+                            icono={<IcoEnviar />}
                             titulo="Aún no hay documentos"
                             descripcion="Redacta uno desde aquí o desde un expediente, para responderlo."
                         />

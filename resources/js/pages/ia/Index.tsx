@@ -1,4 +1,4 @@
-import { BrainCircuit20Regular } from '@fluentui/react-icons';
+import { IcoIa } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { DataTable } from '@/components/data/DataTable';
@@ -51,7 +51,7 @@ function Precision({ titulo, filas }: { titulo: string; filas: Categoria[] }) {
                 columnas={columnasCategoria}
                 filas={filas}
                 claveFila={(f) => f.nombre}
-                vacio={<EmptyState icono={<BrainCircuit20Regular />} titulo="Aún no hay decisiones con las que comparar" />}
+                vacio={<EmptyState icono={<IcoIa />} titulo="Aún no hay decisiones con las que comparar" />}
             />
         </Card>
     );
@@ -140,7 +140,7 @@ export default function IaIndex({ precision, correcciones, modo, modelo }: Props
                         columnas={columnasCorreccion}
                         filas={correcciones.data}
                         claveFila={(c) => c.id}
-                        vacio={<EmptyState icono={<BrainCircuit20Regular />} titulo="No hay correcciones pendientes" descripcion="Aparecen cuando una derivación contradice a la IA." />}
+                        vacio={<EmptyState icono={<IcoIa />} titulo="No hay correcciones pendientes" descripcion="Aparecen cuando una derivación contradice a la IA." />}
                     />
                     <Pagination links={correcciones.links} meta={correcciones.meta} />
                 </Card>

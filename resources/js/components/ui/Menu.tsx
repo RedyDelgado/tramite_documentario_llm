@@ -18,12 +18,12 @@ export function Menu({ disparador, encabezado, items }: Props) {
                 <M.Content
                     align="end"
                     sideOffset={4}
-                    className="z-50 min-w-48 rounded-card border border-border bg-surface py-1 shadow-card"
+                    className="z-50 min-w-56 rounded-card bg-material p-1.5 shadow-flotante backdrop-blur-xl"
                 >
                     {encabezado && (
                         <>
-                            <div className="px-3 py-2">{encabezado}</div>
-                            <M.Separator className="my-1 h-px bg-border" />
+                            <div className="px-2.5 py-2">{encabezado}</div>
+                            <M.Separator className="mx-1 my-1 h-px bg-separador" />
                         </>
                     )}
                     {items.map((item) => (
@@ -31,7 +31,7 @@ export function Menu({ disparador, encabezado, items }: Props) {
                             key={item.etiqueta}
                             onSelect={item.onSelect}
                             className={cn(
-                                'flex h-8 cursor-pointer items-center gap-2 px-3 text-base outline-none data-highlighted:bg-primary-50',
+                                'flex h-8 cursor-pointer items-center gap-2 rounded-[6px] px-2.5 text-base outline-none data-highlighted:bg-primary-600 data-highlighted:text-on-primary',
                                 item.peligro ? 'text-danger' : 'text-fg',
                             )}
                         >

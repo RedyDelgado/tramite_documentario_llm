@@ -9,7 +9,7 @@ export function Tooltip({ texto, children }: { texto: string; children: ReactNod
                 <T.Portal>
                     <T.Content
                         sideOffset={4}
-                        className="z-50 rounded-control bg-fg px-2 py-1 text-sm text-on-primary shadow-card"
+                        className="z-50 rounded-control bg-fg/90 px-2.5 py-1 text-sm text-on-primary shadow-flotante backdrop-blur"
                     >
                         {texto}
                     </T.Content>

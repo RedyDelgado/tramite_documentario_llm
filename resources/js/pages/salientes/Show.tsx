@@ -1,4 +1,4 @@
-import { ArrowDownload20Regular, CheckmarkCircle20Regular, DocumentArrowUp20Regular, Edit20Regular, Send20Regular } from '@fluentui/react-icons';
+import { IcoCorrecto, IcoDescargar, IcoEditar, IcoEnviar, IcoSubirDocumento } from '@/components/ui/iconos';
 import { Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
@@ -48,14 +48,14 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
                     <>
                         {s.permisos.editar && (
                             <Link href={`/salientes/${s.id}/edit`} className={botonClases()}>
-                                <Edit20Regular />
+                                <IcoEditar />
                                 Editar
                             </Link>
                         )}
                         {s.permisos.revision && (
                             <BotonConfirmado
                                 variante="primario"
-                                icono={<Send20Regular />}
+                                icono={<IcoEnviar />}
                                 titulo="¿Enviar a revisión?"
                                 descripcion="Ya no se podrá editar salvo que quien revisa lo devuelva."
                                 confirmar="Enviar a revisión"
@@ -70,7 +70,7 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
                                 <Button onClick={() => setDevolviendo(true)}>Devolver</Button>
                                 <BotonConfirmado
                                     variante="primario"
-                                    icono={<CheckmarkCircle20Regular />}
+                                    icono={<IcoCorrecto />}
                                     titulo="¿Aprobar y numerar?"
                                     descripcion={
                                         s.esperar_firma
@@ -87,7 +87,7 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
                         )}
                         {s.permisos.firmar && (
                             <label className={botonClases({ variante: s.esperar_firma && !s.firmado ? 'primario' : 'secundario' })}>
-                                <DocumentArrowUp20Regular />
+                                <IcoSubirDocumento />
                                 {s.firmado ? 'Reemplazar firmado' : 'Adjuntar PDF firmado'}
                                 <input
                                     type="file"
@@ -99,16 +99,16 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
                         )}
                         {s.firmado && (
                             <a href={`/salientes/${s.id}/descargar/firmado`} className={botonClases()}>
-                                <ArrowDownload20Regular />
+                                <IcoDescargar />
                                 Firmado
                             </a>
                         )}
                         <a href={`/salientes/${s.id}/descargar/pdf`} className={botonClases()}>
-                            <ArrowDownload20Regular />
+                            <IcoDescargar />
                             PDF
                         </a>
                         <a href={`/salientes/${s.id}/descargar/docx`} className={botonClases()}>
-                            <ArrowDownload20Regular />
+                            <IcoDescargar />
                             Word
                         </a>
                     </>

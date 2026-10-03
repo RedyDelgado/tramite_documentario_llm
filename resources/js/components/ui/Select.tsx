@@ -1,4 +1,4 @@
-import { ChevronDown16Regular } from '@fluentui/react-icons';
+import { IcoFlechaAbajo16 } from '@/components/ui/iconos';
 import type { SelectHTMLAttributes } from 'react';
 import { cn } from '@/lib/cn';
 import type { Opcion } from '@/types';
@@ -14,7 +14,7 @@ type Props = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> & {
 export function Select({ opciones, vacia, className, ...props }: Props) {
     return (
         <div className={cn('relative', className)}>
-            <select className={cn(campoClases, 'h-8 cursor-pointer appearance-none pr-8')} {...props}>
+            <select className={cn(campoClases, 'h-9 cursor-pointer appearance-none pr-9')} {...props}>
                 {vacia !== undefined && <option value="">{vacia}</option>}
                 {opciones.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -22,7 +22,7 @@ export function Select({ opciones, vacia, className, ...props }: Props) {
                     </option>
                 ))}
             </select>
-            <ChevronDown16Regular className="pointer-events-none absolute inset-y-0 right-2 my-auto text-fg-muted" />
+            <IcoFlechaAbajo16 className="pointer-events-none absolute inset-y-0 right-3 my-auto text-fg-muted" />
         </div>
     );
 }

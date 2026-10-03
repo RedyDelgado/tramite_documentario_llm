@@ -1,4 +1,4 @@
-import { Add20Regular, ArrowRouting20Regular, Edit20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoEditar, IcoRuta } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -83,7 +83,7 @@ export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opci
                 descripcion="Sugieren a qué área derivar según tipo, palabras del asunto o remitente. Se aplica la primera activa, por prioridad."
                 acciones={
                     <Link href={rutaModal('/reglas-derivacion/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nueva regla
                     </Link>
                 }
@@ -112,7 +112,7 @@ export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opci
                             type="search"
                             aria-label="Buscar por nombre"
                             placeholder="Buscar por nombre"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -129,7 +129,7 @@ export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opci
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<ArrowRouting20Regular />}
+                            icono={<IcoRuta />}
                             titulo={hayFiltros ? 'No hay reglas que coincidan con los filtros' : 'Aún no hay reglas de derivación'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda, el área o el estado.' : 'Por ejemplo: los convenios van a Cooperación; lo que llega de la SUNEDU, a Dirección.'}
                         />
@@ -146,7 +146,7 @@ export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opci
                             acciones={
                                 <>
                                     <Link href={rutaModal(`/reglas-derivacion/${elegida.id}/edit`)} preserveScroll className={botonClases()}>
-                                        <Edit20Regular />
+                                        <IcoEditar />
                                         Editar
                                     </Link>
                                     {elegida.activa ? (

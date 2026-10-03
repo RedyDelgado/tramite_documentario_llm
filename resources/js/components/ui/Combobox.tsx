@@ -1,4 +1,4 @@
-import { Add16Regular, ChevronDown16Regular } from '@fluentui/react-icons';
+import { IcoAgregar16, IcoFlechaAbajo16 } from '@/components/ui/iconos';
 import { Popover as P } from 'radix-ui';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { cn } from '@/lib/cn';
@@ -100,10 +100,10 @@ export function Combobox({ opciones, value, onChange, onCrear, creando, id, plac
                         onClick={() => setAbierto(true)}
                         onKeyDown={alTeclear}
                         onBlur={alSalir}
-                        className={cn(campoClases, 'h-8 pr-8')}
+                        className={cn(campoClases, 'h-9 pr-9')}
                         {...aria}
                     />
-                    <ChevronDown16Regular className="pointer-events-none absolute inset-y-0 right-2 my-auto text-fg-muted" />
+                    <IcoFlechaAbajo16 className="pointer-events-none absolute inset-y-0 right-3 my-auto text-fg-muted" />
                 </div>
             </P.Anchor>
             <P.Portal>
@@ -115,7 +115,7 @@ export function Combobox({ opciones, value, onChange, onCrear, creando, id, plac
                     onOpenAutoFocus={(e) => e.preventDefault()}
                     onCloseAutoFocus={(e) => e.preventDefault()}
                     onInteractOutside={(e) => ancla.current?.contains(e.target as Node) && e.preventDefault()}
-                    className="z-50 max-h-64 w-(--radix-popper-anchor-width) overflow-y-auto rounded-card border border-border bg-surface py-1 shadow-card"
+                    className="z-50 max-h-64 w-(--radix-popper-anchor-width) overflow-y-auto rounded-card bg-surface p-1.5 shadow-flotante"
                 >
                     {filtradas.map((o, i) => (
                         <div
@@ -126,7 +126,7 @@ export function Combobox({ opciones, value, onChange, onCrear, creando, id, plac
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => elegir(i)}
                             onMouseEnter={() => setActiva(i)}
-                            className={cn('flex h-8 cursor-pointer items-center px-3 text-base text-fg', i === activa && 'bg-primary-50', o.value === value && 'font-semibold')}
+                            className={cn('flex h-8 cursor-pointer items-center rounded-[6px] px-2.5 text-base', i === activa ? 'bg-primary-600 text-on-primary' : 'text-fg', o.value === value && 'font-semibold')}
                         >
                             {o.label}
                         </div>
@@ -140,12 +140,12 @@ export function Combobox({ opciones, value, onChange, onCrear, creando, id, plac
                             onClick={() => elegir(filtradas.length)}
                             onMouseEnter={() => setActiva(filtradas.length)}
                             className={cn(
-                                'flex h-8 cursor-pointer items-center gap-2 px-3 text-base text-primary-700',
-                                activa === filtradas.length && 'bg-primary-50',
-                                filtradas.length > 0 && 'border-t border-border',
+                                'flex h-8 cursor-pointer items-center gap-2 rounded-[6px] px-2.5 text-base',
+                                activa === filtradas.length ? 'bg-primary-600 text-on-primary' : 'text-primary-700',
+                                filtradas.length > 0 && 'mt-1',
                             )}
                         >
-                            <Add16Regular />
+                            <IcoAgregar16 />
                             Crear «{texto.trim()}»
                         </div>
                     )}

@@ -1,4 +1,4 @@
-import { ErrorCircle16Regular } from '@fluentui/react-icons';
+import { IcoAlerta16 } from '@/components/ui/iconos';
 import { useId, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -26,8 +26,8 @@ export function FormField({ etiqueta, error, ayuda, requerido = false, className
     const descritoPor = [ayuda && idAyuda, error && idError].filter(Boolean).join(' ') || undefined;
 
     return (
-        <div className={cn('flex flex-col gap-1', className)}>
-            <label htmlFor={id} className="text-base font-semibold text-fg">
+        <div className={cn('flex flex-col gap-1.5', className)}>
+            <label htmlFor={id} className="text-base font-medium text-fg">
                 {etiqueta}
                 {requerido && (
                     <span className="text-danger" aria-hidden>
@@ -43,7 +43,7 @@ export function FormField({ etiqueta, error, ayuda, requerido = false, className
             )}
             {error && (
                 <p id={idError} className="flex items-center gap-1 text-sm text-danger">
-                    <ErrorCircle16Regular className="shrink-0" />
+                    <IcoAlerta16 className="shrink-0" />
                     {error}
                 </p>
             )}

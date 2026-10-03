@@ -1,4 +1,4 @@
-import { Add20Regular, Archive20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoArchivo, IcoBuscar } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import type { Columna } from '@/components/data/DataTable';
 import { ActivoBadge } from '@/components/domain/ActivoBadge';
@@ -43,7 +43,7 @@ export default function UbicacionesIndex({ ubicaciones, filtros: iniciales, form
                 descripcion="Archivadores, cajas o estantes donde se guardan los originales en papel, que nunca se descartan."
                 acciones={
                     <Link href={rutaModal('/ubicaciones/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nueva ubicación
                     </Link>
                 }
@@ -64,7 +64,7 @@ export default function UbicacionesIndex({ ubicaciones, filtros: iniciales, form
                             type="search"
                             aria-label="Buscar"
                             placeholder="Buscar"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -80,7 +80,7 @@ export default function UbicacionesIndex({ ubicaciones, filtros: iniciales, form
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<Archive20Regular />}
+                            icono={<IcoArchivo />}
                             titulo={hayFiltros ? 'No hay ubicaciones que coincidan con los filtros' : 'Aún no hay ubicaciones'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda o el estado.' : 'Por ejemplo: Archivador 1 – 2026, Caja 3, Estante B.'}
                         />

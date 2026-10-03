@@ -1,4 +1,4 @@
-import { Add20Regular, Edit20Regular, Merge20Regular, Organization20Regular, Search20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoAreas, IcoBuscar, IcoEditar, IcoFusionar } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -94,7 +94,7 @@ export default function AreasIndex({ areas, filtros: iniciales, opcionesArea, fo
                 descripcion="Áreas de la institución, su jerarquía y las palabras clave que orientan la derivación."
                 acciones={
                     <Link href={rutaModal('/areas/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nueva área
                     </Link>
                 }
@@ -115,7 +115,7 @@ export default function AreasIndex({ areas, filtros: iniciales, opcionesArea, fo
                             type="search"
                             aria-label="Buscar por nombre"
                             placeholder="Buscar por nombre"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -134,7 +134,7 @@ export default function AreasIndex({ areas, filtros: iniciales, opcionesArea, fo
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<Organization20Regular />}
+                            icono={<IcoAreas />}
                             titulo={hayFiltros ? 'No hay áreas que coincidan con los filtros' : 'Aún no hay áreas'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda o el estado.' : 'Crea la primera área para empezar a derivar expedientes.'}
                         />
@@ -151,11 +151,11 @@ export default function AreasIndex({ areas, filtros: iniciales, opcionesArea, fo
                             acciones={
                                 <>
                                     <Link href={rutaModal(`/areas/${elegida.id}/edit`)} preserveScroll className={botonClases()}>
-                                        <Edit20Regular />
+                                        <IcoEditar />
                                         Editar
                                     </Link>
                                     {elegida.activa && (
-                                        <Button icono={<Merge20Regular />} onClick={() => setDestino('')}>
+                                        <Button icono={<IcoFusionar />} onClick={() => setDestino('')}>
                                             Fusionar
                                         </Button>
                                     )}

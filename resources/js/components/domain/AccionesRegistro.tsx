@@ -1,4 +1,4 @@
-import { Archive20Regular, ArrowUndo20Regular, CheckmarkCircle20Regular, Prohibited20Regular } from '@fluentui/react-icons';
+import { IcoArchivo, IcoCorrecto, IcoDeshacer, IcoProhibido } from '@/components/ui/iconos';
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { FormField } from '@/components/forms/FormField';
@@ -42,11 +42,11 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
         <>
             {(estado === 'por_revisar' || estado === 'historico') && (
                 <>
-                    <Button variante="primario" icono={<CheckmarkCircle20Regular />} onClick={() => setConfirmando(true)}>
+                    <Button variante="primario" icono={<IcoCorrecto />} onClick={() => setConfirmando(true)}>
                         Registrar como trámite
                     </Button>
                     <BotonConfirmado
-                        icono={<Archive20Regular />}
+                        icono={<IcoArchivo />}
                         titulo="¿Marcar como no trámite?"
                         descripcion="Se archiva sin número ni semáforo. No se borra: se puede devolver a revisión."
                         confirmar="No es trámite"
@@ -59,7 +59,7 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
             )}
             {estado === 'no_tramite' && (
                 <BotonConfirmado
-                    icono={<ArrowUndo20Regular />}
+                    icono={<IcoDeshacer />}
                     titulo="¿Devolver a revisión?"
                     descripcion="Vuelve a la bandeja por revisar para decidir si es trámite."
                     confirmar="Devolver"
@@ -70,7 +70,7 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
                 </BotonConfirmado>
             )}
             {expediente.numero_registro && estado !== 'anulado' && (
-                <Button icono={<Prohibited20Regular />} onClick={() => setAnulando(true)}>
+                <Button icono={<IcoProhibido />} onClick={() => setAnulando(true)}>
                     Anular
                 </Button>
             )}

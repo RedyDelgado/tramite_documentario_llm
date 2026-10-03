@@ -1,4 +1,4 @@
-import { Edit20Regular } from '@fluentui/react-icons';
+import { IcoEditar } from '@/components/ui/iconos';
 import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AppShell } from '@/components/layouts/AppShell';
@@ -19,7 +19,7 @@ export default function UmbralesIndex({ umbrales: u }: { umbrales: Umbrales }) {
                 titulo="Umbrales"
                 descripcion="Rigen desde el siguiente cálculo, sin desplegar."
                 acciones={
-                    <Button variante="primario" icono={<Edit20Regular />} onClick={() => setEditando(true)}>
+                    <Button variante="primario" icono={<IcoEditar />} onClick={() => setEditando(true)}>
                         Editar
                     </Button>
                 }

@@ -1,4 +1,4 @@
-import { ArrowDownload16Regular, Attach16Regular, Mail20Regular, Send20Regular, ShieldError16Regular } from '@fluentui/react-icons';
+import { IcoAdjunto16, IcoAmenaza16, IcoCorreo, IcoDescargar16, IcoEnviar } from '@/components/ui/iconos';
 import { Link } from '@inertiajs/react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
@@ -24,9 +24,9 @@ function EnlaceDocumento({ d }: { d: DocumentoDetalle }) {
     if (d.amenaza) {
         return (
             <span className="inline-flex flex-wrap items-center gap-1 text-base text-fg">
-                <Attach16Regular aria-hidden />
+                <IcoAdjunto16 aria-hidden />
                 {d.nombre}
-                <Badge tono="peligro" icono={<ShieldError16Regular aria-hidden />}>
+                <Badge tono="peligro" icono={<IcoAmenaza16 aria-hidden />}>
                     En cuarentena: {d.amenaza}
                 </Badge>
             </span>
@@ -38,7 +38,7 @@ function EnlaceDocumento({ d }: { d: DocumentoDetalle }) {
             href={`/documentos/${d.id}/descargar`}
             className="inline-flex items-center gap-1 rounded-control text-base text-primary-600 hover:text-primary-500 hover:underline"
         >
-            <Attach16Regular aria-hidden />
+            <IcoAdjunto16 aria-hidden />
             {d.nombre}
         </a>
     );
@@ -48,7 +48,7 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
     const adjuntos = documentos.filter((d) => c.documentos.includes(d.id));
 
     return (
-        <article className="border-b border-border px-4 py-4 last:border-b-0">
+        <article className="border-b border-separador px-5 py-4 last:border-b-0">
             <header className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                     <p className="text-base font-semibold text-fg">
@@ -65,7 +65,7 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
                 </div>
             </header>
             <p className="mt-2 text-base font-semibold text-fg">{c.asunto}</p>
-            {c.cuerpo && <div className="mt-2 rounded-control bg-surface-subtle p-3 text-base whitespace-pre-wrap text-fg">{c.cuerpo}</div>}
+            {c.cuerpo && <div className="mt-2 rounded-card bg-surface-subtle px-4 py-3 text-base whitespace-pre-wrap text-fg">{c.cuerpo}</div>}
             <footer className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                 {adjuntos.map((d) => (
                     <EnlaceDocumento key={d.id} d={d} />
@@ -74,7 +74,7 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
                     <span className="ml-auto text-sm text-fg-muted">Correo original en cuarentena</span>
                 ) : (
                     <a href={`/correos/${c.id}/eml`} className="ml-auto inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline">
-                        <ArrowDownload16Regular aria-hidden />
+                        <IcoDescargar16 aria-hidden />
                         Correo original (.eml)
                     </a>
                 )}
@@ -110,7 +110,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         <AccionesAtencion expediente={e} derivacion={derivacion} />
                         {e.permisos.redactar && (
                             <Link href={`/salientes/create?expediente=${e.id}`} className={botonClases()}>
-                                <Send20Regular />
+                                <IcoEnviar />
                                 Redactar respuesta
                             </Link>
                         )}
@@ -124,7 +124,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
             <div className="grid items-start gap-4 lg:grid-cols-3">
                 <Card titulo={`Correos (${e.correos.length})`} sinRelleno className="lg:col-span-2">
                     {e.correos.length === 0 ? (
-                        <EmptyState icono={<Mail20Regular />} titulo="Sin correos" />
+                        <EmptyState icono={<IcoCorreo />} titulo="Sin correos" />
                     ) : (
                         e.correos.map((c) => <Correo key={c.id} c={c} documentos={e.documentos} />)
                     )}

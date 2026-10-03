@@ -130,7 +130,7 @@ Todo lo que ve el usuario (administración, bandejas, dashboard, registro de pap
 2. **Primitivos de UI** (`resources/js/components/ui/`): `Button`, `IconButton`, `Input`, `Textarea`, `Select`, `Combobox`, `DatePicker`, `Checkbox`, `Switch`, `Badge`, `Card`, `Tabs`, `Dialog`, `Drawer`, `Popover`, `Tooltip`, `Toast`, `Skeleton`, `EmptyState`, `Spinner`. Basados en Radix, con variantes (`cva`) y estados (hover, foco, deshabilitado, error, carga) definidos **una sola vez**.
 3. **Compuestos de formulario y datos** (`components/forms/`, `components/data/`): `FormField` (etiqueta + control + ayuda + error), `FormSection`, `DataTable` (cabecera fija, orden, selección, paginación, fila en hover/seleccionada, estado vacío y de carga), `FilterBar`, `CommandBar` (acciones a la izquierda, filtros y búsqueda a la derecha), `ConfirmDialog`, `FileDropzone`, `KpiCard`, `ChartCard`.
 4. **Compuestos de dominio** (`components/domain/`): `SemaforoBadge` (siempre icono + texto), `EstadoBadge`, `ExpedienteDrawer`, `LineaTiempo`, `EmisorCombobox`, `AreaSelect`, `ResponsableSelect`, `EtiquetaQR`, `LectorQR`, `CargaEscaneo`. Un componente de dominio nunca define estilos propios: compone capas 2 y 3.
-5. **Plantillas de página** (`components/layouts/`): `AppShell` (barra superior de 48 px, navegación lateral colapsable con ítem activo de 3 px), `ListPage` (CommandBar + FilterBar + DataTable + Drawer de detalle), `FormPage`, `DashboardPage`.
+5. **Plantillas de página** (`components/layouts/`): `AppShell` (barra superior y navegación lateral translúcidas, selección en cápsula), `ListPage` (CommandBar + FilterBar + DataTable + Drawer de detalle), `FormPage`, `DashboardPage`.
 6. **Páginas** (`resources/js/pages/`): solo ensamblan plantillas y compuestos y llaman a Inertia. Sin CSS propio, sin HEX, sin lógica de negocio.
 
 **Reglas de reutilización**
@@ -152,20 +152,20 @@ Todo lo que ve el usuario (administración, bandejas, dashboard, registro de pap
 
 ## 5.3 Diseño visual y paleta
 
-**Estilo:** Fluent / Microsoft 365. Sobrio, denso, claro y centrado en la tarea. Sin gradientes, sin sombras pesadas, sin decoración.
+**Estilo:** forma, tipografía y capas al estilo de Apple (Human Interface Guidelines, escritorio); colores de Google (Material 3, abajo). Decisión del usuario, en reemplazo del estilo Fluent / Microsoft 365 inicial. Claro y centrado en la tarea: la jerarquía se da con tamaño, peso y espacio, no con bordes.
 
 **Estructura de pantalla**
-- Barra superior blanca de 48 px: nombre del sistema, búsqueda global y menú de usuario.
-- Navegación lateral colapsable; ítem activo con barra vertical de 3 px en `primary-600` y fondo `primary-50`.
+- Barra superior de 52 px translúcida (material con desenfoque) sobre el contenido: nombre del sistema, búsqueda global (campo relleno, sin borde) y menú de usuario con avatar de iniciales.
+- Navegación lateral translúcida y colapsable (solo iconos en ventanas de menos de 1024 px); ítem activo en cápsula redondeada `primary-100`, sin barra lateral.
 - Barra de comandos sobre cada tabla: acciones principales a la izquierda, filtros y búsqueda a la derecha.
-- Fondo de página gris claro; tarjetas blancas con borde de 1 px.
-- Tablas densas con cabecera fija, fila en hover y fila seleccionada.
-- Panel lateral (drawer) para ver un expediente sin perder la lista.
+- Fondo de página gris claro; tarjetas blancas **sin borde**, con sombra en capas y esquinas de 14 px.
+- Tablas como listas: cabecera fija translúcida sin franja de color, filas de 44 px con separadores finos, fila en hover y seleccionada.
+- Crear, editar y ver en modales tipo hoja (esquinas de 18 px, fondo desenfocado, entrada suave); detalle en lista agrupada etiqueta | valor.
 - Solo tema claro en la v1.
 
-**Tipografía:** pila `"Segoe UI", "Segoe UI Variable", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif`. Sin fuentes externas (CDN): el sistema es local. Base 14 px; escala 12 / 14 / 16 / 20 / 28 px; pesos 400, 600.
+**Tipografía:** fuente del sistema (`-apple-system`, SF Pro en Apple, Segoe UI Variable en Windows, Roboto en Android); los títulos usan la variante Display con interletrado algo cerrado. Sin fuentes externas (CDN): el sistema es local. Base 14 px; escala 12 / 14 / 16 / 20 / 28 px; pesos 400, 500, 600 y 700 (nunca pesos finos). Título de página en negrita de 28 px.
 
-**Forma y espaciado:** cuadrícula de 4 px; radio 4 px en controles y 8 px en tarjetas; sombra única `0 1px 2px rgba(0,0,0,0.12)`; anillo de foco de 2 px en `primary-600` con separación de 2 px.
+**Forma y espaciado:** cuadrícula de 4 px; radio 8 px en controles, 14 px en tarjetas y 18 px en hojas; sombras en capas (`--sombra`, `--sombra-flotante`); campos de 36 px con borde gris de Google (3,7:1) y, al enfocar, halo azul de 3 px; anillo de foco de 2 px en `primary-600` con separación de 2 px en el resto. Botón secundario relleno de gris (no contorno); deshabilitado, atenuado al 40 %. Etiquetas en cápsula.
 
 **Paleta única (HEX)**
 
@@ -213,9 +213,9 @@ Paleta **al estilo de Gmail (Material 3 de Google)**, por decisión del usuario 
 **Implementación**
 - Una sola fuente de verdad: `resources/css/tokens.css` con variables CSS (`--primary-600`, `--bg-app`, `--status-ok`, etc.).
 - Tailwind 4 consume esas variables desde `@theme` en `resources/css/app.css` (no hay `tailwind.config.js`): la escala `primary` y los tokens neutros y semánticos se registran completos con los valores de esta sección (sin tonos autogenerados ni colores por defecto de Tailwind); prohibido escribir HEX sueltos o clases de color fuera de los tokens en componentes y páginas. Un lint/test falla si aparece un HEX fuera de `tokens.css`.
-- Los componentes de 5.2 son la única vía para aplicar este diseño: densidad de tablas, barra de comandos, drawer, barra lateral con ítem activo de 3 px, radios, sombra única y anillo de foco se definen en los primitivos y plantillas, no en las páginas.
+- Los componentes de 5.2 son la única vía para aplicar este diseño: tablas, barra de comandos, hojas, barra lateral, radios, sombras, materiales y anillo de foco se definen en los primitivos y plantillas, no en las páginas.
 - Fuentes: pila de sistema sin CDN, sin Google Fonts ni proveedores externos.
-- Iconos de trazo simple estilo Fluent con `@fluentui/react-icons` (variante *regular*), un solo set en todo el sistema.
+- Iconos de trazo redondeado al estilo de SF Symbols con Lucide (`lucide-react`, trazo 1,75), siempre desde `components/ui/iconos.tsx`: un solo set en todo el sistema.
 
 ## 6. Modelo de datos (borrador inicial)
 

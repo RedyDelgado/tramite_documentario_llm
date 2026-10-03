@@ -1,4 +1,4 @@
-import { Add20Regular, Search20Regular, TaskListLtr20Regular } from '@fluentui/react-icons';
+import { IcoAgregar, IcoBuscar, IcoInstrucciones } from '@/components/ui/iconos';
 import { Link, router } from '@inertiajs/react';
 import type { Columna } from '@/components/data/DataTable';
 import { ActivoBadge } from '@/components/domain/ActivoBadge';
@@ -35,7 +35,7 @@ export default function InstruccionesIndex({ instrucciones, filtros: iniciales, 
                 descripcion="Se eligen de una lista al derivar, en el orden indicado, en vez de escribirlas cada vez."
                 acciones={
                     <Link href={rutaModal('/instrucciones/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
-                        <Add20Regular />
+                        <IcoAgregar />
                         Nueva instrucción
                     </Link>
                 }
@@ -56,7 +56,7 @@ export default function InstruccionesIndex({ instrucciones, filtros: iniciales, 
                             type="search"
                             aria-label="Buscar"
                             placeholder="Buscar"
-                            iconoInicio={<Search20Regular />}
+                            iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
                             onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
@@ -72,7 +72,7 @@ export default function InstruccionesIndex({ instrucciones, filtros: iniciales, 
                     cargando,
                     vacio: (
                         <EmptyState
-                            icono={<TaskListLtr20Regular />}
+                            icono={<IcoInstrucciones />}
                             titulo={hayFiltros ? 'No hay instrucciones que coincidan con los filtros' : 'Aún no hay instrucciones'}
                             descripcion={hayFiltros ? 'Cambia la búsqueda o el estado.' : 'Por ejemplo: para conocimiento, atender, presentar información.'}
                         />
