@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AtencionController;
+use App\Http\Controllers\BuzonController;
 use App\Http\Controllers\EmisorController;
 use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\FeriadoController;
@@ -147,6 +148,13 @@ Route::middleware('auth')->group(function () {
     Route::post('expedientes/{expediente}/resolver-cierre', [AtencionController::class, 'resolverCierre'])->name('expedientes.resolver-cierre');
 
     Route::get('notificaciones', [NotificacionController::class, 'index'])->name('notificaciones.index');
+
+    Route::get('buzon', [BuzonController::class, 'index'])->name('buzon.index');
+    Route::get('buzon/conectar', [BuzonController::class, 'conectar'])->name('buzon.conectar');
+    Route::get('buzon/google/callback', [BuzonController::class, 'volver'])->middleware('throttle:10,1')->name('buzon.callback');
+    Route::post('buzon/descargar', [BuzonController::class, 'descargar'])->middleware('throttle:6,1')->name('buzon.descargar');
+    Route::post('buzon/activar', [BuzonController::class, 'activar'])->name('buzon.activar');
+    Route::post('buzon/desconectar', [BuzonController::class, 'desconectar'])->name('buzon.desconectar');
 
     Route::get('documentos/{documento}/descargar', [OriginalController::class, 'documento'])->name('documentos.descargar');
     Route::get('correos/{correo}/eml', [OriginalController::class, 'correo'])->name('correos.eml');

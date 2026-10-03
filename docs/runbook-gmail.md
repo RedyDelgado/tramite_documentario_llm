@@ -1,42 +1,30 @@
 # Runbook: conectar el buzón central de Gmail
 
-Requisito previo: autorización por escrito del administrador de Google Workspace y de la dirección (pendiente 1 del plan). Hasta tenerla, usar un buzón de prueba propio.
+Se conecta desde el sistema: **Administración → Buzón central** (solo el superadmin). No hace falta copiar tokens al `.env`.
 
-## 1. Cliente OAuth (una vez)
+## 1. Google Cloud (una vez, con el mismo cliente OAuth del inicio de sesión)
 
-1. En Google Cloud Console, con la cuenta de Workspace, crear un proyecto `tramite-documentario`.
+1. En Google Cloud Console, abrir el proyecto del cliente OAuth que ya usa el inicio de sesión (`GOOGLE_CLIENT_ID`).
 2. *APIs y servicios → Biblioteca*: habilitar **Gmail API**.
-3. *Pantalla de consentimiento OAuth*: tipo **Interno**; agregar el scope `https://www.googleapis.com/auth/gmail.modify`.
-4. *Credenciales → Crear ID de cliente OAuth*: tipo **Aplicación web**; URI de redirección autorizada `https://developers.google.com/oauthplayground`.
-5. Copiar el ID y el secreto del cliente.
+3. *Pantalla de consentimiento OAuth → Permisos (scopes)*: agregar `https://www.googleapis.com/auth/gmail.modify` (leer, etiquetar lo procesado y enviar).
+   - Con Google Workspace, tipo **Interno**: no requiere verificación de Google.
+   - Con una cuenta @gmail.com, tipo **Externo** en modo *Prueba*: agregar la cuenta del buzón en *Usuarios de prueba*. En ese modo Google vence el acceso a los 7 días; para que no venza hay que publicar la app (Google pide verificación para este permiso).
+4. *Credenciales → el ID de cliente → URI de redirección autorizados*: agregar `<APP_URL>/buzon/google/callback` (en local, `http://localhost:8100/buzon/google/callback`). La pantalla Buzón central muestra la URI exacta.
 
-## 2. Refresh token de la cuenta del buzón (una vez)
+## 2. Conectar y descargar
 
-1. Abrir <https://developers.google.com/oauthplayground> en una ventana con la sesión de la **cuenta del buzón central**.
-2. Engranaje → marcar *Use your own OAuth credentials* → pegar ID y secreto.
-3. En *Step 1* escribir `https://www.googleapis.com/auth/gmail.modify` → *Authorize APIs* → aceptar.
-4. *Step 2* → *Exchange authorization code for tokens* → copiar el **Refresh token**.
-5. En el engranaje, quitar las credenciales propias del Playground.
+1. Entrar como superadmin → **Buzón central** → **Conectar con Google** → elegir la **cuenta del buzón central** → marcar el permiso de Gmail → *Continuar*. El acceso queda cifrado en la base (con `APP_KEY`), nunca en la auditoría.
+2. **Descargar ahora**: lee un lote (`CORREO_LOTE`, 50 por defecto) en la cola; cada correo nuevo aparece en Expedientes como «Por revisar» y en Gmail queda con la etiqueta `tramite/procesado`. Horizon debe estar corriendo.
+3. Revisar los primeros expedientes; si están bien, **Encender descarga automática** (cada minuto; requiere el programador, `schedule:work`).
+4. La pantalla muestra la última lectura: cuántos entraron, cuántos fallaron y, si Google rechazó el acceso, el motivo (por ejemplo `invalid_grant`: volver a conectar).
 
-## 3. Configurar el sistema
+`CORREO_BACKFILL_DESDE` fija desde qué fecha se lee; lo anterior a `CORREO_INICIO_OPERACION` entra como histórico. Para dimensionar sin guardar nada: `docker compose exec app php artisan correo:estadisticas`.
 
-1. En `.env` del servidor (nunca en el repositorio):
-   ```
-   CORREO_DRIVER=gmail
-   GMAIL_CLIENT_ID=...
-   GMAIL_CLIENT_SECRET=...
-   GMAIL_REFRESH_TOKEN=...
-   CORREO_BACKFILL_DESDE=2026-01-01
-   CORREO_INICIO_OPERACION=<fecha de puesta en marcha>
-   CORREO_ACTIVO=false
-   ```
-2. `docker compose exec app php artisan config:clear`
-3. Dimensionar sin guardar nada: `docker compose exec app php artisan correo:estadisticas`
-4. Probar un lote chico: `docker compose exec -u www-data app php artisan correo:importar --limite=5`
-5. Revisar en el panel que los 5 expedientes estén bien y que en Gmail tengan la etiqueta `tramite/procesado`.
-6. Activar el job programado: `CORREO_ACTIVO=true` → `docker compose exec app php artisan config:clear`.
+### Alternativa sin panel (`.env`)
 
-## 3b. Enviar los documentos aprobados
+Si no se conecta desde el panel, vale lo del `.env`: `CORREO_DRIVER=gmail`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` (obtenido con <https://developers.google.com/oauthplayground> y el permiso de arriba) y `CORREO_ACTIVO=true`, luego `php artisan config:clear`. Lo conectado en el panel manda sobre el `.env`.
+
+## 3. Enviar los documentos aprobados
 
 El scope `gmail.modify` ya permite enviar (`users.messages.send`): no hace falta otra autorización.
 
@@ -48,4 +36,4 @@ El scope `gmail.modify` ya permite enviar (`users.messages.send`): no hace falta
 ## 4. Revocar el acceso
 
 1. <https://myaccount.google.com/permissions> con la cuenta del buzón → quitar el acceso del cliente, o eliminar el ID de cliente en Google Cloud.
-2. Poner `CORREO_ACTIVO=false` y borrar `GMAIL_REFRESH_TOKEN` del `.env`.
+2. En **Buzón central → Desconectar** (o, si se usó el `.env`, `CORREO_ACTIVO=false` y borrar `GMAIL_REFRESH_TOKEN`).

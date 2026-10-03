@@ -1,4 +1,5 @@
-import { IcoArchivo, IcoAreas, IcoColas, IcoComponentes, IcoCorreoAviso, IcoCorreoBloqueado, IcoDocumento, IcoDocumentos, IcoEnviar, IcoExpedientes, IcoFeriado, IcoIa, IcoInicio, IcoInstitucion, IcoInstrucciones, IcoNuevoDocumento, IcoNumeral, IcoPlazo, IcoResponsables, IcoRuta, IcoUsuarios, IcoVelocimetro } from '@/components/ui/iconos';
+import { IcoArchivo, IcoAreas, IcoColas, IcoComponentes, IcoCorreo,
+    IcoCorreoAviso, IcoCorreoBloqueado, IcoDocumento, IcoDocumentos, IcoEnviar, IcoExpedientes, IcoFeriado, IcoIa, IcoInicio, IcoInstitucion, IcoInstrucciones, IcoNuevoDocumento, IcoNumeral, IcoPlazo, IcoResponsables, IcoRuta, IcoUsuarios, IcoVelocimetro } from '@/components/ui/iconos';
 import type { ReactElement } from 'react';
 import type { SharedProps } from '@/types';
 
@@ -56,6 +57,7 @@ const NAVEGACION: GrupoNav[] = [
     {
         titulo: 'Sistema',
         items: [
+            { etiqueta: 'Buzón central', href: '/buzon', icono: <IcoCorreo />, rol: 'superadmin' },
             { etiqueta: 'Notificaciones', href: '/notificaciones', icono: <IcoCorreoAviso />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Colas (Horizon)', href: '/horizon', icono: <IcoColas />, rol: 'superadmin', externo: true },
             { etiqueta: 'Componentes', href: '/ui', icono: <IcoComponentes />, soloLocal: true },

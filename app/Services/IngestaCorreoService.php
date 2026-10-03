@@ -44,16 +44,23 @@ class IngestaCorreoService
         $desde = CarbonImmutable::parse(config('tramite.correo.backfill_desde'))->startOfDay();
         $resultado = ['procesados' => 0, 'fallidos' => 0];
 
-        foreach ($buzon->pendientes($desde, $limite) as $mensaje) {
-            try {
-                $this->procesar($mensaje->contenido, $mensaje->uid);
-                $buzon->marcarProcesado($mensaje);
-                $resultado['procesados']++;
-            } catch (Throwable $e) {
-                report($e);
-                $resultado['fallidos']++;
+        try {
+            foreach ($buzon->pendientes($desde, $limite) as $mensaje) {
+                try {
+                    $this->procesar($mensaje->contenido, $mensaje->uid);
+                    $buzon->marcarProcesado($mensaje);
+                    $resultado['procesados']++;
+                } catch (Throwable $e) {
+                    report($e);
+                    $resultado['fallidos']++;
+                }
             }
+        } catch (Throwable $e) {
+            // No se pudo ni leer el buzón (token revocado, sin red): queda a la vista en Buzón central.
+            app(BuzonService::class)->registrarLectura($resultado, $e->getMessage());
+            throw $e;
         }
+        app(BuzonService::class)->registrarLectura($resultado);
 
         return $resultado;
     }

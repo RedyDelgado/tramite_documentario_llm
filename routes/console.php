@@ -2,6 +2,7 @@
 
 use App\Jobs\IngestarCorreos;
 use App\Models\Feriado;
+use App\Services\BuzonService;
 use Illuminate\Support\Facades\Schedule;
 
 // Antes de la verificación de la auditoría, para que el respaldo no compita con ella.
@@ -14,8 +15,8 @@ if ($superadmin = config('tramite.superadmin.email')) {
 // Una alteración de la auditoría debe detectarse en menos de un día (sección 9).
 Schedule::command('auditoria:verificar')->dailyAt('03:00')->withoutOverlapping();
 
-// Solo con el buzón configurado y autorizado (CORREO_ACTIVO).
-Schedule::job(new IngestarCorreos)->everyMinute()->when(fn () => config('tramite.correo.activo'));
+// Solo con la descarga automática encendida (en el panel, Buzón central, o CORREO_ACTIVO).
+Schedule::job(new IngestarCorreos)->everyMinute()->when(fn () => app(BuzonService::class)->activo());
 
 // Los vencimientos y los días sin movimiento cambian el color sin que nadie toque el expediente (8).
 Schedule::command('semaforos:recalcular')->hourly()->withoutOverlapping();

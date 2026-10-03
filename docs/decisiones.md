@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-10 — Buzón central conectado desde el panel
+
+- **El superadmin conecta la cuenta del buzón con Google desde la pantalla Buzón central**, con el mismo cliente OAuth del inicio de sesión y el permiso `gmail.modify` (acceso permanente: `access_type=offline`, `prompt=consent`). Antes había que sacar el refresh token con el OAuth Playground y pegarlo en el `.env`; por eso, en la práctica, el correo no se descargaba.
+- El refresh token se guarda en `configuracion` cifrado con `APP_KEY`; la auditoría registra solo la cuenta. Lo conectado en el panel manda sobre el `.env`, que queda como alternativa.
+- **Descargar ahora** encola un lote; **descarga automática** se enciende o apaga en el panel (manda sobre `CORREO_ACTIVO`). Cada lectura guarda su resultado y, si Google rechaza el acceso, el error queda a la vista.
+- Solo el superadmin (gate `gestionar-buzon`): el acceso da lectura y envío sobre todo el buzón.
+
 ## 2026-10-09 — Diseño al estilo de Apple con los colores de Google (decisión del usuario)
 
 - **Se reemplaza el estilo Fluent / Microsoft 365 por los principios de diseño de Apple (HIG, escritorio)**, aplicados con la skill de revisión de diseño, y **se mantienen los colores de Google** (ningún HEX cambió; solo se agregó `--border-campo`, el gris 600 de Google, para campos más livianos con 3,7:1).

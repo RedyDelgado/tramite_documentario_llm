@@ -32,8 +32,9 @@ return [
             'client_id' => env('GMAIL_CLIENT_ID'),
             'client_secret' => env('GMAIL_CLIENT_SECRET'),
             'refresh_token' => env('GMAIL_REFRESH_TOKEN'),
-            'usuario' => env('GMAIL_USUARIO', 'me'),
-            'etiqueta' => env('GMAIL_ETIQUETA', 'tramite/procesado'),
+            // `?:` y no el valor por defecto de env(): una línea vacía en el .env («GMAIL_ETIQUETA=») no debe dejarla en blanco.
+            'usuario' => env('GMAIL_USUARIO') ?: 'me',
+            'etiqueta' => env('GMAIL_ETIQUETA') ?: 'tramite/procesado',
         ],
     ],
 
