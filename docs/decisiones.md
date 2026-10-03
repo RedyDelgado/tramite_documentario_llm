@@ -2,6 +2,10 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Piloto: adopción
+
+- **Adopción = respondidos desde el sistema** (16.7): de los expedientes atendidos o cerrados en el año que exigían respuesta, los que tienen una respuesta (`es_respuesta`) **enviada** desde el sistema. Cerrar a mano, o con la respuesta aún en borrador, cuenta como respondido por fuera. Lo «solo para conocimiento» no entra. Es una tarjeta más en Inicio, calculada sobre lo que el usuario puede ver, como el resto del panel. El tiempo de atención y las correcciones de la IA ya estaban en Inicio y en `/ia`.
+
 ## 2026-10-07 — Piloto: producción
 
 - **Override `docker-compose.prod.yml`** activado con `COMPOSE_FILE` en el `.env`: los comandos siguen siendo `docker compose …` en ambos entornos. Apaga `vite` (perfil `dev`; los assets salen de `npm run build`) y agrega **Caddy** como único servicio expuesto (80/443), con Let's Encrypt automático o el certificado de la institución. nginx sigue escuchando solo en `127.0.0.1`.

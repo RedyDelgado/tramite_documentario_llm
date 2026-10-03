@@ -19,6 +19,7 @@ type Indicadores = {
     sin_movimiento: number;
     dias_sin_movimiento: number;
     en_plazo: { atendidos: number; en_plazo: number };
+    adopcion: { con_respuesta: number; desde_sistema: number };
     tiempo_por_area: Tiempo[];
     tiempo_por_tipo: Tiempo[];
     carga: Carga[];
@@ -86,20 +87,25 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
         );
     }
 
-    const porcentaje = i.en_plazo.atendidos ? Math.round((i.en_plazo.en_plazo / i.en_plazo.atendidos) * 100) : null;
+    const porcentaje = (parte: number, total: number) => (total ? `${Math.round((parte / total) * 100)} %` : '—');
 
     return (
         <AppShell>
             <PageHeader titulo="Inicio" descripcion="Expedientes que puedes ver: estado, semáforos, tiempos de atención y carga." />
             <div className="flex flex-col gap-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     <Cifra titulo="Abiertos" valor={i.abiertos} detalle="Derivados o en atención" />
                     <Cifra titulo="Por revisar" valor={i.por_revisar} detalle="Correos que esperan registro" href="/expedientes?estado=por_revisar" />
                     <Cifra titulo="Sin movimiento" valor={i.sin_movimiento} detalle={`Abiertos con más de ${i.dias_sin_movimiento} días quietos`} />
                     <Cifra
                         titulo="Atendidos en plazo"
-                        valor={porcentaje === null ? '—' : `${porcentaje} %`}
+                        valor={porcentaje(i.en_plazo.en_plazo, i.en_plazo.atendidos)}
                         detalle={`${i.en_plazo.en_plazo} de ${i.en_plazo.atendidos} con plazo, en el año`}
+                    />
+                    <Cifra
+                        titulo="Respondidos desde el sistema"
+                        valor={porcentaje(i.adopcion.desde_sistema, i.adopcion.con_respuesta)}
+                        detalle={`${i.adopcion.desde_sistema} de ${i.adopcion.con_respuesta} que exigían respuesta, en el año`}
                     />
                 </div>
 

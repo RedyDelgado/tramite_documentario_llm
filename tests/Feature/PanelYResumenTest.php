@@ -6,7 +6,9 @@ use App\Enums\EstadoExpediente;
 use App\Mail\ResumenDiario;
 use App\Models\Area;
 use App\Models\AreaResponsable;
+use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
+use App\Models\TipoDocumento;
 use App\Models\User;
 use App\Services\PanelService;
 use Database\Seeders\RolesSeeder;
@@ -54,6 +56,31 @@ class PanelYResumenTest extends TestCase
         $this->assertSame(1, $delCoordinador['por_semaforo']['rojo']);
         $this->assertSame([['area' => 'Laboratorios', 'responsable' => null, 'abiertos' => 1, 'rojos' => 1]], $delCoordinador['carga']);
         $this->assertSame([['nombre' => 'Laboratorios', 'dias' => 9.0, 'total' => 2]], $delCoordinador['tiempo_por_area']);
+    }
+
+    public function test_la_adopcion_cuenta_solo_lo_respondido_desde_el_sistema(): void
+    {
+        $respondido = function (Expediente $e, string $estado = 'enviado') {
+            DocumentoSaliente::create([
+                'expediente_id' => $e->id, 'tipo_documento_id' => TipoDocumento::firstOrCreate(['nombre' => 'Oficio'])->id,
+                'area_id' => $e->area_principal_id, 'asunto' => 'Respuesta', 'cuerpo' => 'Texto',
+                'destinatarios' => [['email' => 'a@b.pe', 'nombre' => null]], 'es_respuesta' => true, 'creado_por' => $this->coordinador->id,
+            ])->forceFill(['estado' => $estado])->save();
+        };
+        $terminado = ['estado' => EstadoExpediente::Atendido, 'requiere_respuesta' => true, 'atendido_at' => '2026-10-05 10:00:00'];
+
+        $respondido($this->expediente($terminado));
+        // Cerrado a mano: respondieron por fuera del sistema.
+        $this->expediente(['estado' => EstadoExpediente::Cerrado] + $terminado);
+        // La respuesta quedó en borrador y lo cerraron igual.
+        $respondido($this->expediente(['estado' => EstadoExpediente::Cerrado] + $terminado), 'borrador');
+        // Solo para conocimiento: no exigía respuesta.
+        $this->expediente(['requiere_respuesta' => false] + $terminado);
+        // De otra área: el coordinador no lo ve.
+        $respondido(Expediente::factory()->create(['area_principal_id' => Area::factory()->create()->id] + $terminado));
+
+        $this->assertSame(['con_respuesta' => 3, 'desde_sistema' => 1], app(PanelService::class)->indicadores($this->coordinador)['adopcion']);
+        $this->assertSame(['con_respuesta' => 4, 'desde_sistema' => 2], app(PanelService::class)->indicadores(User::factory()->create()->assignRole('director'))['adopcion']);
     }
 
     public function test_el_superadmin_no_recibe_indicadores_de_tramites(): void

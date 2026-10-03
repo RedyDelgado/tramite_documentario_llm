@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\EstadoExpediente;
 use App\Enums\Semaforo;
 use App\Models\Configuracion;
+use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,6 +29,11 @@ class PanelService
         $conPlazo = (clone $terminados)->whereNotNull('fecha_limite');
         // atendido_at es un instante; se compara su día en Lima con la fecha límite.
         $enPlazo = (clone $conPlazo)->whereRaw("(atendido_at AT TIME ZONE 'America/Lima')::date <= fecha_limite")->count();
+        // Adopción del piloto (16.7): lo que exigía respuesta y la tuvo enviada desde el sistema, no cerrado a mano.
+        $conRespuesta = (clone $terminados)->where('requiere_respuesta', true);
+        $desdeSistema = (clone $conRespuesta)
+            ->whereIn('expedientes.id', DocumentoSaliente::where('es_respuesta', true)->where('estado', 'enviado')->select('expediente_id'))
+            ->count();
 
         return [
             'por_estado' => $this->contar($base(), 'estado', fn ($v) => EstadoExpediente::from($v)->etiqueta()),
@@ -39,6 +45,7 @@ class PanelService
             'sin_movimiento' => $base()->whereIn('estado', self::ABIERTOS)->where('ultimo_movimiento_at', '<', now()->subDays($diasQuieto))->count(),
             'dias_sin_movimiento' => $diasQuieto,
             'en_plazo' => ['atendidos' => $conPlazo->count(), 'en_plazo' => $enPlazo],
+            'adopcion' => ['con_respuesta' => $conRespuesta->count(), 'desde_sistema' => $desdeSistema],
             'tiempo_por_area' => $this->tiempoPromedio($terminados, 'areas', 'area_principal_id'),
             'tiempo_por_tipo' => $this->tiempoPromedio($terminados, 'tipos_tramite', 'tipo_tramite_id'),
             'carga' => $this->carga($base()),

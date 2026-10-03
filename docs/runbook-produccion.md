@@ -89,7 +89,7 @@ Desde el panel, en este orden:
 
 - **Cada mañana**: debe existir el respaldo de la madrugada y haberse copiado fuera del servidor ([runbook](runbook-respaldos.md)).
 - **Cada semana**: revisar Horizon (`/horizon`, solo superadmin), en especial los trabajos fallidos.
-- **Al cierre** (sección 16, punto 7): tiempo de atención y semáforos en **Inicio**; acierto y correcciones de la IA en **Inteligencia artificial**.
+- **Al cierre** (sección 16, punto 7): adopción («Respondidos desde el sistema»), tiempo de atención y semáforos en **Inicio**; acierto y correcciones de la IA en **Inteligencia artificial**. Entra como director para verlos completos: cada rol ve solo lo suyo.
 
 ## Actualizar a una versión nueva
 
