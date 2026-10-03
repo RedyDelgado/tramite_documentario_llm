@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Expediente;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
@@ -138,7 +139,7 @@ class RespaldoService
         return $clave;
     }
 
-    /** @return \Illuminate\Support\Collection<int, string> carpetas de respaldo (no el almacén ni copias con otro nombre) */
+    /** @return Collection<int, string> carpetas de respaldo (no el almacén ni copias con otro nombre) */
     private function carpetas(string $raiz)
     {
         return collect(is_dir($raiz) ? File::directories($raiz) : [])
