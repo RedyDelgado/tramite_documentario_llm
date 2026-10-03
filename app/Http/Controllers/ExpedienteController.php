@@ -278,13 +278,17 @@ class ExpedienteController extends Controller
             ->get();
         $usuarios = User::whereIn('id', $eventos->pluck('usuario_id')->filter()->unique())->pluck('name', 'id');
         $movimientos = Movimiento::where('expediente_id', $expediente->id)->with(['aArea:id,nombre', 'aUser:id,name'])->get()->keyBy('id');
+        $correos = $expediente->correos->keyBy(fn (Correo $c) => (string) $c->id);
+        $esCorreo = (new Correo)->getMorphClass();
 
         return $eventos->map(fn (Auditoria $a) => [
             'id' => $a->id,
             'fecha' => $a->fecha_hora->toIso8601String(),
             'accion' => AccionesAuditoria::etiqueta($a->accion),
             'usuario' => $a->usuario_id ? ($usuarios[$a->usuario_id] ?? "Usuario {$a->usuario_id}") : 'Sistema',
-            'detalle' => ($m = $movimientos->get($a->valor_nuevo['movimiento_id'] ?? 0)) ? $this->detalle($m) : null,
+            'detalle' => ($m = $movimientos->get($a->valor_nuevo['movimiento_id'] ?? 0)) ? $this->detalle($m)
+                // Un correo que llega (una respuesta, un reenvío): de quién y sobre qué, sin abrirlo.
+                : ($a->entidad === $esCorreo && ($c = $correos->get($a->entidad_id)) ? "De {$c->de_email}: «{$c->asunto}»" : null),
         ])->all();
     }
 

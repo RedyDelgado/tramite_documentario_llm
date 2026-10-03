@@ -139,7 +139,7 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
                             titulo="Ingresos y atenciones por mes, últimos 12 meses"
                             filas={i.tendencia}
                             series={[
-                                { clave: 'ingresados', nombre: 'Registrados' },
+                                { clave: 'ingresados', nombre: 'Ingresados' },
                                 { clave: 'atendidos', nombre: 'Atendidos' },
                             ]}
                         />

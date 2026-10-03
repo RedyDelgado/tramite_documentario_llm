@@ -73,6 +73,9 @@ class EntregaRespuestasTest extends TestCase
         $this->assertNotNull($this->saliente->fresh()->respondido_at);
         $this->assertNull($this->saliente->fresh()->semaforo());
         $this->assertDatabaseHas('auditoria', ['accion' => 'saliente.respondido']);
+        // En la línea de tiempo se ve quién respondió y sobre qué.
+        $this->actingAs(User::factory()->create()->assignRole('director'))->get("/expedientes/{$expediente->id}")
+            ->assertInertia(fn ($page) => $page->where('historial', fn ($h) => collect($h)->contains('detalle', 'De mesa@muni.gob.pe: «RE: OFICIO N.º 001-2026-DGA - Solicitud de información»')));
     }
 
     public function test_si_el_cliente_pierde_el_hilo_el_codigo_y_el_remitente_bastan(): void

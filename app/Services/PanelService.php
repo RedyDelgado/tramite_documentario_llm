@@ -64,7 +64,8 @@ class PanelService
     }
 
     /**
-     * Días promedio entre el registro y la atención, agrupados por área o tipo.
+     * Días promedio entre el ingreso y la atención, agrupados por área o tipo. Desde el ingreso y no desde el registro:
+     * un trámite en curso del registro en papel se registra tarde, pero esperó desde que llegó.
      *
      * @return list<array{nombre: string, dias: float, total: int}>
      */
@@ -76,7 +77,7 @@ class PanelService
             ->orderBy("{$tabla}.nombre")
             ->get([
                 "{$tabla}.nombre",
-                DB::raw('round(avg(extract(epoch from (atendido_at - registrado_at)) / 86400)::numeric, 1) as dias'),
+                DB::raw('round(avg(extract(epoch from (atendido_at - fecha_ingreso)) / 86400)::numeric, 1) as dias'),
                 DB::raw('count(*) as total'),
             ])
             ->map(fn ($f) => ['nombre' => $f->nombre, 'dias' => (float) $f->dias, 'total' => (int) $f->total])
@@ -84,7 +85,8 @@ class PanelService
     }
 
     /**
-     * Registrados y atendidos por mes en Lima, los últimos 12 meses con el actual; los meses vacíos van en cero.
+     * Trámites que ingresaron y que se atendieron por mes en Lima, los últimos 12 meses con el actual; los meses vacíos van en cero.
+     * Cuenta el mes en que llegó el documento (un trámite en curso registrado hoy entra en su mes), solo de lo registrado como trámite.
      *
      * @param  Closure(): Builder  $base
      * @return list<array{mes: string, ingresados: int, atendidos: int}>
@@ -97,7 +99,7 @@ class PanelService
             ->groupBy('mes')
             ->toBase()
             ->pluck('total', 'mes');
-        $ingresados = $porMes($base(), 'registrado_at');
+        $ingresados = $porMes($base()->whereNotNull('secuencia'), 'fecha_ingreso');
         $atendidos = $porMes($base()->whereIn('estado', self::TERMINADOS), 'atendido_at');
 
         return collect(range(11, 0))
