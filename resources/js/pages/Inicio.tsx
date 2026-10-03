@@ -1,6 +1,7 @@
 import { Board20Regular } from '@fluentui/react-icons';
 import { Link } from '@inertiajs/react';
 import { DataTable } from '@/components/data/DataTable';
+import { GraficoMensual } from '@/components/data/GraficoMensual';
 import { SemaforoBadge, type Semaforo } from '@/components/domain/SemaforoBadge';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
@@ -20,6 +21,7 @@ type Indicadores = {
     dias_sin_movimiento: number;
     en_plazo: { atendidos: number; en_plazo: number };
     adopcion: { con_respuesta: number; desde_sistema: number };
+    tendencia: { mes: string; ingresados: number; atendidos: number }[];
     tiempo_por_area: Tiempo[];
     tiempo_por_tipo: Tiempo[];
     carga: Carga[];
@@ -130,6 +132,21 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
                         )}
                     </Card>
                 </div>
+
+                <Card titulo="Ingresos y atenciones por mes">
+                    {i.tendencia.some((m) => m.ingresados || m.atendidos) ? (
+                        <GraficoMensual
+                            titulo="Ingresos y atenciones por mes, últimos 12 meses"
+                            filas={i.tendencia}
+                            series={[
+                                { clave: 'ingresados', nombre: 'Registrados' },
+                                { clave: 'atendidos', nombre: 'Atendidos' },
+                            ]}
+                        />
+                    ) : (
+                        <EmptyState icono={<Board20Regular />} titulo="Aún no hay trámites registrados" />
+                    )}
+                </Card>
 
                 <Card titulo="Carga por responsable" sinRelleno>
                     <DataTable

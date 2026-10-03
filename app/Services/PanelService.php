@@ -8,6 +8,7 @@ use App\Models\Configuracion;
 use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
 use App\Models\User;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -50,6 +51,7 @@ class PanelService
             'tiempo_por_area' => $this->tiempoPromedio($terminados, 'areas', 'area_principal_id'),
             'tiempo_por_tipo' => $this->tiempoPromedio($terminados, 'tipos_tramite', 'tipo_tramite_id'),
             'carga' => $this->carga($base()),
+            'tendencia' => $this->tendencia($base),
         ];
     }
 
@@ -78,6 +80,29 @@ class PanelService
                 DB::raw('count(*) as total'),
             ])
             ->map(fn ($f) => ['nombre' => $f->nombre, 'dias' => (float) $f->dias, 'total' => (int) $f->total])
+            ->all();
+    }
+
+    /**
+     * Registrados y atendidos por mes en Lima, los últimos 12 meses con el actual; los meses vacíos van en cero.
+     *
+     * @param  Closure(): Builder  $base
+     * @return list<array{mes: string, ingresados: int, atendidos: int}>
+     */
+    private function tendencia(Closure $base): array
+    {
+        $desde = now()->startOfMonth()->subMonths(11);
+        $porMes = fn (Builder $q, string $columna) => $q->where($columna, '>=', $desde)
+            ->selectRaw("to_char({$columna} AT TIME ZONE 'America/Lima', 'YYYY-MM') as mes, count(*) as total")
+            ->groupBy('mes')
+            ->toBase()
+            ->pluck('total', 'mes');
+        $ingresados = $porMes($base(), 'registrado_at');
+        $atendidos = $porMes($base()->whereIn('estado', self::TERMINADOS), 'atendido_at');
+
+        return collect(range(11, 0))
+            ->map(fn (int $atras) => $desde->copy()->addMonths(11 - $atras)->format('Y-m'))
+            ->map(fn (string $mes) => ['mes' => $mes, 'ingresados' => (int) ($ingresados[$mes] ?? 0), 'atendidos' => (int) ($atendidos[$mes] ?? 0)])
             ->all();
     }
 

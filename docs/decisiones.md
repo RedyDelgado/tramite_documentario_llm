@@ -2,6 +2,12 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Tendencia mensual
+
+- **Recharts llega con la primera serie de tiempo** (como se dejó en la fase 2): registrados y atendidos por mes, últimos 12 meses con el actual, en Inicio. Cada trámite cuenta en su mes según la hora de Lima (`to_char(... AT TIME ZONE 'America/Lima')`); los meses vacíos van en cero para que el eje no salte.
+- **`GraficoMensual`** (componentes de datos): barras agrupadas en `primary-600` y `primary-300` (5.3: los gráficos usan la escala primary; lo semántico es solo para semáforos), colores por variable CSS y no por HEX. Lleva un resumen en texto (`figcaption` oculto) para lectores de pantalla.
+- Sobre lo que el usuario atiende (sin copias), igual que el resto del panel.
+
 ## 2026-10-07 — Áreas en copia
 
 - **`expediente_areas_copia`** (modelo de datos, sección 6): al derivar o reasignar se eligen áreas en copia. Si vienen en la petición, reemplazan a las anteriores; el área responsable nunca queda además en copia.

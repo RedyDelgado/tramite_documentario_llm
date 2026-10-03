@@ -83,6 +83,25 @@ class PanelYResumenTest extends TestCase
         $this->assertSame(['con_respuesta' => 4, 'desde_sistema' => 2], app(PanelService::class)->indicadores(User::factory()->create()->assignRole('director'))['adopcion']);
     }
 
+    public function test_la_tendencia_cuenta_cada_tramite_en_su_mes_de_lima(): void
+    {
+        $this->expediente(['estado' => EstadoExpediente::Derivado, 'registrado_at' => '2026-10-02 09:00:00']);
+        // 30 de septiembre a las 22:00 en Lima, aunque en UTC ya sea 1 de octubre.
+        $this->expediente(['estado' => EstadoExpediente::Cerrado, 'registrado_at' => '2026-10-01 03:00:00+00', 'atendido_at' => '2026-10-05 10:00:00']);
+        // Fuera de los 12 meses y de otra área: no cuentan.
+        $this->expediente(['estado' => EstadoExpediente::Derivado, 'registrado_at' => '2025-10-31 09:00:00']);
+        Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'area_principal_id' => Area::factory()->create()->id, 'registrado_at' => '2026-10-02 09:00:00']);
+
+        $tendencia = app(PanelService::class)->indicadores($this->coordinador)['tendencia'];
+
+        $this->assertCount(12, $tendencia);
+        $this->assertSame(['mes' => '2025-11', 'ingresados' => 0, 'atendidos' => 0], $tendencia[0]);
+        $this->assertSame([
+            ['mes' => '2026-09', 'ingresados' => 1, 'atendidos' => 0],
+            ['mes' => '2026-10', 'ingresados' => 1, 'atendidos' => 1],
+        ], array_slice($tendencia, -2));
+    }
+
     public function test_el_superadmin_no_recibe_indicadores_de_tramites(): void
     {
         $this->actingAs(User::factory()->create()->assignRole('superadmin'))->get('/')
