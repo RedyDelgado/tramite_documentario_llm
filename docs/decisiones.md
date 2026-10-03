@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Respaldos cifrados e incrementales
+
+- **Cifrado con libsodium** (`secretstream xchacha20poly1305`, viene con PHP): autenticado y por trozos de 1 MB, así que no carga archivos grandes en memoria, y un archivo alterado, recortado o con otra clave falla al descifrar. Se eligió frente a `openssl enc`, que no autentica. La clave es `RESPALDO_CLAVE` (32 bytes en base64), aparte de `APP_KEY`: si un día se rota `APP_KEY`, los respaldos siguen legibles. Sin clave no se cifra (desarrollo, CI).
+- **Originales incrementales**: un almacén común `respaldos/archivos/` con un archivo por SHA-256, y en cada carpeta un manifiesto `originales.txt` (formato `sha256sum`, ruta incluida). Los originales ya se guardaban por hash y no cambian, así que copiar una vez por contenido es exacto. La retención borra del almacén lo que ningún manifiesto vigente usa. El nombre en el almacén es el SHA-256 del contenido en claro: no revela el documento, y no depende de la clave, así que rotarla no rompe la poda.
+- **Restaurar verifica todo antes de tocar la base**: sumas de la carpeta, descifrado de la base y descifrado más SHA-256 de cada original. Cada original se descifra dos veces (comprobar y escribir), algo aceptable porque restaurar es raro (`ponytail`). No borra originales posteriores al respaldo: el original nunca se destruye.
+- **Formato anterior** (`originales.tar.gz`): no se restaura con el código nuevo. Solo existían respaldos de desarrollo, que la retención borrará.
+
 ## 2026-10-07 — Rol de base de datos de la aplicación
 
 - **La aplicación ya no entra como superusuario** (pendiente de despliegue de la fase 1): un superusuario se salta cualquier permiso y puede desactivar el trigger de la auditoría. Hay dos conexiones: `pgsql` (la aplicación, p. ej. `tramite_app`) y `pgsql_dueno` (`DB_DUENO_*`, el superusuario del contenedor), que migra y respalda.

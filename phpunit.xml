@@ -31,5 +31,7 @@
         <env name="SCOUT_DRIVER" value="null"/>
         <!-- Sin antivirus en los tests: AntivirusTest lo reemplaza o habla con clamd directamente. -->
         <env name="ANTIVIRUS_HOST" value="" force="true"/>
+        <!-- Sin cifrar por defecto; RespaldoTest cifra con una clave propia. -->
+        <env name="RESPALDO_CLAVE" value="" force="true"/>
     </php>
 </phpunit>

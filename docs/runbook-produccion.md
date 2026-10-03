@@ -37,6 +37,7 @@ Editar `.env` (nunca va al repositorio):
 | `REGISTRO_INICIO_NUMERO` | Siguiente número del registro en papel (pendiente 9) |
 | `MAIL_MAILER` | `log` hasta tener el buzón autorizado; después `gmail` (el resumen diario y los avisos salen por la cuenta del buzón central, sin SMTP) |
 | `MAIL_FROM_ADDRESS` | La cuenta del buzón central |
+| `RESPALDO_CLAVE` | `openssl rand -base64 32`: cifra los respaldos. Guárdala con la copia del `.env`; sin ella, los respaldos no se pueden leer |
 | `COMPOSE_PROFILES` / `ANTIVIRUS_HOST` | `clamav` / `clamav`: los adjuntos y las subidas se analizan con ClamAV (~1 GB de RAM) |
 
 Con el certificado de la institución (servidor solo interno): copiar `certificado.pem` y `clave.pem` a `docker/caddy/certs/` y agregar en `docker/caddy/Caddyfile`, dentro del bloque, `tls /certs/certificado.pem /certs/clave.pem`. Los certificados no se suben al repositorio.

@@ -63,6 +63,8 @@ return [
         'directorio' => env('RESPALDO_DIRECTORIO', storage_path('app/respaldos')),
         'modelos' => env('RESPALDO_MODELOS', '/var/www/modelos_ia'),
         'dias' => (int) env('RESPALDO_DIAS', 30),
+        // 32 bytes en base64 (`openssl rand -base64 32`); sin ella, los respaldos no se cifran. Se guarda aparte, con el .env.
+        'clave' => env('RESPALDO_CLAVE'),
     ],
 
     // Primer número de una secuencia en un año dado; sin entrada empieza en 1.

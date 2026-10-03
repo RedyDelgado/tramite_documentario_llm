@@ -4,14 +4,24 @@ Escrito para que otra persona pueda recuperar el sistema sin ayuda (pendiente 12
 
 ## Qué se respalda
 
-Cada respaldo es una carpeta `storage/app/respaldos/AAAA-MM-DD_HHMMSS/` (hora de Lima) con:
+Todo vive en `storage/app/respaldos/`. Cada respaldo es una carpeta `AAAA-MM-DD_HHMMSS/` (hora de Lima) con:
 
 | Archivo | Contenido |
 |---|---|
-| `base.dump` | Toda la base de PostgreSQL: expedientes, movimientos, auditoría, configuración, usuarios (`pg_dump`, formato custom). |
-| `originales.tar.gz` | Correos `.eml`, adjuntos, escaneos y documentos emitidos (disco `originales`). |
-| `modelos.tar.gz` | Versiones entrenadas del clasificador de IA (volumen `modelos_ia`). |
-| `SHA256SUMS` | Suma de cada archivo; se comprueba antes de restaurar. |
+| `base.dump.cifrado` | Toda la base de PostgreSQL: expedientes, movimientos, auditoría, configuración y usuarios (`pg_dump`, formato custom). |
+| `modelos.tar.gz.cifrado` | Versiones entrenadas del clasificador de IA (volumen `modelos_ia`). |
+| `originales.txt` | Manifiesto: SHA-256 y ruta de cada correo `.eml`, adjunto, escaneo y documento emitido de ese momento. |
+| `SHA256SUMS` | Suma de cada archivo de la carpeta; se comprueba antes de restaurar. |
+
+Los originales en sí van a **`archivos/`**, un almacén común a todos los respaldos: cada archivo se guarda **una sola vez**, con su SHA-256 como nombre. Un respaldo diario solo agrega lo nuevo, así que 30 respaldos no ocupan 30 veces el disco. La retención borra del almacén lo que ya ningún respaldo usa. **Una carpeta de respaldo sola no alcanza para restaurar: hace falta también `archivos/`.**
+
+**Cifrado.** Con `RESPALDO_CLAVE` en el `.env`, todo se cifra (sufijo `.cifrado`): la base, los modelos y cada original del almacén. Es un cifrado autenticado (libsodium), así que una clave equivocada o un archivo alterado se detectan al restaurar. Sin `RESPALDO_CLAVE` no se cifra y los archivos van sin sufijo. La clave se genera una vez:
+
+```bash
+openssl rand -base64 32
+```
+
+**Si se pierde la clave, los respaldos no se pueden leer.** Se guarda junto con el `.env`, fuera del servidor (ver «Guardar el `.env` aparte»). Si se cambia, los respaldos anteriores siguen necesitando la clave vieja.
 
 **No se respalda, a propósito:**
 
@@ -39,25 +49,27 @@ Usa siempre `--user www-data`: un comando corrido como root deja archivos que de
 ls -l storage/app/respaldos
 ```
 
-Debe haber una carpeta por día, la última de esta madrugada. Para comprobar que la última no está dañada:
+Debe haber una carpeta por día, la última de esta madrugada. Para comprobar que la última no está dañada (no hace falta la clave):
 
 ```bash
 cd storage/app/respaldos/<carpeta> && sha256sum -c SHA256SUMS
 ```
 
+Los originales del almacén no están en esa lista: los protege el cifrado autenticado, que se comprueba al restaurar.
+
 ## Copia fuera del servidor (obligatoria)
 
-Los respaldos se guardan en el mismo disco que el sistema: si el disco o el servidor se pierden, se pierden también. **Hay que copiar la carpeta `storage/app/respaldos` fuera del servidor** a diario, por ejemplo a un disco externo o a otro equipo de la institución. El destino está por decidir (pendiente 12). Un ejemplo con `rsync` a otro equipo:
+Los respaldos se guardan en el mismo disco que el sistema: si el disco o el servidor se pierden, se pierden también. **Hay que copiar la carpeta `storage/app/respaldos` completa (con `archivos/`) fuera del servidor** a diario, por ejemplo a un disco externo o a otro equipo de la institución. El destino está por decidir (pendiente 12). Un ejemplo con `rsync` a otro equipo:
 
 ```bash
 rsync -a --delete storage/app/respaldos/ usuario@otro-equipo:/respaldos/tramite/
 ```
 
-Los respaldos contienen documentos institucionales y datos personales (Ley 29733): el destino debe tener acceso restringido, igual que el servidor.
+Como el almacén solo crece con lo nuevo, `rsync` copia cada día únicamente los archivos agregados. Cifrados, los respaldos se pueden guardar en un disco o equipo externo sin exponer los documentos; aun así, conviene que el destino tenga acceso restringido.
 
 ## Guardar el `.env` aparte
 
-Sin el `.env` el sistema arranca, pero sin conexión a Google ni al buzón. Guarda una copia del `.env` del servidor en un lugar seguro y distinto de los respaldos (por ejemplo, un gestor de contraseñas institucional) cada vez que cambie. Si se pierde, se rehace con `.env.example` y los runbooks de [Gmail](runbook-gmail.md) y del [inicio de sesión con Google](runbook-google-login.md); un `APP_KEY` nuevo solo cierra las sesiones abiertas.
+**El `.env` lleva `RESPALDO_CLAVE`: sin ella, los respaldos cifrados no sirven.** Sin el `.env` el sistema arranca, pero sin conexión a Google ni al buzón. Guarda una copia del `.env` del servidor en un lugar seguro y distinto de los respaldos (por ejemplo, un gestor de contraseñas institucional) cada vez que cambie. Si se pierde, se rehace con `.env.example` y los runbooks de [Gmail](runbook-gmail.md) y del [inicio de sesión con Google](runbook-google-login.md); un `APP_KEY` nuevo solo cierra las sesiones abiertas.
 
 ## Restaurar
 
@@ -72,13 +84,13 @@ docker compose restart ai
 docker compose start nginx horizon scheduler
 ```
 
-El comando pide confirmación, comprueba las sumas y se niega a seguir si algo no coincide (respaldo dañado), sin tocar nada. La base se restaura en una sola transacción: si falla a la mitad, queda como estaba.
+El comando pide confirmación y, **antes de tocar nada**, comprueba las sumas de la carpeta, descifra y verifica cada original del almacén contra su SHA-256, y descifra la base. Si algo no coincide (respaldo dañado, incompleto o con otra clave), se niega a seguir. La base se restaura en una sola transacción: si falla a la mitad, queda como estaba.
 
 ### En un servidor nuevo (el anterior se perdió)
 
 1. Instalar Docker y clonar el repositorio.
 2. Copiar el `.env` guardado aparte a la carpeta del proyecto.
-3. Copiar la carpeta del respaldo (desde la copia fuera del servidor) a `storage/app/respaldos/`.
+3. Copiar la carpeta del respaldo **y** `archivos/` (desde la copia fuera del servidor) a `storage/app/respaldos/`.
 4. Seguir «Arranque» del `README.md` **sin** `key:generate` (la clave viene en el `.env`) ni `db:actualizar --seed` (la base sale del respaldo; la restauración vuelve a dar los permisos al rol de la aplicación).
 5. `docker compose exec app chown -R www-data:www-data storage bootstrap/cache`
 6. Restaurar como en la sección anterior, desde `respaldo:restaurar`.
@@ -94,4 +106,4 @@ El comando pide confirmación, comprueba las sumas y se niega a seguir si algo n
 
 Un respaldo que nunca se restauró no está probado. En una máquina distinta del servidor (un portátil con Docker basta), sigue «En un servidor nuevo» con el respaldo más reciente y la copia del `.env`, y comprueba «Después de restaurar». Anota la fecha y el tiempo que tomó.
 
-Las pruebas automáticas (`tests/Feature/RespaldoTest.php`) restauran un respaldo en la base de pruebas y comprueban que vuelven los mismos datos, archivos y modelos, que un respaldo dañado se rechaza sin tocar la base y que la retención solo borra lo vencido.
+Las pruebas automáticas (`tests/Feature/RespaldoTest.php`) restauran un respaldo en la base de pruebas y comprueban que vuelven los mismos datos, archivos y modelos, también cifrados; que sin la clave no se lee la base ni los documentos; que una clave equivocada, un original alterado o un respaldo dañado se rechazan sin tocar la base; que los originales se copian una sola vez, y que la retención solo borra lo vencido y lo que ya nadie usa.
