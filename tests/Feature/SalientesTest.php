@@ -59,6 +59,21 @@ class SalientesTest extends TestCase
         ]);
     }
 
+    public function test_lo_que_aprueba_el_coordinador_tambien_lo_aprueba_el_director_nunca_el_autor(): void
+    {
+        // Un área con un solo coordinador: si él redacta el informe, lo aprueba el director.
+        $informe = TipoDocumento::create(['nombre' => 'Informe', 'aprueba_salida' => 'coordinador']);
+        $coordinador = User::factory()->create()->assignRole('coordinador');
+        AreaResponsable::create(['area_id' => $this->area->id, 'user_id' => $coordinador->id, 'tipo' => 'titular', 'vigente_desde' => '2026-01-01']);
+        $this->redactar(['tipo_documento_id' => $informe->id, 'expediente_id' => null, 'es_respuesta' => false], $coordinador)->assertSessionHasNoErrors();
+        $s = DocumentoSaliente::sole();
+        $this->actingAs($coordinador)->post("/salientes/{$s->id}/revision")->assertSessionHasNoErrors();
+
+        $this->actingAs($coordinador)->post("/salientes/{$s->id}/aprobar")->assertForbidden();
+        $this->actingAs($this->director)->post("/salientes/{$s->id}/aprobar")->assertSessionHasNoErrors();
+        $this->assertSame($this->director->id, $s->fresh()->aprobado_por);
+    }
+
     public function test_ningun_documento_se_numera_sin_aprobacion_explicita_y_auditada(): void
     {
         $this->redactar()->assertSessionHasNoErrors();
@@ -104,7 +119,7 @@ class SalientesTest extends TestCase
         $s = DocumentoSaliente::sole();
         $this->actingAs($this->administrativo)->post("/salientes/{$s->id}/revision");
 
-        $this->actingAs($this->director)->post("/salientes/{$s->id}/aprobar")->assertForbidden();
+        // El coordinador de otra área no; el director sí podría, como superior (ver el test siguiente).
         $this->actingAs($ajeno)->post("/salientes/{$s->id}/aprobar")->assertForbidden();
         $this->actingAs($coordinador)->post("/salientes/{$s->id}/aprobar")->assertSessionHasNoErrors();
     }

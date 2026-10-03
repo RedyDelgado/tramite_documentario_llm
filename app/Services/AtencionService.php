@@ -14,6 +14,7 @@ use Closure;
 use DateTimeInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /** Atención de un expediente (7, 8): cada paso deja un movimiento y queda auditado; el semáforo se recalcula al guardar. */
 class AtencionService
@@ -128,7 +129,8 @@ class AtencionService
             if ($e->cierre_solicitado_at) {
                 throw new ReglaDeNegocio('El cierre ya está solicitado; falta su aprobación.');
             }
-            if ($e->tipoTramite?->aprueba_cierre) {
+            // Si quien lo pide ya tiene la facultad de aprobarlo, la aprobación sería la suya: se cierra.
+            if ($e->tipoTramite?->aprueba_cierre && ! Gate::allows('cerrarSinAprobacion', $e)) {
                 $e->forceFill(['cierre_solicitado_at' => now()]);
 
                 return ['accion' => 'expediente.cierre_solicitado', 'movimiento' => ['tipo' => 'cierre_solicitado', 'nota' => $nota]];

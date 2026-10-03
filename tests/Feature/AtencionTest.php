@@ -108,6 +108,37 @@ class AtencionTest extends TestCase
         $this->assertSame(['derivacion', 'en_atencion', 'cierre_solicitado', 'cierre_aprobado'], Movimiento::orderBy('id')->pluck('tipo')->all());
     }
 
+    public function test_si_quien_atiende_ya_aprueba_el_cierre_se_cierra_y_si_es_un_docente_espera_al_coordinador(): void
+    {
+        $tipo = TipoTramite::create(['nombre' => 'Reserva de matrícula', 'plazo_dias' => 5, 'aprueba_cierre' => 'coordinador']);
+
+        // El coordinador lo atiende en persona: su aprobación sería la suya.
+        $propio = $this->registrado();
+        $this->derivar($propio, $tipo);
+        $this->actingAs($this->coordinador)->post("/expedientes/{$propio->id}/solicitar-cierre", ['nota' => 'Reserva registrada.'])->assertSessionHasNoErrors();
+        $this->assertSame(EstadoExpediente::Cerrado, $propio->fresh()->estado);
+
+        // Lo atiende un docente asignado: el cierre espera al coordinador del área.
+        $docente = User::factory()->create()->assignRole('otros');
+        $asignado = $this->registrado();
+        $this->derivar($asignado, $tipo, ['responsable_id' => $docente->id]);
+        $this->actingAs($docente)->post("/expedientes/{$asignado->id}/solicitar-cierre", ['nota' => 'Revisado.'])->assertSessionHasNoErrors();
+        $this->assertSame(EstadoExpediente::Derivado, $asignado->fresh()->estado);
+        $this->actingAs($this->coordinador)->post("/expedientes/{$asignado->id}/resolver-cierre", ['aprobar' => true])->assertSessionHasNoErrors();
+        $this->assertSame(EstadoExpediente::Cerrado, $asignado->fresh()->estado);
+    }
+
+    public function test_el_superadmin_titular_de_un_area_no_atiende_sus_tramites(): void
+    {
+        $superadmin = User::factory()->create()->assignRole('superadmin');
+        AreaResponsable::create(['area_id' => $this->area->id, 'user_id' => $superadmin->id, 'tipo' => 'suplente', 'vigente_desde' => '2026-01-01']);
+        $expediente = $this->registrado();
+        $this->derivar($expediente, TipoTramite::create(['nombre' => 'Reserva', 'plazo_dias' => 5, 'aprueba_cierre' => 'coordinador']));
+
+        $this->assertFalse($superadmin->can('atender', $expediente->fresh()));
+        $this->assertFalse($superadmin->can('cerrarSinAprobacion', $expediente->fresh()));
+    }
+
     public function test_sin_aprobacion_configurada_solicitar_el_cierre_ya_cierra(): void
     {
         $tipo = TipoTramite::create(['nombre' => 'Invitación', 'plazo_dias' => 3]);

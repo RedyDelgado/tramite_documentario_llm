@@ -37,7 +37,8 @@ class SalientePolicy
         return $s->estado === 'en_revision'
             && $s->creado_por !== $user->id
             && match ($s->tipoDocumento->aprueba_salida) {
-                'coordinador' => in_array($s->area_id, $user->areasVigentes(), true),
+                // El director, como superior, también: un área con un solo coordinador no podría aprobar lo que él redacta.
+                'coordinador' => in_array($s->area_id, $user->areasVigentes(), true) || $user->hasRole('director'),
                 default => $user->hasRole('director'),
             };
     }

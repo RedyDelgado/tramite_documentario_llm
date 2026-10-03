@@ -70,13 +70,19 @@ class ExpedientePolicy
     /** Aprueba el rol configurado en el tipo; nunca quien registró ni quien pidió el cierre (5: quien registra no cierra). */
     public function aprobarCierre(User $user, Expediente $expediente): bool
     {
-        $rol = $expediente->tipoTramite?->aprueba_cierre;
         $solicitante = Movimiento::where('expediente_id', $expediente->id)->where('tipo', 'cierre_solicitado')->latest('id')->value('user_id');
 
-        return $rol !== null
-            && $user->id !== $expediente->registrado_por
-            && $user->id !== $solicitante
-            && match ($rol) {
+        return $user->id !== $solicitante && $this->cerrarSinAprobacion($user, $expediente);
+    }
+
+    /**
+     * Quien tiene la facultad de aprobar el cierre (el rol del tipo) y no registró el trámite: si es quien lo atiende,
+     * cerrarlo no espera una segunda firma, que sería la suya (el coordinador que atiende en persona, el director en Dirección).
+     */
+    public function cerrarSinAprobacion(User $user, Expediente $expediente): bool
+    {
+        return $user->id !== $expediente->registrado_por
+            && match ($expediente->tipoTramite?->aprueba_cierre) {
                 'director' => $user->hasRole('director'),
                 'coordinador' => $this->coordinaElArea($user, $expediente),
                 default => false,
@@ -92,8 +98,9 @@ class ExpedientePolicy
         if ($expediente->area_principal_id === null) {
             return false;
         }
+        // Y que pueda ver trámites: el superadmin puede figurar como titular, pero no accede a su contenido (5).
         if (AreaResponsable::where('area_id', $expediente->area_principal_id)->where('user_id', $user->id)->vigentes()->exists()) {
-            return true;
+            return $this->view($user, $expediente);
         }
 
         return $user->can('expedientes.ver_areas') && in_array($expediente->area_principal_id, $user->areasVigentes(), true);
