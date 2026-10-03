@@ -6,11 +6,11 @@ Stack: Laravel 13 + Inertia 3 + React 19 (TypeScript) + Tailwind 4, PostgreSQL 1
 
 ## Arranque (desarrollo)
 
-1. `cp .env.example .env` y cambiar las claves `cambiar-*`.
+1. `cp .env.example .env` y cambiar las claves `cambiar-*`. Para que la aplicación no entre como dueña de la base, define `DB_DUENO_USERNAME`/`DB_DUENO_PASSWORD` (el superusuario de PostgreSQL) y deja en `DB_USERNAME`/`DB_PASSWORD` un rol propio, por ejemplo `tramite_app`.
 2. `docker compose up -d --build`
 3. `docker compose exec app composer install`
 4. `docker compose exec app php artisan key:generate`
-5. `docker compose exec app php artisan migrate --seed`
+5. `docker compose exec --user www-data app php artisan db:actualizar --seed` (migra como dueño y deja al rol de la aplicación sin poder alterar la auditoría; reemplaza a `migrate`)
 6. Abrir <http://localhost:8100> → «Entrar como superadmin (solo desarrollo)».
 
 | URL | Qué es |

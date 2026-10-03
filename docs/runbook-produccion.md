@@ -30,7 +30,8 @@ Editar `.env` (nunca va al repositorio):
 | `APP_URL` | `https://<DOMINIO>` |
 | `LOG_LEVEL` | `warning` |
 | `MEILI_ENV` | `production` |
-| `DB_PASSWORD`, `REDIS_PASSWORD`, `MEILISEARCH_KEY`, `AI_SERVICE_TOKEN` | Una clave distinta para cada una: `openssl rand -hex 24` |
+| `DB_DUENO_USERNAME` / `DB_USERNAME` | `tramite` / `tramite_app`: el dueño migra y respalda; la aplicación entra con su propio rol y no puede alterar la auditoría |
+| `DB_DUENO_PASSWORD`, `DB_PASSWORD`, `REDIS_PASSWORD`, `MEILISEARCH_KEY`, `AI_SERVICE_TOKEN` | Una clave distinta para cada una: `openssl rand -hex 24` |
 | `GOOGLE_DOMINIO`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Del runbook de inicio de sesión |
 | `SUPERADMIN_EMAIL` | Cuenta institucional de quien administra el sistema |
 | `REGISTRO_INICIO_NUMERO` | Siguiente número del registro en papel (pendiente 9) |
@@ -48,12 +49,12 @@ docker compose exec app composer install --no-dev --optimize-autoloader
 docker compose exec app php artisan key:generate --force
 docker compose run --rm --no-deps vite sh -c "npm ci && npm run build"
 docker compose exec app chown -R www-data:www-data storage bootstrap/cache
-docker compose exec --user www-data app php artisan migrate --force --seed
+docker compose exec --user www-data app php artisan db:actualizar --seed
 docker compose exec --user www-data app php artisan scout:sync-index-settings
 docker compose exec --user www-data app php artisan optimize
 ```
 
-`migrate --seed` crea los roles, las reglas de correo no trámite y el superadmin; en producción no crea datos de ejemplo. Guarda una copia del `.env` fuera del servidor ([runbook de respaldos](runbook-respaldos.md#guardar-el-env-aparte)).
+`db:actualizar --seed` migra con el rol dueño, crea el rol de la aplicación (que en la auditoría solo puede insertar y leer) y carga los roles, las reglas de correo no trámite y el superadmin; en producción no crea datos de ejemplo. Guarda una copia del `.env` fuera del servidor ([runbook de respaldos](runbook-respaldos.md#guardar-el-env-aparte)).
 
 Comprobar:
 
@@ -100,7 +101,7 @@ git pull
 docker compose up -d --build
 docker compose exec app composer install --no-dev --optimize-autoloader
 docker compose run --rm --no-deps vite sh -c "npm ci && npm run build"
-docker compose exec --user www-data app php artisan migrate --force
+docker compose exec --user www-data app php artisan db:actualizar
 docker compose exec --user www-data app php artisan optimize
 docker compose exec --user www-data app php artisan horizon:terminate
 docker compose restart scheduler

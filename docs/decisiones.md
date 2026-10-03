@@ -2,6 +2,15 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-07 — Rol de base de datos de la aplicación
+
+- **La aplicación ya no entra como superusuario** (pendiente de despliegue de la fase 1): un superusuario se salta cualquier permiso y puede desactivar el trigger de la auditoría. Hay dos conexiones: `pgsql` (la aplicación, p. ej. `tramite_app`) y `pgsql_dueno` (`DB_DUENO_*`, el superusuario del contenedor), que migra y respalda.
+- **`php artisan db:actualizar`** reemplaza a `migrate`: migra con el dueño y luego crea o actualiza el rol de la aplicación con su clave del `.env`. Le da `SELECT/INSERT/UPDATE/DELETE` en todas las tablas y le quita `UPDATE/DELETE/TRUNCATE` en `auditoria`. Como no es dueño, tampoco puede `ALTER TABLE ... DISABLE TRIGGER`. Es idempotente y se corre después de cada migración, para que las tablas nuevas queden con permisos. No se usó `ALTER DEFAULT PRIVILEGES`, que habría vuelto a dar `UPDATE` a una `auditoria` recreada.
+- **Sin `DB_DUENO_*` todo sigue como antes** (un solo rol): CI y cualquier instalación previa funcionan sin cambios.
+- **Respaldos con el dueño**; la restauración usa `--no-privileges` (en un servidor nuevo el rol aún no existe) y vuelve a aplicar los permisos.
+- **Los tests van con el dueño** (`DB_CONNECTION=pgsql_dueno` en `phpunit.xml`, porque migran); `RolBaseDatosTest` prueba el rol restringido con otra conexión y un rol de prueba que borra al terminar.
+- **Local**: ya usa `tramite_app` (clave nueva en `.env`) y `tramite` como dueño.
+
 ## 2026-10-07 — Antivirus (ClamAV)
 
 - **Se analiza lo que llega de fuera, antes de procesarlo** (11): adjuntos de correo y subidas (escaneo de papel, cargo firmado, PDF firmado). Lo que genera el sistema (PDF de documentos emitidos) no se analiza: así aprobar un documento no depende del antivirus.

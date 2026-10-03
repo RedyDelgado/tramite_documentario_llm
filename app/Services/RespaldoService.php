@@ -20,7 +20,7 @@ class RespaldoService
 {
     private const FORMATO = 'Y-m-d_His';
 
-    public function __construct(private AuditoriaService $auditoria, private ColaService $colas) {}
+    public function __construct(private AuditoriaService $auditoria, private ColaService $colas, private RolBaseDatosService $roles) {}
 
     /** Devuelve la carpeta creada; si algo falla, la borra para no dejar un respaldo a medias. */
     public function crear(): string
@@ -66,7 +66,9 @@ class RespaldoService
         $this->verificar($carpeta);
 
         // En una transacción: si falla, la base queda como estaba y los archivos no se tocan.
-        $this->postgres('pg_restore', ['--clean', '--if-exists', '--no-owner', '--single-transaction', $carpeta.'/base.dump']);
+        // Sin los permisos del respaldo: en un servidor nuevo el rol de la aplicación aún no existe; se aplican después.
+        $this->postgres('pg_restore', ['--clean', '--if-exists', '--no-owner', '--no-privileges', '--single-transaction', $carpeta.'/base.dump']);
+        $this->roles->aplicar();
         $this->desempaquetar($carpeta.'/originales.tar.gz', Storage::disk('originales')->path(''));
         if (is_file($carpeta.'/modelos.tar.gz')) {
             $this->desempaquetar($carpeta.'/modelos.tar.gz', config('tramite.respaldo.modelos'));
@@ -101,7 +103,8 @@ class RespaldoService
     /** @param  list<string>  $argumentos */
     private function postgres(string $programa, array $argumentos): void
     {
-        $db = config('database.connections.'.config('database.default'));
+        // El dueño: el rol de la aplicación no puede recrear tablas.
+        $db = config('database.connections.pgsql_dueno');
 
         Process::env(['PGPASSWORD' => $db['password']])->timeout(3600)->run([
             $programa,

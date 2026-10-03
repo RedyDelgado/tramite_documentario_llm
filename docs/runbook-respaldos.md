@@ -79,7 +79,7 @@ El comando pide confirmación, comprueba las sumas y se niega a seguir si algo n
 1. Instalar Docker y clonar el repositorio.
 2. Copiar el `.env` guardado aparte a la carpeta del proyecto.
 3. Copiar la carpeta del respaldo (desde la copia fuera del servidor) a `storage/app/respaldos/`.
-4. Seguir «Arranque» del `README.md` **sin** `key:generate` (la clave viene en el `.env`) ni `migrate --seed` (la base sale del respaldo).
+4. Seguir «Arranque» del `README.md` **sin** `key:generate` (la clave viene en el `.env`) ni `db:actualizar --seed` (la base sale del respaldo; la restauración vuelve a dar los permisos al rol de la aplicación).
 5. `docker compose exec app chown -R www-data:www-data storage bootstrap/cache`
 6. Restaurar como en la sección anterior, desde `respaldo:restaurar`.
 

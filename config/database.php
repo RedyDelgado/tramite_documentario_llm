@@ -101,6 +101,24 @@ return [
             'timezone' => env('DB_TIMEZONE', env('APP_TIMEZONE', 'America/Lima')),
         ],
 
+        // Dueño de las tablas: migra (db:actualizar) y respalda. Sin DB_DUENO_*, es el mismo rol que la aplicación.
+        'pgsql_dueno' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_DUENO_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_DUENO_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Misma zona que la app: Laravel escribe fechas sin desfase y PostgreSQL las interpreta en esta zona.
+            'timezone' => env('DB_TIMEZONE', env('APP_TIMEZONE', 'America/Lima')),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
