@@ -38,6 +38,28 @@ class UsuarioTest extends TestCase
         $this->assertDatabaseMissing('users', ['email' => 'ana@uni.edu.pe']);
     }
 
+    public function test_el_superadmin_da_y_quita_la_configuracion_desde_la_ficha_y_queda_auditado(): void
+    {
+        $director = User::factory()->create(['email' => 'directora@uni.edu.pe'])->assignRole('director');
+        $this->actingAs($director)->get('/areas')->assertForbidden();
+
+        $this->actingAs($this->admin)->put("/usuarios/{$director->id}", $this->datos(['email' => 'directora@uni.edu.pe', 'rol' => 'director', 'administra_configuracion' => true]))
+            ->assertRedirect('/usuarios');
+        $this->actingAs($director->fresh())->get('/areas')->assertOk();
+        // Sigue siendo director: ve los trámites igual que antes y no gestiona usuarios.
+        $this->assertSame(['director'], $director->fresh()->getRoleNames()->all());
+        $this->actingAs($director->fresh())->get('/usuarios')->assertForbidden();
+        $this->actingAs($this->admin)->get('/usuarios')
+            ->assertInertia(fn ($page) => $page->where('usuarios.data', fn ($u) => collect($u)->firstWhere('id', $director->id)['administra_configuracion'] === true));
+
+        $this->actingAs($this->admin)->put("/usuarios/{$director->id}", $this->datos(['email' => 'directora@uni.edu.pe', 'rol' => 'director', 'administra_configuracion' => false]));
+        $this->actingAs($director->fresh())->get('/areas')->assertForbidden();
+        $this->assertSame(
+            [['configuracion.gestionar' => true], ['configuracion.gestionar' => false]],
+            DB::table('auditoria')->where('accion', 'usuario.permiso_cambiado')->orderBy('id')->pluck('valor_nuevo')->map(fn ($v) => json_decode($v, true))->all(),
+        );
+    }
+
     public function test_crea_un_usuario_con_su_rol_y_queda_auditado(): void
     {
         $this->actingAs($this->admin)->post('/usuarios', $this->datos(['email' => ' Ana@Uni.edu.pe ']))->assertRedirect('/usuarios');

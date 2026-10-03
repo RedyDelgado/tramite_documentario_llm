@@ -2,6 +2,12 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-08 — Delegar la configuración (pendiente 8)
+
+- **Un interruptor en la ficha del usuario, no una pantalla de roles y permisos**: «Administra la configuración» da el permiso `configuracion.gestionar` como permiso directo (Spatie), aparte del rol. El rol sigue diciendo qué trámites ve; el permiso, si administra el catálogo (áreas, responsables, plazos, feriados, catálogos, plantillas y notificaciones). Con cinco roles fijos (5), una matriz editable sería más superficie que necesidad.
+- **Gestionar usuarios sigue siendo solo del superadmin** (`usuarios.gestionar`): quien asigna permisos podría darse cualquiera.
+- Dar o quitar el permiso queda en la auditoría (`usuario.permiso_cambiado`). Al superadmin el interruptor se le muestra encendido y bloqueado: lo tiene por su rol.
+
 ## 2026-10-08 — Estado de entrega del resumen diario
 
 - **`notificaciones_enviadas`** (modelo de datos, sección 6): cada resumen diario se registra al encolarse con un Message-ID propio (`resumen-<uuid>@<dominio>`, vía `Headers` del Mailable). Queda **enviado** al dispararse `MessageSent` (el correo salió del transporte), **fallido** si la cola agota los intentos (`failed()` del Mailable) y **rebotado** si un DSN cita ese Message-ID (`EntregaService`, el mismo mecanismo de los documentos emitidos, ahora con `idsReferidos()` compartido).

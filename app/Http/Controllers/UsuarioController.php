@@ -34,7 +34,7 @@ class UsuarioController extends Controller
         ]);
 
         $usuarios = User::query()
-            ->with('roles:id,name')
+            ->with(['roles:id,name', 'roles.permissions:id,name', 'permissions:id,name'])
             ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->where(fn ($q) => $q
                 ->whereLike('name', "%{$texto}%")
                 ->orWhereLike('email', "%{$texto}%")))
@@ -104,7 +104,7 @@ class UsuarioController extends Controller
     {
         return [
             // resolve(): el recurso suelto va sin el envoltorio `data`.
-            'usuario' => $usuario ? UsuarioResource::make($usuario->load('roles:id,name'))->resolve() : null,
+            'usuario' => $usuario ? UsuarioResource::make($usuario->load(['roles:id,name', 'roles.permissions:id,name', 'permissions:id,name']))->resolve() : null,
             'opcionesRol' => $this->opcionesRol(),
             'dominio' => config('tramite.google_dominio'),
         ];

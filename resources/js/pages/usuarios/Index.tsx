@@ -164,6 +164,10 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
                                 items={[
                                     { etiqueta: 'Correo', valor: elegido.email },
                                     { etiqueta: 'Rol', valor: elegido.rol_etiqueta ?? 'Sin rol' },
+                                    {
+                                        etiqueta: 'Configuración',
+                                        valor: elegido.administra_por_rol ? 'La administra por su rol' : elegido.administra_configuracion ? 'La administra (delegada)' : 'No la administra',
+                                    },
                                     { etiqueta: 'Última actualización', valor: formatearFechaHora(elegido.actualizado) },
                                 ]}
                             />

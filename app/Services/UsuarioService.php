@@ -10,22 +10,25 @@ use Illuminate\Support\Facades\DB;
 /** Única vía de escritura de usuarios y su rol; cada cambio queda auditado (9). */
 class UsuarioService
 {
+    private const CONFIGURACION = 'configuracion.gestionar';
+
     public function __construct(private readonly AuditoriaService $auditoria) {}
 
-    /** @param array{name: string, email: string, rol: string, activo: bool} $datos */
+    /** @param array{name: string, email: string, rol: string, activo: bool, administra_configuracion?: bool} $datos */
     public function crear(array $datos): User
     {
         return DB::transaction(function () use ($datos) {
             $usuario = User::create(collect($datos)->only(['name', 'email', 'activo'])->all());
             $usuario->assignRole($datos['rol']);
             $this->auditoria->registrar('usuario.creado', $usuario, despues: $datos);
+            $this->delegarConfiguracion($usuario, (bool) ($datos['administra_configuracion'] ?? false));
 
             return $usuario;
         });
     }
 
     /**
-     * @param  array{name: string, email: string, rol: string, activo: bool}  $datos
+     * @param  array{name: string, email: string, rol: string, activo: bool, administra_configuracion?: bool}  $datos
      *
      * @throws ReglaDeNegocio
      */
@@ -45,9 +48,24 @@ class UsuarioService
                 $usuario->syncRoles([$datos['rol']]);
                 $this->auditoria->registrar('usuario.rol_cambiado', $usuario, antes: ['rol' => $rolAnterior], despues: ['rol' => $datos['rol']]);
             }
+            if (array_key_exists('administra_configuracion', $datos)) {
+                $this->delegarConfiguracion($usuario, (bool) $datos['administra_configuracion']);
+            }
 
             return $usuario;
         });
+    }
+
+    /** Permiso directo, aparte del rol: el rol sigue diciendo qué trámites ve; esto, si administra el catálogo. */
+    private function delegarConfiguracion(User $usuario, bool $administra): void
+    {
+        if ($usuario->hasDirectPermission(self::CONFIGURACION) === $administra) {
+            return;
+        }
+
+        $administra ? $usuario->givePermissionTo(self::CONFIGURACION) : $usuario->revokePermissionTo(self::CONFIGURACION);
+        $this->auditoria->registrar('usuario.permiso_cambiado', $usuario,
+            antes: [self::CONFIGURACION => ! $administra], despues: [self::CONFIGURACION => $administra]);
     }
 
     /**

@@ -22,6 +22,9 @@ class UsuarioResource extends JsonResource
             'rol' => $rol,
             'rol_etiqueta' => RolesSeeder::ROLES[$rol] ?? null,
             'activo' => $this->activo,
+            // Directo (delegado) o por su rol (superadmin): el formulario solo cambia el directo.
+            'administra_configuracion' => $this->hasDirectPermission('configuracion.gestionar'),
+            'administra_por_rol' => $this->roles->flatMap->permissions->contains('name', 'configuracion.gestionar'),
             'actualizado' => $this->updated_at?->toIso8601String(),
         ];
     }

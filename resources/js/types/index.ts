@@ -4,7 +4,14 @@ import type { Semaforo } from '@/components/domain/SemaforoBadge';
 export type Usuario = { id: number; name: string; email: string };
 
 /** UsuarioResource. */
-export type UsuarioFila = Usuario & { rol: string | null; rol_etiqueta: string | null; activo: boolean; actualizado: string | null };
+export type UsuarioFila = Usuario & {
+    rol: string | null;
+    rol_etiqueta: string | null;
+    activo: boolean;
+    administra_configuracion: boolean;
+    administra_por_rol: boolean;
+    actualizado: string | null;
+};
 
 export type Toast ={ tipo: 'ok' | 'error' | 'info'; mensaje: string };
 

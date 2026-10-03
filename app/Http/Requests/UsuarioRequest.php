@@ -37,6 +37,8 @@ class UsuarioRequest extends FormRequest
             ],
             'rol' => ['required', Rule::in(array_keys(RolesSeeder::ROLES))],
             'activo' => ['required', 'boolean'],
+            // Delegar la configuración (5.1, pendiente 8) sin dar el resto del superadmin.
+            'administra_configuracion' => ['sometimes', 'boolean'],
         ];
     }
 

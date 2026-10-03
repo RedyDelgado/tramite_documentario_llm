@@ -17,6 +17,7 @@ export default function UsuarioForm({ usuario, opcionesRol, dominio, onCerrar }:
         email: usuario?.email ?? '',
         rol: usuario?.rol ?? '',
         activo: usuario?.activo ?? true,
+        administra_configuracion: usuario?.administra_configuracion ?? false,
     });
     const { data, setData, errors } = form;
 
@@ -56,6 +57,25 @@ export default function UsuarioForm({ usuario, opcionesRol, dominio, onCerrar }:
                             value={data.rol}
                             disabled={esUnoMismo}
                             onChange={(e) => setData('rol', e.target.value)}
+                        />
+                    )}
+                </FormField>
+                <FormField
+                    etiqueta="Administra la configuración"
+                    ayuda={
+                        data.rol === 'superadmin'
+                            ? 'El superadmin ya la administra por su rol.'
+                            : 'Áreas, responsables, plazos, feriados, catálogos y plantillas. No incluye gestionar usuarios.'
+                    }
+                    error={errors.administra_configuracion}
+                >
+                    {(c) => (
+                        <Switch
+                            id={c.id}
+                            aria-describedby={c['aria-describedby']}
+                            checked={data.rol === 'superadmin' || data.administra_configuracion}
+                            disabled={data.rol === 'superadmin'}
+                            onCheckedChange={(v) => setData('administra_configuracion', v)}
                         />
                     )}
                 </FormField>
