@@ -40,6 +40,11 @@ Route::middleware('guest')->group(function () {
         'rolesDesarrollo' => app()->isLocal()
             ? collect(RolesSeeder::ROLES)->except('otros')->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()
             : [],
+        // Con datos de prueba hay varios coordinadores y docentes: se entra como una persona concreta.
+        'personasDesarrollo' => app()->isLocal()
+            ? User::where('activo', true)->with('roles:id,name')->orderBy('name')->get()
+                ->map(fn (User $u) => ['value' => $u->id, 'label' => $u->name.' — '.(RolesSeeder::ROLES[$u->roles->first()?->name] ?? 'sin rol')])
+            : [],
     ]))->name('login');
 
     Route::get('/auth/google', [GoogleController::class, 'redirigir'])->name('google.redirigir');
@@ -48,8 +53,13 @@ Route::middleware('guest')->group(function () {
     // Atajo sin Google para desarrollo; nunca se registra fuera de local.
     if (app()->isLocal()) {
         Route::post('/dev/entrar', function (Request $request) {
-            $rol = $request->validate(['rol' => ['required', 'in:superadmin,director,administrativo,coordinador']])['rol'];
-            Auth::login(User::role($rol)->where('activo', true)->orderBy('id')->firstOrFail());
+            $datos = $request->validate([
+                'rol' => ['required_without:usuario_id', 'in:superadmin,director,administrativo,coordinador'],
+                'usuario_id' => ['required_without:rol', 'integer'],
+            ]);
+            Auth::login(isset($datos['usuario_id'])
+                ? User::where('activo', true)->findOrFail($datos['usuario_id'])
+                : User::role($datos['rol'])->where('activo', true)->orderBy('id')->firstOrFail());
             $request->session()->regenerate();
 
             return to_route('inicio');

@@ -2,19 +2,24 @@ import { ErrorCircle20Regular } from '@fluentui/react-icons';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button, botonClases } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { cn } from '@/lib/cn';
 import type { Opcion } from '@/types';
 
-type Props = { google: boolean; rolesDesarrollo: Opcion<string>[] };
+type Props = { google: boolean; rolesDesarrollo: Opcion<string>[]; personasDesarrollo: Opcion<number>[] };
 
-export default function Login({ google, rolesDesarrollo }: Props) {
+export default function Login({ google, rolesDesarrollo, personasDesarrollo }: Props) {
     const { props, flash } = usePage();
     // Aquí no hay AppShell ni Toaster: el rechazo de Google se muestra en la tarjeta.
     const error = flash.toast?.tipo === 'error' ? flash.toast.mensaje : null;
     const [entrando, setEntrando] = useState<string | null>(null);
 
+    const [persona, setPersona] = useState('');
+
     const entrar = (rol: string) =>
         router.post('/dev/entrar', { rol }, { onStart: () => setEntrando(rol), onFinish: () => setEntrando(null) });
+    const entrarComo = () =>
+        router.post('/dev/entrar', { usuario_id: Number(persona) }, { onStart: () => setEntrando('persona'), onFinish: () => setEntrando(null) });
 
     return (
         <>
@@ -55,6 +60,21 @@ export default function Login({ google, rolesDesarrollo }: Props) {
                                     </Button>
                                 ))}
                             </div>
+                            {personasDesarrollo.length > 0 && (
+                                <div className="mt-3 flex gap-2">
+                                    <Select
+                                        aria-label="Persona"
+                                        className="min-w-0 flex-1"
+                                        vacia="O elige una persona"
+                                        opciones={personasDesarrollo}
+                                        value={persona}
+                                        onChange={(e) => setPersona(e.target.value)}
+                                    />
+                                    <Button cargando={entrando === 'persona'} disabled={!persona || entrando !== null} onClick={entrarComo}>
+                                        Entrar
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </section>
