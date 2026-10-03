@@ -121,12 +121,19 @@ class PanelYResumenTest extends TestCase
 
         $this->artisan('resumen:diario')->assertSuccessful();
 
-        Mail::assertQueued(ResumenDiario::class, 1);
+        // Un docente con un trámite asignado y pendiente también recibe el suyo.
+        $docente = User::factory()->create()->assignRole('otros');
+        $this->expediente(['estado' => EstadoExpediente::EnAtencion, 'responsable_id' => $docente->id, 'area_principal_id' => Area::factory()->create()->id]);
+        $this->artisan('resumen:diario')->assertSuccessful();
+        Mail::assertQueued(ResumenDiario::class, fn (ResumenDiario $mail) => $mail->hasTo($docente->email));
+        Mail::assertQueued(ResumenDiario::class, 3);
         Mail::assertQueued(ResumenDiario::class, function (ResumenDiario $mail) use ($vencido) {
+            if (! $mail->hasTo($this->coordinador->email)) {
+                return false;
+            }
             $mail->assertSeeInHtml(route('expedientes.show', $vencido));
 
-            return $mail->hasTo($this->coordinador->email) && $mail->expedientes->pluck('id')->all() === [$vencido->id]
-                && $mail->envelope()->subject === 'Trámites pendientes: 1 (1 en rojo)';
+            return $mail->expedientes->pluck('id')->all() === [$vencido->id] && $mail->envelope()->subject === 'Trámites pendientes: 1 (1 en rojo)';
         });
         $this->assertDatabaseHas('auditoria', ['accion' => 'notificacion.resumen_diario']);
     }

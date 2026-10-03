@@ -10,9 +10,10 @@ use App\Models\User;
 /** El superadmin no tiene estos permisos: administra, pero no ve el contenido de los trámites (5). */
 class ExpedientePolicy
 {
+    /** La bandeja: cada quien la ve filtrada a lo suyo (visiblesPara); el superadmin no tiene ninguno de estos permisos. */
     public function viewAny(User $user): bool
     {
-        return $user->canAny(['expedientes.ver_todos', 'expedientes.ver_areas']);
+        return $user->canAny(['expedientes.ver_todos', 'expedientes.ver_areas', 'expedientes.ver_asignados']);
     }
 
     public function view(User $user, Expediente $expediente): bool

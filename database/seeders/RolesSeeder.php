@@ -28,6 +28,8 @@ class RolesSeeder extends Seeder
         'usuarios.gestionar' => ['superadmin'],
         'expedientes.ver_todos' => ['director', 'administrativo'],
         'expedientes.ver_areas' => ['coordinador'],
+        // Docentes y demás personal: su bandeja con lo que se les asigna (5: «otros» ve solo lo asignado).
+        'expedientes.ver_asignados' => ['otros'],
         'expedientes.registrar' => ['administrativo'],
         // Derivar y reasignar (5); atender y cerrar se deciden por expediente en ExpedientePolicy.
         'expedientes.derivar' => ['director', 'administrativo'],

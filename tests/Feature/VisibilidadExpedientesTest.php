@@ -79,6 +79,7 @@ class VisibilidadExpedientesTest extends TestCase
         Expediente::factory()->create();
 
         $this->assertSame([$asignado->id], $this->visibles($otro));
-        $this->assertFalse($otro->can('viewAny', Expediente::class));
+        // Tiene bandeja, pero filtrada a lo que se le asigna.
+        $this->assertTrue($otro->can('viewAny', Expediente::class));
     }
 }

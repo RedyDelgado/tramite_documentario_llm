@@ -39,7 +39,7 @@ export type ItemNav = {
 
 export type GrupoNav = { titulo?: string; items: ItemNav[] };
 
-export const PERMISOS_EXPEDIENTES = ['expedientes.ver_todos', 'expedientes.ver_areas'];
+export const PERMISOS_EXPEDIENTES = ['expedientes.ver_todos', 'expedientes.ver_areas', 'expedientes.ver_asignados'];
 
 const NAVEGACION: GrupoNav[] = [
     {

@@ -79,6 +79,15 @@ class PermisosAtencionTest extends TestCase
         $this->assertFalse($ajeno->can('view', $this->expediente));
         $this->actingAs($asignado)->post("/expedientes/{$this->expediente->id}/tomar")->assertSessionHasNoErrors();
         $this->assertSame(EstadoExpediente::EnAtencion, $this->expediente->fresh()->estado);
+
+        // Por la interfaz: su bandeja muestra solo lo suyo y abre el expediente (el detalle se dibuja sobre la bandeja).
+        Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'area_principal_id' => $this->otraArea->id]);
+        $this->actingAs($asignado)->get('/expedientes')->assertOk()
+            ->assertInertia(fn ($page) => $page->where('expedientes.meta.total', 1)->where('expedientes.data.0.id', $this->expediente->id));
+        $this->actingAs($asignado)->get("/expedientes/{$this->expediente->id}")->assertOk()
+            ->assertInertia(fn ($page) => $page->where('expediente.permisos.solicitar_cierre', true));
+        $this->actingAs($ajeno)->get('/expedientes')->assertOk()->assertInertia(fn ($page) => $page->where('expedientes.meta.total', 0));
+        $this->actingAs($ajeno)->get("/expedientes/{$this->expediente->id}")->assertForbidden();
     }
 
     public function test_el_director_ve_todo_pero_no_atiende(): void
