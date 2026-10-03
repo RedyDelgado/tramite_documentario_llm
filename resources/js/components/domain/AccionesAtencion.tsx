@@ -26,7 +26,7 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
     const ia = derivacion?.ia;
     // Primero lo ya decidido, luego la regla (determinista) y al final la IA (10: la IA propone, las reglas deciden).
     const derivar = useForm({
-        tipo_tramite_id: String(e.tipo_tramite_id ?? ia?.tipo_tramite_id ?? ''),
+        tipo_tramite_id: String(e.tipo_tramite_id ?? sugerencia?.tipo_tramite_id ?? ia?.tipo_tramite_id ?? ''),
         area_id: String(e.area_principal_id ?? sugerencia?.area_id ?? ia?.area_id ?? ''),
         responsable_id: String(e.responsable_id ?? (e.area_principal_id ? '' : (sugerencia?.responsable_id ?? ''))),
         requiere_respuesta: e.requiere_respuesta,

@@ -66,7 +66,12 @@ export default function ReglaDerivacionForm({ regla, opcionesTipo, opcionesArea,
             </FormSection>
 
             <FormSection titulo="Condiciones" descripcion="Deben cumplirse todas las que indiques; al menos una.">
-                <FormField etiqueta="Tipo de trámite" error={errors.tipo_tramite_id} className="md:col-span-2">
+                <FormField
+                    etiqueta="Tipo de trámite"
+                    ayuda="Si el expediente ya tiene tipo, debe coincidir. Si aún no lo tiene, la regla lo propone junto con el área (necesita palabras clave o remitentes)."
+                    error={errors.tipo_tramite_id}
+                    className="md:col-span-2"
+                >
                     {(c) => (
                         <Select
                             {...c}

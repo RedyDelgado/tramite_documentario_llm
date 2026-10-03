@@ -40,7 +40,13 @@ class ReglaDerivacion extends Model
         $email = mb_strtolower((string) $expediente->remitente_email);
         $dominio = Str::after($email, '@');
 
-        return ($this->tipo_tramite_id === null || $this->tipo_tramite_id === $expediente->tipo_tramite_id)
+        // Sin tipo aún (la primera derivación): la regla aplica por sus palabras o remitentes y propone su tipo.
+        // Solo con tipo, no: sugeriría lo mismo para todo lo que llega sin clasificar.
+        $tipoOk = $this->tipo_tramite_id === null
+            || $this->tipo_tramite_id === $expediente->tipo_tramite_id
+            || ($expediente->tipo_tramite_id === null && ($palabras !== [] || $remitentes !== []));
+
+        return $tipoOk
             && ($palabras === [] || collect($palabras)->contains(fn ($p) => str_contains($asunto, mb_strtolower($p))))
             && ($remitentes === [] || collect($remitentes)->map(fn ($r) => mb_strtolower($r))
                 ->contains(fn ($r) => str_contains($r, '@') ? $r === $email : ($dominio === $r || str_ends_with($dominio, ".{$r}"))));

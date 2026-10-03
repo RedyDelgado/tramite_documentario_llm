@@ -258,7 +258,7 @@ class ExpedienteController extends Controller
             'areas' => Area::opciones(),
             'usuarios' => User::opciones(),
             'instrucciones' => InstruccionFrecuente::opciones(),
-            'sugerencia' => $regla ? ['regla' => $regla->nombre, 'area_id' => $regla->area_destino_id, 'responsable_id' => $regla->responsable_id] : null,
+            'sugerencia' => $regla ? ['regla' => $regla->nombre, 'tipo_tramite_id' => $regla->tipo_tramite_id, 'area_id' => $regla->area_destino_id, 'responsable_id' => $regla->responsable_id] : null,
             'ia' => app(ClasificacionService::class)->sugerencia($expediente),
         ];
     }

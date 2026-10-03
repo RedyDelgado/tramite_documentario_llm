@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\EstadoExpediente;
 use App\Models\Area;
 use App\Models\Configuracion;
 use App\Models\Expediente;
@@ -57,6 +58,26 @@ class ReglasDerivacionYUmbralesTest extends TestCase
         $this->assertSame($cooperacion->id, ReglaDerivacion::primeraQueAplica($deOtro)?->area_destino_id);
         $this->assertNull(ReglaDerivacion::primeraQueAplica($sinRegla));
         $this->assertDatabaseHas('auditoria', ['accion' => 'regla_derivacion.creada']);
+    }
+
+    public function test_sin_tipo_aun_la_regla_aplica_por_sus_palabras_y_propone_el_tipo(): void
+    {
+        $requerimiento = TipoTramite::create(['nombre' => 'Requerimiento de información', 'plazo_dias' => 5]);
+        $otro = TipoTramite::create(['nombre' => 'Convenio', 'plazo_dias' => 10]);
+        $academica = Area::factory()->create();
+        $this->crearRegla(['nombre' => 'Encuestas', 'tipo_tramite_id' => $requerimiento->id, 'palabras_clave' => ['encuesta'], 'area_destino_id' => $academica->id, 'prioridad' => 10]);
+        $this->crearRegla(['nombre' => 'Todo convenio', 'tipo_tramite_id' => $otro->id, 'area_destino_id' => Area::factory()->create()->id, 'prioridad' => 1]);
+
+        // Recién registrado, sin tipo: la regla de solo tipo no aplica; la de palabras sí, y trae su tipo.
+        $recien = Expediente::factory()->create(['asunto' => 'Encuesta de seguimiento a egresados', 'tipo_tramite_id' => null, 'estado' => EstadoExpediente::Registrado, 'anio' => 2026, 'secuencia' => 50]);
+        $this->assertSame('Encuestas', ReglaDerivacion::primeraQueAplica($recien)?->nombre);
+        $director = User::factory()->create()->assignRole('director');
+        $this->actingAs($director)->get("/expedientes/{$recien->id}")
+            ->assertInertia(fn ($page) => $page->where('derivacion.sugerencia.tipo_tramite_id', $requerimiento->id)->where('derivacion.sugerencia.area_id', $academica->id));
+
+        // Ya clasificado con otro tipo, el tipo de la regla vuelve a ser condición.
+        $recien->forceFill(['tipo_tramite_id' => $otro->id])->save();
+        $this->assertSame('Todo convenio', ReglaDerivacion::primeraQueAplica($recien)?->nombre);
     }
 
     public function test_un_dominio_no_coincide_con_otro_que_solo_termina_igual(): void
