@@ -1,5 +1,5 @@
 import type { LucideIcon, LucideProps } from 'lucide-react';
-import { Activity, Archive, ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, Ban, BrainCircuit, CalendarX, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleUser, Clock, CornerUpRight, Download, FilePlus, FileSearch, FileText, FileUp, Files, FolderOpen, Gauge, Hash, History, House, Info, Landmark, LayoutDashboard, LayoutGrid, ListChecks, Lock, LogOut, Mail, MailWarning, MailX, Merge, MessageSquare, Network, PanelLeft, Paperclip, Pencil, Plus, Printer, QrCode, Route, Search, Send, ShieldAlert, SlidersHorizontal, Timer, Trash2, Undo2, UserCheck, UserCog, Users, X } from 'lucide-react';
+import { Activity, Archive, ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, Ban, BrainCircuit, CalendarX, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleUser, Clock, CornerUpRight, Download, FilePlus, FileSearch, FileText, FileUp, Files, FolderOpen, Gauge, Hash, History, House, Image, Info, Landmark, LayoutDashboard, LayoutGrid, ListChecks, Lock, LogOut, Mail, MailWarning, MailX, Merge, MessageSquare, Network, PanelLeft, Paperclip, Pencil, Plus, Printer, QrCode, Route, Search, Send, ShieldAlert, SlidersHorizontal, Timer, Trash2, Undo2, UserCheck, UserCog, Users, X } from 'lucide-react';
 
 // Trazo de 1,75 y esquinas redondeadas, al estilo de SF Symbols (HIG, Icons): un solo set en todo el sistema (5.3).
 function icono(Icono: LucideIcon, tamano: number) {
@@ -36,6 +36,8 @@ export const IcoCorrecto16 = icono(CircleCheck, 16);
 export const IcoCorreo = icono(Mail, 18);
 export const IcoCorreoAviso = icono(MailWarning, 18);
 export const IcoCorreoBloqueado = icono(MailX, 18);
+export const IcoCorreo16 = icono(Mail, 16);
+export const IcoImagen = icono(Image, 18);
 export const IcoDerivar = icono(CornerUpRight, 18);
 export const IcoDerivar16 = icono(CornerUpRight, 16);
 export const IcoDescargar = icono(Download, 18);

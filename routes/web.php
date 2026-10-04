@@ -158,6 +158,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('documentos/{documento}/descargar', [OriginalController::class, 'documento'])->name('documentos.descargar');
     Route::get('correos/{correo}/eml', [OriginalController::class, 'correo'])->name('correos.eml');
+    Route::get('correos/{correo}/vista', [OriginalController::class, 'vista'])->name('correos.vista');
 
     // Catálogo de componentes (5.2): referencia de diseño, solo en local.
     if (app()->isLocal()) {

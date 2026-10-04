@@ -7,11 +7,14 @@ use App\Models\Auditoria;
 use App\Models\Correo;
 use App\Models\Documento;
 use App\Models\Expediente;
+use App\Models\User;
 use App\Services\ExpedienteService;
 use App\Services\IngestaCorreoService;
 use Database\Seeders\ReglasNoTramiteSeeder;
+use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -184,5 +187,48 @@ class IngestaCorreoTest extends TestCase
 
         $this->assertSame(0, Correo::count());
         Storage::disk('originales')->assertDirectoryEmpty('/');
+    }
+
+    public function test_el_correo_como_llego_se_ve_aislado_y_sin_imagenes_externas_hasta_pedirlas(): void
+    {
+        $this->seed(RolesSeeder::class);
+        // La imagen incrustada pasa por el OCR como cualquier adjunto.
+        Http::fake(['ai:8000/ocr' => Http::response(['texto' => '', 'paginas' => 1])]);
+        $eml = implode("\r\n", [
+            'From: Boletin <noticias@boletines.example>',
+            'To: tramite@universidad.example',
+            'Subject: Con diseño',
+            'Message-ID: <html@pruebas.example>',
+            // Boletín: queda como no trámite y no pasa por la IA.
+            'List-Unsubscribe: <mailto:baja@boletines.example>',
+            'Date: Mon, 05 Oct 2026 09:00:00 -0500',
+            'MIME-Version: 1.0',
+            'Content-Type: multipart/related; boundary="b"',
+            '',
+            '--b',
+            'Content-Type: text/html; charset="utf-8"',
+            '',
+            '<p>Hola</p><img src="cid:logo@x"><img src="https://rastreo.example/p.gif">',
+            '--b',
+            'Content-Type: image/png',
+            'Content-ID: <logo@x>',
+            'Content-Transfer-Encoding: base64',
+            '',
+            base64_encode('png'),
+            '--b--',
+            '',
+        ]);
+        $correo = $this->ingesta->procesar($eml, 'html')->correos()->sole();
+        $director = User::factory()->create()->assignRole('director');
+
+        $vista = $this->actingAs($director)->get("/correos/{$correo->id}/vista")->assertOk();
+        $vista->assertSee('<p>Hola</p>', false)->assertSee('data:image/png;base64,'.base64_encode('png'), false);
+        $csp = $vista->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("default-src 'none'", $csp);
+        $this->assertStringContainsString('sandbox', $csp);
+        $this->assertStringNotContainsString('https:', $csp);
+
+        $this->assertStringContainsString('img-src data: https:', $this->get("/correos/{$correo->id}/vista?imagenes=1")->headers->get('Content-Security-Policy'));
+        $this->actingAs(User::factory()->create())->get("/correos/{$correo->id}/vista")->assertForbidden();
     }
 }

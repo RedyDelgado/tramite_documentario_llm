@@ -1,5 +1,6 @@
-import { IcoAdjunto16, IcoAmenaza16, IcoCorreo, IcoDescargar16, IcoEnviar } from '@/components/ui/iconos';
+import { IcoAdjunto16, IcoAmenaza16, IcoCorreo, IcoCorreo16, IcoDescargar16, IcoEnviar, IcoImagen } from '@/components/ui/iconos';
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
 import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
@@ -9,7 +10,7 @@ import { OriginalPapel } from '@/components/domain/OriginalPapel';
 import { SerieCard } from '@/components/domain/SerieCard';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { Badge } from '@/components/ui/Badge';
-import { botonClases } from '@/components/ui/Button';
+import { Button, botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -44,6 +45,42 @@ function EnlaceDocumento({ d }: { d: DocumentoDetalle }) {
     );
 }
 
+/** El correo con su diseño, aislado en un iframe sin scripts; las imágenes externas, solo si se piden (como en Gmail). */
+function CorreoOriginal({ c }: { c: CorreoDetalle }) {
+    const [abierto, setAbierto] = useState(false);
+    const [imagenes, setImagenes] = useState(false);
+
+    return (
+        <>
+            <button type="button" onClick={() => setAbierto(true)} className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline">
+                <IcoCorreo16 />
+                Ver como llegó
+            </button>
+            <Dialog
+                abierto={abierto}
+                onCambiar={(a) => (setAbierto(a), setImagenes(false))}
+                titulo={c.asunto || '(sin asunto)'}
+                descripcion={imagenes ? undefined : 'Las imágenes externas están ocultas: al mostrarlas, el remitente puede saber que abriste el correo.'}
+                acciones={
+                    !imagenes && (
+                        <Button icono={<IcoImagen />} onClick={() => setImagenes(true)}>
+                            Mostrar imágenes
+                        </Button>
+                    )
+                }
+                tamano="xl"
+            >
+                <iframe
+                    title={`Correo: ${c.asunto}`}
+                    src={`/correos/${c.id}/vista${imagenes ? '?imagenes=1' : ''}`}
+                    sandbox="allow-popups allow-popups-to-escape-sandbox"
+                    className="h-[70vh] w-full rounded-card bg-surface"
+                />
+            </Dialog>
+        </>
+    );
+}
+
 function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDetalle[] }) {
     const adjuntos = documentos.filter((d) => c.documentos.includes(d.id));
 
@@ -73,10 +110,13 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
                 {adjuntos.some((d) => d.amenaza) ? (
                     <span className="ml-auto text-sm text-fg-muted">Correo original en cuarentena</span>
                 ) : (
-                    <a href={`/correos/${c.id}/eml`} className="ml-auto inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline">
-                        <IcoDescargar16 aria-hidden />
-                        Correo original (.eml)
-                    </a>
+                    <span className="ml-auto flex items-center gap-4">
+                        <CorreoOriginal c={c} />
+                        <a href={`/correos/${c.id}/eml`} className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline">
+                            <IcoDescargar16 aria-hidden />
+                            Correo original (.eml)
+                        </a>
+                    </span>
                 )}
             </footer>
         </article>
