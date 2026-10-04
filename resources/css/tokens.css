@@ -45,6 +45,13 @@
     /* Separadores finos de listas: text-primary al 8 %. */
     --separador: rgb(31 31 31 / 0.08);
 
+    /* Barra lateral de marca: degradado del azul de Google a su tono 800; texto blanco (6,4:1 o más). */
+    --barra-fondo: linear-gradient(165deg, var(--primary-600) 0%, var(--primary-700) 55%, var(--primary-800) 100%);
+    /* Blanco al 80 % para lo secundario (≥ 4,5:1 sobre el azul más claro), al 10 % y 15 % para hover y selección (texto blanco ≥ 4,5:1). */
+    --barra-suave: rgb(255 255 255 / 0.8);
+    --barra-hover: rgb(255 255 255 / 0.1);
+    --barra-activo: rgb(255 255 255 / 0.15);
+
     /* Fuente del sistema: SF en Apple, Segoe UI Variable en Windows, Roboto en Android. Sin CDN. */
     --fuente-base: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
     --fuente-titulos: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;

@@ -1,22 +1,24 @@
-import { IcoAdjunto16, IcoBuscar, IcoExpedientes } from '@/components/ui/iconos';
-import { router } from '@inertiajs/react';
+import { IcoAdjunto16, IcoBuscar, IcoExpedientes, IcoNuevoDocumento } from '@/components/ui/iconos';
+import { Link, router, usePage } from '@inertiajs/react';
 import type { ComponentProps } from 'react';
 import type { Columna } from '@/components/data/DataTable';
+import { type Pestana, Pestanas } from '@/components/data/Pestanas';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Badge } from '@/components/ui/Badge';
+import { botonClases } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
 import { cerrarModal, rutaModal } from '@/lib/modal';
-import type { ExpedienteFila, Opcion, Paginado } from '@/types';
+import type { ExpedienteFila, Opcion, Paginado, SharedProps } from '@/types';
 import RegistroNuevo from '../registro/Nuevo';
 import ExpedienteShow, { type DetalleExpedienteProps } from './Show';
 
-type Filtros = { q?: string; estado?: string; semaforo?: string; dir?: 'asc' | 'desc' };
+type Filtros = { q?: string; estado?: string; semaforo?: string; dir?: 'asc' | 'desc'; vista?: string };
 
 function Remitente({ e }: { e: ExpedienteFila }) {
     return (
@@ -70,14 +72,17 @@ const columnas: Columna<ExpedienteFila>[] = [
 type Props = {
     expedientes: Paginado<ExpedienteFila>;
     filtros: Filtros;
+    vista: string;
+    vistas: Pestana[];
     estados: Opcion<string>[];
     semaforos: Opcion<string>[];
     registro?: Omit<ComponentProps<typeof RegistroNuevo>, 'onCerrar'>;
 } & Partial<DetalleExpedienteProps>;
 
-export default function ExpedientesIndex({ expedientes, filtros: iniciales, estados, semaforos, registro, expediente, historial, ...detalle }: Props) {
+export default function ExpedientesIndex({ expedientes, filtros: iniciales, vista, vistas, estados, semaforos, registro, expediente, historial, ...detalle }: Props) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
     const hayFiltros = Boolean(filtros.q || filtros.estado || filtros.semaforo);
+    const puedeRegistrar = usePage<SharedProps>().props.auth.can.includes('expedientes.registrar');
 
     return (
         <>
@@ -85,7 +90,16 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, esta
             {expediente && historial && <ExpedienteShow expediente={expediente} historial={historial} {...detalle} onCerrar={() => cerrarModal('/expedientes')} />}
             <ListPage
                 titulo="Expedientes"
-                descripcion="Todo lo que ingresa por el buzón central: revisa, registra como trámite o archiva lo que no lo es."
+                descripcion="Todo lo que ingresa por el buzón central o en papel: revisa lo que llega, regístralo como trámite y síguelo hasta cerrarlo."
+                pestanas={<Pestanas etiqueta="Vista" pestanas={vistas} activa={vista} onCambiar={(v) => cambiar({ vista: v })} />}
+                acciones={
+                    puedeRegistrar && (
+                        <Link href={rutaModal('/registro/nuevo')} preserveScroll className={botonClases({ variante: 'primario' })}>
+                            <IcoNuevoDocumento />
+                            Registrar papel
+                        </Link>
+                    )
+                }
                 filtros={
                     <>
                         <Select
@@ -129,8 +143,8 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, esta
                     vacio: (
                         <EmptyState
                             icono={<IcoExpedientes />}
-                            titulo={hayFiltros ? 'Ningún expediente coincide' : 'Aún no hay expedientes'}
-                            descripcion={hayFiltros ? 'Prueba con otras palabras o quita el filtro de estado.' : 'Los correos del buzón central aparecerán aquí al ingresar.'}
+                            titulo={hayFiltros ? 'Ningún expediente coincide' : vista === 'por_revisar' ? 'Nada por revisar' : 'Nada en esta pestaña'}
+                            descripcion={hayFiltros ? 'Prueba con otras palabras o quita el filtro de estado.' : vista === 'por_revisar' ? 'No hay correos esperando revisión: los nuevos del buzón central aparecen aquí.' : 'Prueba en otra pestaña.'}
                         />
                     ),
                 }}

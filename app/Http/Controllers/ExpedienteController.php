@@ -35,6 +35,25 @@ use Inertia\Response;
 
 class ExpedienteController extends Controller
 {
+    /** Pestañas de la bandeja: vista => estados que agrupa (null: todos). */
+    private const VISTAS = [
+        'por_revisar' => [EstadoExpediente::PorRevisar],
+        'en_curso' => [EstadoExpediente::Registrado, EstadoExpediente::Derivado, EstadoExpediente::EnAtencion, EstadoExpediente::Atendido],
+        'cerrados' => [EstadoExpediente::Cerrado, EstadoExpediente::Anulado],
+        'no_tramite' => [EstadoExpediente::NoTramite],
+        'historico' => [EstadoExpediente::Historico],
+        'todos' => null,
+    ];
+
+    private const ETIQUETAS_VISTA = [
+        'por_revisar' => 'Por revisar',
+        'en_curso' => 'En trámite',
+        'cerrados' => 'Cerrados',
+        'no_tramite' => 'No trámite',
+        'historico' => 'Histórico',
+        'todos' => 'Todos',
+    ];
+
     public function __construct(private readonly ExpedienteService $expedientes) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -46,8 +65,16 @@ class ExpedienteController extends Controller
             'estado' => ['nullable', Rule::enum(EstadoExpediente::class)],
             'semaforo' => ['nullable', Rule::enum(Semaforo::class)],
             'dir' => ['nullable', 'in:asc,desc'],
+            'vista' => ['nullable', Rule::in(array_keys(self::VISTAS))],
         ]);
         $user = $request->user();
+        // Quien registra empieza por los correos que esperan revisión; buscar o filtrar por estado mira en todo.
+        $vista = $filtros['vista'] ?? match (true) {
+            isset($filtros['q']) || isset($filtros['estado']) || isset($filtros['semaforo']) => 'todos',
+            $user->can('expedientes.registrar') => 'por_revisar',
+            default => 'en_curso',
+        };
+        $estadosVista = collect(self::VISTAS[$vista])->map(fn (EstadoExpediente $e) => $e->value)->all();
 
         // Un lector de QR o de código escribe «REG-2026-00038» (o su enlace): se abre directo el expediente.
         if (($texto = $filtros['q'] ?? null) && ($porCodigo = Expediente::porCodigoEn($texto)) && $user->can('view', $porCodigo)) {
@@ -64,6 +91,9 @@ class ExpedienteController extends Controller
             if ($estado = $filtros['estado'] ?? null) {
                 $busqueda->where('estado', $estado);
             }
+            if ($estadosVista) {
+                $busqueda->whereIn('estado', $estadosVista);
+            }
             if ($semaforo = $filtros['semaforo'] ?? null) {
                 $busqueda->where('semaforo', $semaforo);
             }
@@ -73,6 +103,7 @@ class ExpedienteController extends Controller
                 ->with('area:id,nombre')
                 ->withCount('documentos')
                 ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
+                ->when($estadosVista, fn ($q, $estados) => $q->whereIn('estado', $estados))
                 ->when($filtros['semaforo'] ?? null, fn ($q, $semaforo) => $q->where('semaforo', $semaforo))
                 ->orderBy('fecha_ingreso', $filtros['dir'] ?? 'desc')
                 ->orderByDesc('id')
@@ -82,9 +113,23 @@ class ExpedienteController extends Controller
         return Inertia::render('expedientes/Index', [
             'expedientes' => ExpedienteResource::collection($pagina->withQueryString()),
             'filtros' => (object) $filtros,
+            'vista' => $vista,
+            'vistas' => $this->vistas($user),
             'estados' => collect(EstadoExpediente::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->etiqueta()]),
             'semaforos' => collect(Semaforo::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->etiqueta()]),
         ]);
+    }
+
+    /** @return list<array{valor: string, etiqueta: string, total: int}> pestañas con lo que el usuario ve en cada una */
+    private function vistas(User $user): array
+    {
+        $porEstado = Expediente::visiblesPara($user)->toBase()->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
+
+        return collect(self::VISTAS)->map(fn (?array $estados, string $vista) => [
+            'valor' => $vista,
+            'etiqueta' => self::ETIQUETAS_VISTA[$vista],
+            'total' => (int) ($estados === null ? $porEstado->sum() : collect($estados)->sum(fn (EstadoExpediente $e) => $porEstado[$e->value] ?? 0)),
+        ])->values()->all();
     }
 
     public function show(Request $request, Expediente $expediente, AuditoriaService $auditoria, SerieService $series): Response|RedirectResponse

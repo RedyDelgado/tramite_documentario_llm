@@ -130,7 +130,7 @@ Todo lo que ve el usuario (administración, bandejas, dashboard, registro de pap
 2. **Primitivos de UI** (`resources/js/components/ui/`): `Button`, `IconButton`, `Input`, `Textarea`, `Select`, `Combobox`, `DatePicker`, `Checkbox`, `Switch`, `Badge`, `Card`, `Tabs`, `Dialog`, `Drawer`, `Popover`, `Tooltip`, `Toast`, `Skeleton`, `EmptyState`, `Spinner`. Basados en Radix, con variantes (`cva`) y estados (hover, foco, deshabilitado, error, carga) definidos **una sola vez**.
 3. **Compuestos de formulario y datos** (`components/forms/`, `components/data/`): `FormField` (etiqueta + control + ayuda + error), `FormSection`, `DataTable` (cabecera fija, orden, selección, paginación, fila en hover/seleccionada, estado vacío y de carga), `FilterBar`, `CommandBar` (acciones a la izquierda, filtros y búsqueda a la derecha), `ConfirmDialog`, `FileDropzone`, `KpiCard`, `ChartCard`.
 4. **Compuestos de dominio** (`components/domain/`): `SemaforoBadge` (siempre icono + texto), `EstadoBadge`, `ExpedienteDrawer`, `LineaTiempo`, `EmisorCombobox`, `AreaSelect`, `ResponsableSelect`, `EtiquetaQR`, `LectorQR`, `CargaEscaneo`. Un componente de dominio nunca define estilos propios: compone capas 2 y 3.
-5. **Plantillas de página** (`components/layouts/`): `AppShell` (barra superior y navegación lateral translúcidas, selección en cápsula), `ListPage` (CommandBar + FilterBar + DataTable + Drawer de detalle), `FormPage`, `DashboardPage`.
+5. **Plantillas de página** (`components/layouts/`): `AppShell` (barra lateral de marca con la persona arriba, barra de búsqueda translúcida, selección en cápsula), `ListPage` (CommandBar + FilterBar + DataTable + Drawer de detalle), `FormPage`, `DashboardPage`.
 6. **Páginas** (`resources/js/pages/`): solo ensamblan plantillas y compuestos y llaman a Inertia. Sin CSS propio, sin HEX, sin lógica de negocio.
 
 **Reglas de reutilización**
@@ -155,8 +155,9 @@ Todo lo que ve el usuario (administración, bandejas, dashboard, registro de pap
 **Estilo:** forma, tipografía y capas al estilo de Apple (Human Interface Guidelines, escritorio); colores de Google (Material 3, abajo). Decisión del usuario, en reemplazo del estilo Fluent / Microsoft 365 inicial. Claro y centrado en la tarea: la jerarquía se da con tamaño, peso y espacio, no con bordes.
 
 **Estructura de pantalla**
-- Barra superior de 52 px translúcida (material con desenfoque) sobre el contenido: nombre del sistema, búsqueda global (campo relleno, sin borde) y menú de usuario con avatar de iniciales.
-- Navegación lateral translúcida y colapsable (solo iconos en ventanas de menos de 1024 px); ítem activo en cápsula redondeada `primary-100`, sin barra lateral.
+- Barra lateral de marca a toda la altura, con el degradado del azul de Google (`--barra-fondo`, de `primary-600` a `primary-800`) y texto blanco: arriba el nombre del sistema y la tarjeta de la persona (avatar de iniciales, nombre y rol; abre el menú de la cuenta); debajo sus opciones. Ítem activo en cápsula blanca al 15 % y hover al 10 %; colapsable (solo iconos en ventanas de menos de 1024 px).
+- Barra superior de 56 px translúcida (material con desenfoque) a la derecha de la barra lateral: botón para colapsarla y búsqueda global (campo relleno, sin borde).
+- Las bandejas con varias vistas usan un control segmentado (`Pestanas`) sobre la tabla, con el total de cada vista.
 - Barra de comandos sobre cada tabla: acciones principales a la izquierda, filtros y búsqueda a la derecha.
 - Fondo de página gris claro; tarjetas blancas **sin borde**, con sombra en capas y esquinas de 14 px.
 - Tablas como listas: cabecera fija translúcida sin franja de color, filas de 44 px con separadores finos, fila en hover y seleccionada.

@@ -2,6 +2,15 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-10 — Barra lateral de marca, bandeja por pestañas e inicio en una pantalla (decisión del usuario)
+
+- **Barra lateral con fondo de marca** (inspiración enviada por el usuario): degradado del azul de Google, la persona arriba con su rol y todas sus opciones debajo; selección y hover en cápsula blanca translúcida. Los tonos son tokens (`--barra-*`) derivados de los colores ya existentes; el texto blanco cumple AA (≥ 4,6:1 incluso sobre la selección).
+- **Expedientes por pestañas**: Por revisar, En trámite, Cerrados, No trámite, Histórico y Todos, con su total. Mesa de partes empieza en «Por revisar» (los correos que llegan); el resto, en «En trámite». Buscar o filtrar por estado o semáforo mira en todo.
+- **Registrar papel** pasa de la barra lateral a un botón dentro de Expedientes (abre el mismo modal).
+- **Cerrar un modal es instantáneo**: vuelve a la lista sin pedirla al servidor (`router.push` del lado del cliente). Antes cada cierre recargaba la lista (0,6 a 0,9 s en Docker sobre Windows). Lo que guarda o cambia algo sigue redirigiendo y trae la lista al día.
+- **Inicio en una sola pantalla**: saludo con el nombre, cifras compactas con icono, listas con barra de magnitud (las 5 primeras) y gráfico más bajo.
+- «Componentes» (catálogo para desarrollar) solo lo ve el superadmin en local.
+
 ## 2026-10-10 — Buzón central conectado desde el panel
 
 - **El superadmin conecta la cuenta del buzón con Google desde la pantalla Buzón central**, con el mismo cliente OAuth del inicio de sesión y el permiso `gmail.modify` (acceso permanente: `access_type=offline`, `prompt=consent`). Antes había que sacar el refresh token con el OAuth Playground y pegarlo en el `.env`; por eso, en la práctica, el correo no se descargaba.

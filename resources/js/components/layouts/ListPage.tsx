@@ -17,14 +17,17 @@ type Props<T> = {
     detalle?: ReactNode;
     // Bloque sobre la lista que pide atención (p. ej. posibles duplicados).
     aviso?: ReactNode;
+    // Vistas de la bandeja (Pestanas), sobre la tabla.
+    pestanas?: ReactNode;
 };
 
 /** Plantilla de toda bandeja o catálogo: CommandBar + tabla con cabecera fija + paginación + detalle lateral. */
-export function ListPage<T>({ titulo, descripcion, acciones, filtros, tabla, paginacion, detalle, aviso }: Props<T>) {
+export function ListPage<T>({ titulo, descripcion, acciones, filtros, tabla, paginacion, detalle, aviso, pestanas }: Props<T>) {
     return (
         <AppShell>
             <PageHeader titulo={titulo} descripcion={descripcion} />
             {aviso && <div className="mb-4">{aviso}</div>}
+            {pestanas && <div className="mb-4">{pestanas}</div>}
             <section className="overflow-hidden rounded-card bg-surface shadow-card">
                 <CommandBar acciones={acciones} filtros={filtros} />
                 <div className="max-h-[calc(100vh-16rem)] overflow-auto">

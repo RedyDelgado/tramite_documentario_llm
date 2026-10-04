@@ -1,5 +1,5 @@
 import { IcoArchivo, IcoAreas, IcoColas, IcoComponentes, IcoCorreo,
-    IcoCorreoAviso, IcoCorreoBloqueado, IcoDocumento, IcoDocumentos, IcoEnviar, IcoExpedientes, IcoFeriado, IcoIa, IcoInicio, IcoInstitucion, IcoInstrucciones, IcoNuevoDocumento, IcoNumeral, IcoPlazo, IcoResponsables, IcoRuta, IcoUsuarios, IcoVelocimetro } from '@/components/ui/iconos';
+    IcoCorreoAviso, IcoCorreoBloqueado, IcoDocumento, IcoDocumentos, IcoEnviar, IcoExpedientes, IcoFeriado, IcoIa, IcoInicio, IcoInstitucion, IcoInstrucciones, IcoNumeral, IcoPlazo, IcoResponsables, IcoRuta, IcoUsuarios, IcoVelocimetro } from '@/components/ui/iconos';
 import type { ReactElement } from 'react';
 import type { SharedProps } from '@/types';
 
@@ -13,6 +13,8 @@ export type ItemNav = {
     soloLocal?: boolean;
     // Fuera de Inertia (p. ej. Horizon): navegación con recarga completa.
     externo?: boolean;
+    // Otras rutas que viven dentro de esta sección (p. ej. registrar en papel, dentro de Expedientes).
+    tambien?: string[];
 };
 
 export type GrupoNav = { titulo?: string; items: ItemNav[] };
@@ -23,8 +25,7 @@ const NAVEGACION: GrupoNav[] = [
     {
         items: [
             { etiqueta: 'Inicio', href: '/', icono: <IcoInicio /> },
-            { etiqueta: 'Expedientes', href: '/expedientes', icono: <IcoExpedientes />, permisos: PERMISOS_EXPEDIENTES },
-            { etiqueta: 'Registrar papel', href: '/registro/nuevo', icono: <IcoNuevoDocumento />, permisos: ['expedientes.registrar'] },
+            { etiqueta: 'Expedientes', href: '/expedientes', icono: <IcoExpedientes />, permisos: PERMISOS_EXPEDIENTES, tambien: ['/registro'] },
             { etiqueta: 'Documentos emitidos', href: '/salientes', icono: <IcoEnviar />, permisos: [...PERMISOS_EXPEDIENTES, 'expedientes.registrar'] },
         ],
     },
@@ -60,7 +61,8 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Buzón central', href: '/buzon', icono: <IcoCorreo />, rol: 'superadmin' },
             { etiqueta: 'Notificaciones', href: '/notificaciones', icono: <IcoCorreoAviso />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Colas (Horizon)', href: '/horizon', icono: <IcoColas />, rol: 'superadmin', externo: true },
-            { etiqueta: 'Componentes', href: '/ui', icono: <IcoComponentes />, soloLocal: true },
+            // Catálogo de componentes para desarrollar: solo el superadmin, en local.
+            { etiqueta: 'Componentes', href: '/ui', icono: <IcoComponentes />, rol: 'superadmin', soloLocal: true },
         ],
     },
 ];

@@ -1,4 +1,4 @@
-import { IcoBuscar, IcoPanelLateral, IcoSalir } from '@/components/ui/iconos';
+import { IcoBuscar, IcoFlechaAbajo16, IcoPanelLateral, IcoSalir } from '@/components/ui/iconos';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { IconButton } from '@/components/ui/IconButton';
@@ -10,6 +10,14 @@ import { cn } from '@/lib/cn';
 import { esActiva, navegacionVisible, PERMISOS_EXPEDIENTES, tieneAlguno, type ItemNav } from '@/lib/navegacion';
 
 const CLAVE_COLAPSADA = 'navegacion-colapsada';
+
+const ROLES: Record<string, string> = {
+    superadmin: 'Superadmin',
+    director: 'Director',
+    administrativo: 'Mesa de partes',
+    coordinador: 'Coordinador',
+    otros: 'Personal',
+};
 
 // Sin preferencia guardada, en ventanas angostas la barra lateral arranca colapsada para dejar sitio al contenido.
 function leerColapsada(): boolean {
@@ -32,15 +40,15 @@ function iniciales(nombre: string): string {
 }
 
 function ItemNavegacion({ item, activa, colapsada }: { item: ItemNav; activa: boolean; colapsada: boolean }) {
-    // Selección en cápsula redondeada, como la lista lateral de las apps de Apple (HIG, Sidebars).
+    // Cápsula translúcida sobre el fondo de marca: blanco al 15 % la selección, al 10 % el hover.
     const clases = cn(
-        'flex h-8 items-center gap-2.5 rounded-control text-base transition-colors',
-        colapsada ? 'mx-auto w-9 justify-center' : 'mx-2 px-2.5',
-        activa ? 'bg-primary-100 font-medium text-primary-900' : 'text-fg hover:bg-relleno',
+        'flex h-9 items-center gap-3 rounded-full text-base transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-primary',
+        colapsada ? 'mx-auto w-10 justify-center' : 'mx-3 px-3',
+        activa ? 'bg-barra-activo font-semibold text-on-primary' : 'text-barra-suave hover:bg-barra-hover hover:text-on-primary',
     );
     const contenido = (
         <>
-            <span className={cn('shrink-0', activa ? 'text-primary-600' : 'text-primary-600/80')}>{item.icono}</span>
+            <span className="shrink-0">{item.icono}</span>
             <span className={colapsada ? 'sr-only' : 'truncate'}>{item.etiqueta}</span>
         </>
     );
@@ -57,12 +65,13 @@ function ItemNavegacion({ item, activa, colapsada }: { item: ItemNav; activa: bo
     return colapsada ? <Tooltip texto={item.etiqueta}>{enlace}</Tooltip> : enlace;
 }
 
-/** Marco de toda página autenticada: barra y navegación translúcidas sobre el contenido (HIG, Materials), y avisos. */
+/** Marco de toda página autenticada: barra lateral de marca con la persona y sus opciones, y barra de búsqueda translúcida. */
 export function AppShell({ children }: { children: ReactNode }) {
     const { props, url } = usePage();
     const [colapsada, setColapsada] = useState(leerColapsada);
     const grupos = navegacionVisible(props);
     const usuario = props.auth.user;
+    const rol = props.auth.roles.map((r) => ROLES[r] ?? r).join(' · ');
 
     const alternar = () => {
         setColapsada((c) => {
@@ -75,9 +84,98 @@ export function AppShell({ children }: { children: ReactNode }) {
         });
     };
 
+    const avatar = usuario && (
+        <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-on-primary text-base font-bold text-primary-700 shadow-card">
+            {iniciales(usuario.name)}
+        </span>
+    );
+
     return (
         <div className="min-h-screen bg-app">
-            <header className="fixed inset-x-0 top-0 z-40 flex h-13 items-center gap-3 border-b border-separador bg-material px-3 backdrop-blur-xl backdrop-saturate-150">
+            <nav
+                id="navegacion"
+                aria-label="Navegación principal"
+                className={cn(
+                    'fixed inset-y-0 left-0 z-40 flex flex-col overflow-x-hidden bg-[image:var(--barra-fondo)] text-on-primary transition-[width]',
+                    colapsada ? 'w-16' : 'w-64',
+                )}
+            >
+                <Link
+                    href="/"
+                    className={cn('flex h-14 shrink-0 items-center gap-2 font-titulos text-md font-bold tracking-tight', colapsada ? 'justify-center' : 'px-6')}
+                >
+                    <span aria-hidden className="flex size-7 items-center justify-center rounded-control bg-barra-activo text-sm">
+                        TD
+                    </span>
+                    <span className={colapsada ? 'sr-only' : 'truncate'}>{props.app.nombre}</span>
+                </Link>
+
+                {usuario && (
+                    <div className={cn('mb-3', colapsada ? 'flex justify-center' : 'mx-3')}>
+                        <Menu
+                            disparador={
+                                <button
+                                    type="button"
+                                    aria-label={`${usuario.name}: opciones de la cuenta`}
+                                    className={cn(
+                                        'flex w-full cursor-pointer items-center gap-3 rounded-card text-left transition-colors hover:bg-barra-hover focus-visible:outline-2 focus-visible:outline-on-primary',
+                                        colapsada ? 'justify-center p-1' : 'bg-barra-hover p-2.5',
+                                    )}
+                                >
+                                    {avatar}
+                                    {!colapsada && (
+                                        <>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-base font-semibold">{usuario.name}</span>
+                                                <span className="block truncate text-sm text-barra-suave">{rol}</span>
+                                            </span>
+                                            <IcoFlechaAbajo16 className="shrink-0 text-barra-suave" />
+                                        </>
+                                    )}
+                                </button>
+                            }
+                            encabezado={
+                                <>
+                                    <p className="text-base font-semibold text-fg">{usuario.name}</p>
+                                    <p className="text-sm text-fg-muted">{usuario.email}</p>
+                                </>
+                            }
+                            items={[{ etiqueta: 'Cerrar sesión', icono: <IcoSalir />, onSelect: () => router.post('/logout') }]}
+                        />
+                    </div>
+                )}
+
+                <div className="flex-1 overflow-y-auto pb-4">
+                    {grupos.map((grupo, i) => (
+                        <div key={grupo.titulo ?? i} className={cn(i > 0 && 'mt-5')}>
+                            {grupo.titulo &&
+                                (colapsada ? (
+                                    <div role="separator" className="mx-4 mb-2 h-px bg-barra-activo" />
+                                ) : (
+                                    <p className="px-6 pb-1.5 text-sm font-semibold tracking-wide text-barra-suave uppercase">{grupo.titulo}</p>
+                                ))}
+                            <ul className="flex flex-col gap-0.5">
+                                {grupo.items.map((item) => (
+                                    <li key={item.href}>
+                                        <ItemNavegacion
+                                            item={item}
+                                            activa={[item.href, ...(item.tambien ?? [])].some((h) => esActiva(h, url))}
+                                            colapsada={colapsada}
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+            </nav>
+
+            <header
+                className={cn(
+                    'fixed top-0 right-0 z-30 flex h-14 items-center gap-3 border-b border-separador bg-material px-4 backdrop-blur-xl backdrop-saturate-150 transition-[left]',
+                    colapsada ? 'left-16' : 'left-64',
+                )}
+            >
                 <IconButton
                     icono={<IcoPanelLateral />}
                     etiqueta={colapsada ? 'Mostrar la barra lateral' : 'Ocultar la barra lateral'}
@@ -85,13 +183,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     aria-controls="navegacion"
                     onClick={alternar}
                 />
-                <Link href="/" className="shrink-0 rounded-control px-1 text-md font-semibold tracking-tight text-fg">
-                    {props.app.nombre}
-                </Link>
-                {tieneAlguno(props.auth.can, PERMISOS_EXPEDIENTES) ? (
+                {tieneAlguno(props.auth.can, PERMISOS_EXPEDIENTES) && (
                     <form
                         role="search"
-                        className="mx-auto hidden w-full max-w-lg md:block"
+                        className="w-full max-w-lg"
                         onSubmit={(e) => {
                             e.preventDefault();
                             const q = new FormData(e.currentTarget).get('q')?.toString().trim();
@@ -112,64 +207,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                             />
                         </div>
                     </form>
-                ) : (
-                    <div className="mx-auto" />
-                )}
-                {usuario && (
-                    <div className="ml-auto md:ml-0">
-                        <Menu
-                            disparador={
-                                <button
-                                    type="button"
-                                    className="flex h-9 cursor-pointer items-center gap-2 rounded-full py-1 pr-3 pl-1 text-base text-fg transition-colors hover:bg-relleno"
-                                >
-                                    <span aria-hidden className="flex size-7 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-on-primary">
-                                        {iniciales(usuario.name)}
-                                    </span>
-                                    <span className="hidden max-w-48 truncate sm:inline">{usuario.name}</span>
-                                </button>
-                            }
-                            encabezado={
-                                <>
-                                    <p className="text-base font-semibold text-fg">{usuario.name}</p>
-                                    <p className="text-sm text-fg-muted">{usuario.email}</p>
-                                </>
-                            }
-                            items={[{ etiqueta: 'Cerrar sesión', icono: <IcoSalir />, onSelect: () => router.post('/logout') }]}
-                        />
-                    </div>
                 )}
             </header>
 
-            <nav
-                id="navegacion"
-                aria-label="Navegación principal"
-                className={cn(
-                    'fixed top-13 bottom-0 left-0 z-30 overflow-x-hidden overflow-y-auto border-r border-separador bg-material py-3 backdrop-blur-xl backdrop-saturate-150 transition-[width]',
-                    colapsada ? 'w-14' : 'w-64',
-                )}
-            >
-                {grupos.map((grupo, i) => (
-                    <div key={grupo.titulo ?? i} className={cn(i > 0 && 'mt-4')}>
-                        {grupo.titulo &&
-                            (colapsada ? (
-                                <div role="separator" className="mx-3 mb-2 h-px bg-separador" />
-                            ) : (
-                                <p className="px-5 pb-1 text-sm font-semibold text-fg-muted">{grupo.titulo}</p>
-                            ))}
-                        <ul className="flex flex-col gap-0.5">
-                            {grupo.items.map((item) => (
-                                <li key={item.href}>
-                                    <ItemNavegacion item={item} activa={esActiva(item.href, url)} colapsada={colapsada} />
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-            </nav>
-
-            <main className={cn('pt-13 transition-[padding]', colapsada ? 'pl-14' : 'pl-64')}>
-                <div className="mx-auto max-w-[96rem] px-8 py-7">{children}</div>
+            <main className={cn('pt-14 transition-[padding]', colapsada ? 'pl-16' : 'pl-64')}>
+                <div className="mx-auto max-w-[96rem] px-8 py-6">{children}</div>
             </main>
 
             <Toaster />

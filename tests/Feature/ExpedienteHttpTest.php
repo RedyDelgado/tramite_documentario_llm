@@ -58,6 +58,29 @@ class ExpedienteHttpTest extends TestCase
         $this->actingAs($superadmin)->get("/expedientes/{$this->oficio->id}")->assertForbidden();
     }
 
+    public function test_las_pestanas_separan_lo_que_espera_revision_de_lo_demas(): void
+    {
+        app(IngestaCorreoService::class)->procesar(File::get(base_path('tests/fixtures/correos/boletin.eml')));
+
+        // Mesa de partes empieza por lo que espera revisión; cada pestaña trae su total.
+        $this->actingAs($this->administrativo)->get('/expedientes')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('vista', 'por_revisar')
+            ->has('expedientes.data', 1)
+            ->where('vistas.0', ['valor' => 'por_revisar', 'etiqueta' => 'Por revisar', 'total' => 1])
+            ->where('vistas.3', ['valor' => 'no_tramite', 'etiqueta' => 'No trámite', 'total' => 1])
+            ->where('vistas.5.total', 2));
+
+        $this->get('/expedientes?vista=no_tramite')->assertInertia(fn (AssertableInertia $p) => $p
+            ->has('expedientes.data', 1)
+            ->where('expedientes.data.0.estado.valor', 'no_tramite'));
+
+        // Quien no registra empieza por lo que está en trámite.
+        $director = User::factory()->create()->assignRole('director');
+        $this->actingAs($director)->get('/expedientes')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('vista', 'en_curso')
+            ->has('expedientes.data', 0));
+    }
+
     public function test_el_coordinador_no_abre_expedientes_de_otra_area(): void
     {
         $coordinador = $this->coordinadorDe(Area::factory()->create());

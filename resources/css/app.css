@@ -39,6 +39,9 @@
     --color-relleno-fuerte: var(--relleno-fuerte);
     --color-separador: var(--separador);
     --color-border-campo: var(--border-campo);
+    --color-barra-suave: var(--barra-suave);
+    --color-barra-hover: var(--barra-hover);
+    --color-barra-activo: var(--barra-activo);
 
     --color-ok: var(--status-ok);
     --color-ok-soft: var(--status-ok-bg);
