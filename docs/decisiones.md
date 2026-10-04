@@ -2,6 +2,12 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-10 — Aviso por correo al derivar
+
+- Al derivar o reasignar, a quien debe atender le llega un correo con el expediente, la instrucción, el plazo y el enlace directo; el resumen diario sigue igual.
+- Destinatario: la persona asignada; si no hay, quienes coordinan el área hoy (titular y suplente vigentes). Nunca quien deriva, y reasignar al mismo destino (p. ej. cambiar solo el plazo) no vuelve a avisar.
+- Usa la misma vía que el resumen diario: `notificaciones_enviadas` (tipo `derivacion`) con Message-ID propio para enlazar rebotes, y auditoría `notificacion.derivacion`.
+
 ## 2026-10-10 — Barra lateral de marca, bandeja por pestañas e inicio en una pantalla (decisión del usuario)
 
 - **Barra lateral con fondo de marca** (inspiración enviada por el usuario): degradado del azul de Google, la persona arriba con su rol y todas sus opciones debajo; selección y hover en cápsula blanca translúcida. Los tonos son tokens (`--barra-*`) derivados de los colores ya existentes; el texto blanco cumple AA (≥ 4,6:1 incluso sobre la selección).

@@ -4,10 +4,14 @@ namespace App\Services;
 
 use App\Enums\EstadoExpediente;
 use App\Exceptions\ReglaDeNegocio;
+use App\Mail\AvisoDerivacion;
+use App\Models\AreaResponsable;
 use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
 use App\Models\Movimiento;
+use App\Models\NotificacionEnviada;
 use App\Models\TipoTramite;
+use App\Models\User;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Closure;
@@ -15,6 +19,7 @@ use DateTimeInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 
 /** Atención de un expediente (7, 8): cada paso deja un movimiento y queda auditado; el semáforo se recalcula al guardar. */
 class AtencionService
@@ -42,6 +47,7 @@ class AtencionService
      */
     public function derivar(Expediente $expediente, array $datos): Expediente
     {
+        $destinoAnterior = [$expediente->area_principal_id, $expediente->responsable_id];
         $expediente = $this->paso($expediente, [EstadoExpediente::Registrado, ...self::ABIERTOS], 'derivar', function (Expediente $e) use ($datos) {
             $tipo = TipoTramite::findOrFail($datos['tipo_tramite_id']);
             $areaId = (int) $datos['area_id'];
@@ -87,8 +93,38 @@ class AtencionService
         });
         // La derivación es la decisión humana con la que se mide la IA (10).
         $this->clasificacion->registrarDecision($expediente, Auth::user());
+        // Reasignar al mismo destino (p. ej. solo cambiar el plazo) no vuelve a avisar.
+        if ($destinoAnterior !== [$expediente->area_principal_id, $expediente->responsable_id]) {
+            $this->avisarDerivacion($expediente);
+        }
 
         return $expediente;
+    }
+
+    /** Aviso por correo a quien debe atender: la persona asignada o, si no hay, quienes coordinan el área hoy. */
+    private function avisarDerivacion(Expediente $expediente): void
+    {
+        $movimiento = Movimiento::where('expediente_id', $expediente->id)->where('tipo', 'derivacion')->latest('id')->firstOrFail();
+        $ids = $expediente->responsable_id
+            ? [$expediente->responsable_id]
+            : AreaResponsable::where('area_id', $expediente->area_principal_id)->vigentes()->pluck('user_id')->all();
+
+        // Quien deriva a sí mismo no necesita aviso.
+        User::whereIn('id', $ids)->whereKeyNot(Auth::id())->where('activo', true)->each(function (User $destinatario) use ($expediente, $movimiento) {
+            $notificacion = NotificacionEnviada::create([
+                'user_id' => $destinatario->id,
+                'email' => $destinatario->email,
+                'tipo' => 'derivacion',
+                'expedientes' => [$expediente->id],
+                'message_id' => NotificacionEnviada::nuevoMessageId('derivacion'),
+            ]);
+            Mail::to($destinatario)->queue(new AvisoDerivacion($destinatario, $expediente, $movimiento, $notificacion));
+            $this->auditoria->registrar('notificacion.derivacion', $destinatario, despues: [
+                'destinatario' => $destinatario->email,
+                'expediente_id' => $expediente->id,
+                'notificacion_id' => $notificacion->id,
+            ]);
+        });
     }
 
     /** Quien atiende lo toma; si es solo para conocimiento y sin plazo, tomarlo ya lo deja atendido (8). */

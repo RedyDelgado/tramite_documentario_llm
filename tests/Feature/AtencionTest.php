@@ -3,15 +3,18 @@
 namespace Tests\Feature;
 
 use App\Enums\EstadoExpediente;
+use App\Mail\AvisoDerivacion;
 use App\Models\Area;
 use App\Models\AreaResponsable;
 use App\Models\Expediente;
 use App\Models\Movimiento;
+use App\Models\NotificacionEnviada;
 use App\Models\TipoTramite;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -71,6 +74,29 @@ class AtencionTest extends TestCase
         $this->derivar($expediente, $tipo, ['fecha_limite' => '2026-10-20'], $this->director)->assertSessionHasNoErrors();
         $this->assertSame('2026-10-20', $expediente->fresh()->fecha_limite->toDateString());
         $this->derivar($expediente, $tipo, ['fecha_limite' => '2026-10-01'])->assertSessionHasErrors('fecha_limite');
+    }
+
+    public function test_derivar_avisa_por_correo_a_quien_debe_atender(): void
+    {
+        Mail::fake();
+        $tipo = TipoTramite::create(['nombre' => 'Requerimiento', 'plazo_dias' => 3, 'tipo_dias' => 'habiles']);
+        $expediente = $this->registrado();
+
+        // Sin persona asignada: a quien coordina el área.
+        $this->derivar($expediente, $tipo)->assertSessionHasNoErrors();
+        Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->hasTo($this->coordinador->email) && $m->expediente->is($expediente));
+        $this->assertSame('derivacion', NotificacionEnviada::sole()->tipo);
+
+        // Reasignar al mismo destino (otra fecha) no vuelve a avisar.
+        $this->derivar($expediente, $tipo, ['fecha_limite' => '2026-10-20'])->assertSessionHasNoErrors();
+        Mail::assertQueuedCount(1);
+
+        // Con persona asignada: solo a ella, y nunca a quien deriva.
+        $docente = User::factory()->create()->assignRole('otros');
+        $this->derivar($expediente, $tipo, ['responsable_id' => $docente->id])->assertSessionHasNoErrors();
+        Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->hasTo($docente->email));
+        $this->derivar($expediente, $tipo, ['responsable_id' => $this->administrativo->id])->assertSessionHasNoErrors();
+        Mail::assertQueuedCount(2);
     }
 
     public function test_para_conocimiento_sin_plazo_tomarlo_lo_deja_atendido(): void

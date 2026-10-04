@@ -15,7 +15,7 @@ class NotificacionEnviada extends Model
 
     public const ESTADOS = ['pendiente' => 'Pendiente', 'enviado' => 'Enviado', 'fallido' => 'Fallido', 'rebotado' => 'Rebotado'];
 
-    public const TIPOS = ['resumen_diario' => 'Resumen diario'];
+    public const TIPOS = ['resumen_diario' => 'Resumen diario', 'derivacion' => 'Aviso de derivación'];
 
     protected function casts(): array
     {
