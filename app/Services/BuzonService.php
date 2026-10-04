@@ -23,6 +23,12 @@ class BuzonService
 
     public function __construct(private readonly AuditoriaService $auditoria) {}
 
+    /** Fija desde APP_URL y no desde la petición: así es la misma URI que se registra en Google (127.0.0.1 y localhost son distintas). */
+    public function redireccion(): string
+    {
+        return rtrim(config('app.url'), '/').'/buzon/google/callback';
+    }
+
     public function conectado(): bool
     {
         return Configuracion::whereKey(self::TOKEN)->exists();
@@ -104,7 +110,7 @@ class BuzonService
             'desde' => config('tramite.correo.backfill_desde'),
             'inicio_operacion' => config('tramite.correo.inicio_operacion'),
             'cliente_configurado' => filled(config('tramite.correo.gmail.client_id') ?: config('services.google.client_id')),
-            'redireccion' => route('buzon.callback'),
+            'redireccion' => $this->redireccion(),
         ];
     }
 }

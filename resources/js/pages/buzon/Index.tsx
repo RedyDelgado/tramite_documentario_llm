@@ -1,20 +1,20 @@
-import { router } from "@inertiajs/react";
-import { useState } from "react";
-import { DetalleLista } from "@/components/data/DetalleLista";
-import { AppShell } from "@/components/layouts/AppShell";
-import { PageHeader } from "@/components/layouts/PageHeader";
-import { Badge } from "@/components/ui/Badge";
-import { BotonConfirmado } from "@/components/ui/BotonConfirmado";
-import { Button, botonClases } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { IcoCorreo, IcoDescargar } from "@/components/ui/iconos";
-import { formatearFecha, formatearFechaHora } from "@/lib/fechas";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DetalleLista } from '@/components/data/DetalleLista';
+import { AppShell } from '@/components/layouts/AppShell';
+import { PageHeader } from '@/components/layouts/PageHeader';
+import { Badge } from '@/components/ui/Badge';
+import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
+import { Button, botonClases } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { IcoCorreo, IcoDescargar } from '@/components/ui/iconos';
+import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 
 /** BuzonService::estado. */
 type Buzon = {
     conectado: boolean;
     cuenta: string | null;
-    driver: "gmail" | "directorio";
+    driver: 'gmail' | 'directorio';
     activo: boolean;
     ultima_lectura: {
         fecha: string;
@@ -30,11 +30,7 @@ type Buzon = {
 
 export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
     const [enviando, setEnviando] = useState<string | null>(null);
-    const post = (
-        ruta: string,
-        datos: Record<string, boolean>,
-        cerrar?: () => void,
-    ) =>
+    const post = (ruta: string, datos: Record<string, boolean>, cerrar?: () => void) =>
         router.post(ruta, datos, {
             preserveScroll: true,
             onStart: () => setEnviando(ruta),
@@ -54,45 +50,40 @@ export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
                         <DetalleLista
                             items={[
                                 {
-                                    etiqueta: "Cuenta",
+                                    etiqueta: 'Cuenta',
                                     valor: b.conectado ? (
                                         <Badge tono="ok" icono={<IcoCorreo />}>
                                             {b.cuenta}
                                         </Badge>
-                                    ) : b.driver === "directorio" ? (
-                                        <Badge tono="aviso">
-                                            Modo de prueba: carpeta local
-                                        </Badge>
+                                    ) : b.driver === 'directorio' ? (
+                                        <Badge tono="aviso">Modo de prueba: carpeta local</Badge>
                                     ) : (
                                         <Badge>Configurada en el .env</Badge>
                                     ),
                                 },
                                 {
-                                    etiqueta: "Descarga automática",
-                                    valor: b.activo ? (
-                                        <Badge tono="ok">
-                                            Encendida · cada minuto
-                                        </Badge>
-                                    ) : (
-                                        <Badge>Apagada</Badge>
-                                    ),
+                                    etiqueta: 'Descarga automática',
+                                    valor: b.activo ? <Badge tono="ok">Encendida · cada minuto</Badge> : <Badge>Apagada</Badge>,
                                 },
                                 {
-                                    etiqueta: "Lee desde",
+                                    etiqueta: 'Lee desde',
                                     valor: formatearFecha(b.desde),
                                 },
                                 {
-                                    etiqueta: "Inicio de operación",
+                                    etiqueta: 'Inicio de operación',
                                     valor: b.inicio_operacion
                                         ? `${formatearFecha(b.inicio_operacion)} (lo anterior entra como histórico)`
-                                        : "Sin fijar: todo entra como nuevo",
+                                        : 'Sin fijar: todo entra como nuevo',
                                 },
                             ]}
                         />
                         {!b.cliente_configurado && (
-                            <p className="text-base text-danger">
-                                Falta el cliente de Google (GOOGLE_CLIENT_ID y
-                                GOOGLE_CLIENT_SECRET en el .env).
+                            <p className="text-base text-danger">Falta el cliente de Google (GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en el .env).</p>
+                        )}
+                        {!b.conectado && (
+                            <p className="text-sm text-fg-muted">
+                                Antes de conectar, esta dirección debe estar en «URI de redirección autorizados» del cliente de Google:{' '}
+                                <code className="select-all">{b.redireccion}</code>
                             </p>
                         )}
                         <div className="flex flex-wrap gap-2">
@@ -100,42 +91,26 @@ export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
                                 <a
                                     href="/buzon/conectar"
                                     className={botonClases({
-                                        variante: b.conectado
-                                            ? "secundario"
-                                            : "primario",
+                                        variante: b.conectado ? 'secundario' : 'primario',
                                     })}
                                 >
                                     <IcoCorreo />
-                                    {b.conectado
-                                        ? "Cambiar de cuenta"
-                                        : "Conectar con Google"}
+                                    {b.conectado ? 'Cambiar de cuenta' : 'Conectar con Google'}
                                 </a>
                             )}
                             <BotonConfirmado
                                 variante="secundario"
-                                titulo={
-                                    b.activo
-                                        ? "¿Apagar la descarga automática?"
-                                        : "¿Encender la descarga automática?"
-                                }
+                                titulo={b.activo ? '¿Apagar la descarga automática?' : '¿Encender la descarga automática?'}
                                 descripcion={
                                     b.activo
-                                        ? "El sistema deja de leer el buzón cada minuto; podrás seguir descargando a mano."
-                                        : "El sistema leerá el buzón cada minuto y registrará los correos nuevos como «Por revisar»."
+                                        ? 'El sistema deja de leer el buzón cada minuto; podrás seguir descargando a mano.'
+                                        : 'El sistema leerá el buzón cada minuto y registrará los correos nuevos como «Por revisar».'
                                 }
-                                confirmar={b.activo ? "Apagar" : "Encender"}
-                                cargando={enviando === "/buzon/activar"}
-                                onConfirmar={(cerrar) =>
-                                    post(
-                                        "/buzon/activar",
-                                        { activo: !b.activo },
-                                        cerrar,
-                                    )
-                                }
+                                confirmar={b.activo ? 'Apagar' : 'Encender'}
+                                cargando={enviando === '/buzon/activar'}
+                                onConfirmar={(cerrar) => post('/buzon/activar', { activo: !b.activo }, cerrar)}
                             >
-                                {b.activo
-                                    ? "Apagar descarga automática"
-                                    : "Encender descarga automática"}
+                                {b.activo ? 'Apagar descarga automática' : 'Encender descarga automática'}
                             </BotonConfirmado>
                             {b.conectado && (
                                 <BotonConfirmado
@@ -144,10 +119,8 @@ export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
                                     descripcion="El sistema deja de leer y de enviar desde esta cuenta. Lo ya descargado se conserva."
                                     confirmar="Desconectar"
                                     peligro
-                                    cargando={enviando === "/buzon/desconectar"}
-                                    onConfirmar={(cerrar) =>
-                                        post("/buzon/desconectar", {}, cerrar)
-                                    }
+                                    cargando={enviando === '/buzon/desconectar'}
+                                    onConfirmar={(cerrar) => post('/buzon/desconectar', {}, cerrar)}
                                 >
                                     Desconectar
                                 </BotonConfirmado>
@@ -162,58 +135,42 @@ export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
                             <DetalleLista
                                 items={[
                                     {
-                                        etiqueta: "Última lectura",
-                                        valor: formatearFechaHora(
-                                            lectura.fecha,
-                                        ),
+                                        etiqueta: 'Última lectura',
+                                        valor: formatearFechaHora(lectura.fecha),
                                     },
                                     {
-                                        etiqueta: "Correos descargados",
+                                        etiqueta: 'Correos descargados',
                                         valor: lectura.procesados,
                                     },
                                     {
-                                        etiqueta: "Con error",
-                                        valor: lectura.fallidos ? (
-                                            <Badge tono="peligro">
-                                                {lectura.fallidos}
-                                            </Badge>
-                                        ) : (
-                                            0
-                                        ),
+                                        etiqueta: 'Con error',
+                                        valor: lectura.fallidos ? <Badge tono="peligro">{lectura.fallidos}</Badge> : 0,
                                     },
                                     ...(lectura.error
                                         ? [
                                               {
-                                                  etiqueta: "No se pudo leer",
-                                                  valor: (
-                                                      <span className="text-danger">
-                                                          {lectura.error}
-                                                      </span>
-                                                  ),
+                                                  etiqueta: 'No se pudo leer',
+                                                  valor: <span className="text-danger">{lectura.error}</span>,
                                               },
                                           ]
                                         : []),
                                 ]}
                             />
                         ) : (
-                            <p className="text-base text-fg-muted">
-                                Aún no se leyó el buzón.
-                            </p>
+                            <p className="text-base text-fg-muted">Aún no se leyó el buzón.</p>
                         )}
                         <div>
                             <Button
                                 variante="primario"
                                 icono={<IcoDescargar />}
-                                cargando={enviando === "/buzon/descargar"}
-                                onClick={() => post("/buzon/descargar", {})}
+                                cargando={enviando === '/buzon/descargar'}
+                                onClick={() => post('/buzon/descargar', {})}
                             >
                                 Descargar ahora
                             </Button>
                         </div>
                         <p className="text-sm text-fg-muted">
-                            Lee hasta 50 correos por vez; lo ya descargado no se
-                            repite. Si hay más, vuelve a pulsar o enciende la
-                            descarga automática.
+                            Lee hasta 50 correos por vez; lo ya descargado no se repite. Si hay más, vuelve a pulsar o enciende la descarga automática.
                         </p>
                     </div>
                 </Card>

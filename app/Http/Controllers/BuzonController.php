@@ -34,7 +34,7 @@ class BuzonController extends Controller
         Gate::authorize('gestionar-buzon');
 
         return Socialite::driver('google')
-            ->redirectUrl(route('buzon.callback'))
+            ->redirectUrl($this->buzon->redireccion())
             ->scopes([self::PERMISO_GMAIL])
             ->with(array_filter(['access_type' => 'offline', 'prompt' => 'consent select_account', 'login_hint' => config('tramite.salientes.buzon_central')]))
             ->redirect();
@@ -45,7 +45,7 @@ class BuzonController extends Controller
         Gate::authorize('gestionar-buzon');
 
         try {
-            $cuenta = Socialite::driver('google')->redirectUrl(route('buzon.callback'))->user();
+            $cuenta = Socialite::driver('google')->redirectUrl($this->buzon->redireccion())->user();
         } catch (InvalidStateException) {
             return $this->aviso('error', 'La conexión con Google expiró. Vuelve a intentarlo.');
         }
