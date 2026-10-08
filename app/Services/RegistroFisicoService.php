@@ -95,6 +95,7 @@ class RegistroFisicoService
             'asunto' => $campos['asunto'] ?? $ia['asunto'] ?? null,
             'emisor_id' => $campos['emisor_id'] ?? (isset($ia['remitente']) ? $this->extraccion->emisor($ia['remitente']) : null),
             'emisor_sugerido' => $campos['emisor_sugerido'] ?? $ia['remitente'] ?? null,
+            'institucion_id' => $campos['institucion_id'] ?? null,
         ];
     }
 
@@ -124,6 +125,7 @@ class RegistroFisicoService
                     'estado' => EstadoExpediente::PorRevisar,
                     'asunto' => $datos['asunto'],
                     'remitente_nombre' => $emisor?->nombre,
+                    'institucion_id' => $datos['institucion_id'] ?? null,
                     // Un trámite en curso entra con su fecha real: de ella salen el plazo y el semáforo (8).
                     'fecha_ingreso' => $enCurso ? CarbonImmutable::parse($datos['fecha_ingreso'])->startOfDay() : now(),
                     'tipo_documento_id' => $datos['tipo_documento_id'] ?? null,

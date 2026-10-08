@@ -19,6 +19,7 @@ class ExpedienteResource extends JsonResource
             'asunto' => $this->asunto,
             'remitente_nombre' => $this->remitente_nombre,
             'remitente_email' => $this->remitente_email,
+            'institucion' => $this->institucion?->nombre,
             'remitente_por_confirmar' => $this->remitente_por_confirmar,
             'estado' => ['valor' => $this->estado->value, 'etiqueta' => $this->estado->etiqueta()],
             'semaforo' => $this->semaforo?->value,

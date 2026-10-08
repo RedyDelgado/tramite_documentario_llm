@@ -86,7 +86,7 @@ class ExpedienteController extends Controller
         if ($texto) {
             // Meilisearch filtra por permisos (visible_para); el scope en la base es la segunda barrera.
             $busqueda = Expediente::search($texto)
-                ->query(fn ($q) => $q->visiblesPara($user)->with('area:id,nombre')->withCount('documentos'));
+                ->query(fn ($q) => $q->visiblesPara($user)->with(['area:id,nombre', 'institucion:id,nombre'])->withCount('documentos'));
             if (($tokens = Expediente::tokensVisiblesPara($user)) !== null) {
                 $busqueda->whereIn('visible_para', $tokens);
             }
@@ -102,7 +102,7 @@ class ExpedienteController extends Controller
             $pagina = $busqueda->paginate(10);
         } else {
             $pagina = Expediente::visiblesPara($user)
-                ->with('area:id,nombre')
+                ->with(['area:id,nombre', 'institucion:id,nombre'])
                 ->withCount('documentos')
                 ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
                 ->when($estadosVista, fn ($q, $estados) => $q->whereIn('estado', $estados))
@@ -150,7 +150,7 @@ class ExpedienteController extends Controller
         $auditoria->registrar('expediente.consultado', $expediente);
         $user = $request->user();
         $registrable = $expediente->estado->puedeConfirmarse() && $user->can('registrar', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo', 'areasCopia:id,nombre']);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'institucion:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo', 'areasCopia:id,nombre']);
         $abierto = in_array($expediente->estado, [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion], true);
         $derivable = ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('derivar', $expediente);
         $custodia = $expediente->codigo !== null && $user->can('custodiar', $expediente);
@@ -170,6 +170,7 @@ class ExpedienteController extends Controller
                 'motivo_anulacion' => $expediente->motivo_anulacion,
                 'responsable' => $expediente->responsable?->name,
                 'emisor' => $expediente->emisor?->nombre,
+                'institucion' => $expediente->institucion?->nombre,
                 'tipo_documento' => $expediente->tipoDocumento?->nombre,
                 'numero_documento' => $expediente->numero_documento_original ?? $expediente->numero_documento,
                 'fecha_documento' => $expediente->fecha_documento?->toDateString(),
@@ -255,8 +256,9 @@ class ExpedienteController extends Controller
         Gate::authorize('registrar', $expediente);
         $datos = $request->validate([
             'emisor_id' => ['nullable', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->whereNull('fusionado_en_id')],
+            'institucion_id' => ['nullable', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->where('clase', 'institucion')->whereNull('fusionado_en_id')],
             'tipo_documento_id' => ['nullable', 'integer', Rule::exists('tipos_documento', 'id')->where('activo', true)],
-        ], attributes: ['emisor_id' => 'emisor', 'tipo_documento_id' => 'tipo de documento']);
+        ], attributes: ['emisor_id' => 'emisor', 'institucion_id' => 'institución', 'tipo_documento_id' => 'tipo de documento']);
         $expediente = $this->expedientes->confirmar($expediente, $datos);
 
         Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => "Registrado como {$expediente->numero_registro} ({$expediente->codigo})."]);

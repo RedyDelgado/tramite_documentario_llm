@@ -7,13 +7,13 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
-import type { ExpedienteFila, Opcion } from '@/types';
-import { EmisorCombobox } from './EmisorCombobox';
+import type { ExpedienteFila, Opcion, OpcionEmisor } from '@/types';
+import { RemitenteCampos } from './RemitenteCampos';
 
 type Props = {
     expediente: Pick<ExpedienteFila, 'id' | 'estado' | 'numero_registro' | 'puede_registrar'>;
     // Desde el detalle se indican emisor y tipo de documento al registrar (6.1); desde la lista, después.
-    opciones?: { emisor: Opcion<number>[]; tipoDocumento: Opcion<number>[] };
+    opciones?: { emisor: OpcionEmisor[]; tipoDocumento: Opcion<number>[] };
 };
 
 /** Acciones de registro (6.2) según el estado; la regla final la aplica ExpedienteService. */
@@ -22,8 +22,7 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
     const [anulando, setAnulando] = useState(false);
     const [procesando, setProcesando] = useState(false);
     const anulacion = useForm({ motivo: '' });
-    const registro = useForm({ emisor_id: null as number | null, tipo_documento_id: '' });
-    const [errorEmisor, setErrorEmisor] = useState<string>();
+    const registro = useForm({ emisor_id: null as number | null, institucion_id: null as number | null, tipo_documento_id: '' });
     const estado = expediente.estado.valor;
 
     if (!expediente.puede_registrar) return null;
@@ -104,17 +103,14 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
             >
                 {opciones && (
                     <div className="flex flex-col gap-4">
-                        <FormField etiqueta="Emisor" ayuda="Dependencia que emite el documento." error={errorEmisor ?? registro.errors.emisor_id}>
-                            {(c) => (
-                                <EmisorCombobox
-                                    {...c}
-                                    opciones={opciones.emisor}
-                                    value={registro.data.emisor_id}
-                                    onChange={(v) => registro.setData('emisor_id', v)}
-                                    onError={setErrorEmisor}
-                                />
-                            )}
-                        </FormField>
+                        <RemitenteCampos
+                            opciones={opciones.emisor}
+                            emisorId={registro.data.emisor_id}
+                            institucionId={registro.data.institucion_id}
+                            onEmisor={(v) => registro.setData('emisor_id', v)}
+                            onInstitucion={(v) => registro.setData('institucion_id', v)}
+                            errores={{ emisor: registro.errors.emisor_id, institucion: registro.errors.institucion_id }}
+                        />
                         <FormField etiqueta="Tipo de documento" error={registro.errors.tipo_documento_id}>
                             {(c) => (
                                 <Select

@@ -22,6 +22,9 @@ class EmisorRequest extends FormRequest
         return [
             'nombre' => ['required', 'string', 'max:200'],
             'tipo' => ['required', Rule::in(array_keys(Emisor::TIPOS))],
+            // En el alta en línea se deduce del nombre (Emisor::adivinarClase); en el catálogo se elige.
+            'clase' => ['sometimes', Rule::in(array_keys(Emisor::CLASES))],
+            'institucion_id' => ['nullable', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->where('clase', 'institucion')->whereNull('fusionado_en_id'), Rule::notIn(array_filter([$this->route('emisor')?->id]))],
             'activo' => ['sometimes', 'boolean'],
             // Alta en línea: confirma que no es ninguno de los parecidos propuestos.
             'confirmado' => ['sometimes', 'boolean'],
@@ -48,9 +51,16 @@ class EmisorRequest extends FormRequest
         ];
     }
 
-    /** @return array{nombre: string, tipo: string, activo?: bool} */
+    /** @return array{nombre: string, tipo: string, clase: string, institucion_id: ?int, activo?: bool} */
     public function datos(): array
     {
-        return $this->safe()->only(['nombre', 'tipo', 'activo']);
+        $datos = $this->safe()->only(['nombre', 'tipo', 'clase', 'institucion_id', 'activo']);
+        $datos['clase'] ??= $this->route('emisor')?->clase ?? Emisor::adivinarClase($datos['nombre']);
+        // Una institución no pertenece a otra en este catálogo.
+        if ($datos['clase'] === 'institucion') {
+            $datos['institucion_id'] = null;
+        }
+
+        return $datos;
     }
 }

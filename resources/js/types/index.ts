@@ -22,6 +22,9 @@ export type SharedProps = {
 
 export type Opcion<V = string | number> = { value: V; label: string };
 
+/** Emisor.opciones: persona o institución, y la institución habitual de una persona. */
+export type OpcionEmisor = Opcion<number> & { clase?: 'persona' | 'institucion'; institucion_id?: number | null };
+
 /** Respuesta de una ResourceCollection paginada de Laravel. */
 export type Paginado<T> = {
     data: T[];
@@ -48,6 +51,8 @@ export type ExpedienteFila = {
     asunto: string;
     remitente_nombre: string | null;
     remitente_email: string | null;
+    // Institución a la que pertenece el emisor en este documento.
+    institucion: string | null;
     remitente_por_confirmar: boolean;
     estado: { valor: EstadoExpediente; etiqueta: string };
     semaforo: Semaforo | null;
@@ -195,7 +200,17 @@ export type ReglaDerivacion = {
 };
 
 /** EmisorController@fila. */
-export type Emisor = { id: number; nombre: string; tipo: 'interno' | 'externo'; activo: boolean; expedientes: number | null; actualizado: string | null };
+export type Emisor = {
+    id: number;
+    nombre: string;
+    tipo: 'interno' | 'externo';
+    clase: 'persona' | 'institucion';
+    institucion_id: number | null;
+    institucion: string | null;
+    activo: boolean;
+    expedientes: number | null;
+    actualizado: string | null;
+};
 
 export type ParDuplicado = { a: { id: number; nombre: string }; b: { id: number; nombre: string } };
 

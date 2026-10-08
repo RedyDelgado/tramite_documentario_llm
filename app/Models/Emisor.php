@@ -14,18 +14,34 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-/** Dependencia que emite el documento (6.1), interna o externa. */
+/**
+ * Quien emite un documento (6.1), interno o externo: una persona (el director del hospital, un estudiante) o una
+ * institución (la municipalidad). Una persona puede tener una institución habitual.
+ */
 #[UsePolicy(EmisorPolicy::class)]
 #[Table('emisores')]
-#[Fillable(['nombre', 'tipo', 'activo'])]
+#[Fillable(['nombre', 'tipo', 'clase', 'institucion_id', 'activo'])]
 class Emisor extends Model
 {
     public const TIPOS = ['interno' => 'Interno', 'externo' => 'Externo'];
 
+    public const CLASES = ['persona' => 'Persona', 'institucion' => 'Institución'];
+
+    // Palabras que delatan una institución en un nombre nuevo; el resto se crea como persona (se corrige en Emisores).
+    private const INSTITUCION = '/\b(municipalidad|hospital|universidad|ugel|direcci[oó]n|oficina|red de salud|ministerio|gobierno|juzgado|'
+        .'colegio|instituci[oó]n|i\.?e\.?|escuela|instituto|vicerrectorado|rectorado|facultad|centro|asociaci[oó]n|empresa|s\.?a\.?c\.?|e\.?i\.?r\.?l\.?|'
+        .'comisar[ií]a|fiscal[ií]a|poder judicial|sunat|reniec|essalud|policl[ií]nico|posta|unidad|coordinaci[oó]n|subprefectura|prefectura)\b/iu';
+
     // Similitud de trigramas desde la que dos nombres se proponen como posible duplicado.
     public const UMBRAL_PARECIDO = 0.5;
 
-    protected $attributes = ['tipo' => 'externo', 'activo' => true];
+    protected $attributes = ['tipo' => 'externo', 'clase' => 'persona', 'activo' => true];
+
+    /** Persona o institución por su nombre, para el alta en línea. */
+    public static function adivinarClase(string $nombre): string
+    {
+        return preg_match(self::INSTITUCION, $nombre) ? 'institucion' : 'persona';
+    }
 
     protected function casts(): array
     {
@@ -52,11 +68,11 @@ class Emisor extends Model
         $query->where('activo', true)->whereNull('fusionado_en_id');
     }
 
-    /** @return list<array{value: int, label: string}> */
+    /** @return list<array{value: int, label: string, clase: string, institucion_id: ?int}> */
     public static function opciones(): array
     {
-        return self::vigentes()->orderBy('nombre')->get(['id', 'nombre'])
-            ->map(fn (self $e) => ['value' => $e->id, 'label' => $e->nombre])
+        return self::vigentes()->orderBy('nombre')->get(['id', 'nombre', 'clase', 'institucion_id'])
+            ->map(fn (self $e) => ['value' => $e->id, 'label' => $e->nombre, 'clase' => $e->clase, 'institucion_id' => $e->institucion_id])
             ->all();
     }
 
@@ -104,6 +120,12 @@ class Emisor extends Model
     public function expedientes(): HasMany
     {
         return $this->hasMany(Expediente::class);
+    }
+
+    /** @return BelongsTo<Emisor, $this> */
+    public function institucion(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'institucion_id');
     }
 
     /** @return BelongsTo<Emisor, $this> */

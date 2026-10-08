@@ -23,6 +23,8 @@ class RegistroFisicoRequest extends FormRequest
             'asunto' => ['required', 'string', 'max:500'],
             // Emisor y tipo son obligatorios en papel: sin ellos no hay clave anti-duplicados (7.3.5).
             'emisor_id' => ['required', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->whereNull('fusionado_en_id')],
+            // A qué institución pertenece quien firma; vacío si es una institución o una persona sin ella.
+            'institucion_id' => ['nullable', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->where('clase', 'institucion')->whereNull('fusionado_en_id')],
             'tipo_documento_id' => ['required', 'integer', Rule::exists('tipos_documento', 'id')->where('activo', true)],
             'numero_documento' => ['required', 'string', 'max:150'],
             'fecha_documento' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
@@ -42,7 +44,7 @@ class RegistroFisicoRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'emisor_id' => 'emisor', 'tipo_documento_id' => 'tipo de documento', 'numero_documento' => 'N° de documento',
+            'emisor_id' => 'emisor', 'institucion_id' => 'institución', 'tipo_documento_id' => 'tipo de documento', 'numero_documento' => 'N° de documento',
             'fecha_documento' => 'fecha del documento', 'motivo_folios' => 'motivo', 'requiere_respuesta' => 'requiere respuesta', 'ubicacion_fisica_id' => 'ubicación',
             'numero_papel' => 'N° en el registro en papel', 'fecha_ingreso' => 'fecha de ingreso',
         ];

@@ -260,6 +260,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                 { etiqueta: 'Requiere respuesta', valor: e.requiere_respuesta ? 'Sí' : 'No, para conocimiento' },
                                 ...(e.atendido_at ? [{ etiqueta: 'Atendido', valor: formatearFechaHora(e.atendido_at) }] : []),
                                 { etiqueta: 'Emisor', valor: e.emisor ?? '—' },
+                                ...(e.institucion ? [{ etiqueta: 'Institución', valor: e.institucion }] : []),
                                 { etiqueta: 'Tipo de documento', valor: e.tipo_documento ?? '—' },
                                 ...(e.numero_documento ? [{ etiqueta: 'N° de documento', valor: e.numero_documento }] : []),
                                 ...(e.fecha_documento ? [{ etiqueta: 'Fecha del documento', valor: formatearFecha(e.fecha_documento) }] : []),

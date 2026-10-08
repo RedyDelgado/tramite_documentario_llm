@@ -170,6 +170,45 @@ class RegistroFisicoTest extends TestCase
         Http::assertSent(fn ($r) => $r['format'] === 'json' && str_contains($r['prompt'], 'feria agropecuaria'));
     }
 
+    public function test_quien_firma_y_su_institucion_se_proponen_y_se_guardan_aparte(): void
+    {
+        $informe = TipoDocumento::where('nombre', 'Oficio')->sole();
+        $hospital = Emisor::create(['nombre' => 'Hospital de Quillabamba', 'tipo' => 'externo', 'clase' => 'institucion']);
+        $director = Emisor::create(['nombre' => 'Dr. Juan Pérez Huamán', 'tipo' => 'externo', 'clase' => 'persona', 'institucion_id' => $hospital->id]);
+        $escaneo = UploadedFile::fake()->createWithContent('oficio-hospital.pdf', self::pdf([
+            'OFICIO N° 120-2026-HQ',
+            'DE: Dr. Juan Pérez Huamán, Director del Hospital de Quillabamba',
+            'ASUNTO: Campos clínicos 2027',
+            'Quillabamba, 1 de agosto de 2026',
+        ]));
+
+        $sha = $this->prellenar($escaneo)->assertOk()
+            ->assertJsonPath('campos.emisor_id', $director->id)
+            ->assertJsonPath('campos.institucion_id', $hospital->id)
+            ->json('sha256');
+
+        $this->registrar($sha, [
+            'emisor_id' => $director->id, 'institucion_id' => $hospital->id, 'tipo_documento_id' => $informe->id,
+            'numero_documento' => 'OFICIO N° 120-2026-HQ', 'asunto' => 'Campos clínicos 2027', 'fecha_documento' => '2026-08-01',
+        ])->assertSessionHasNoErrors();
+        $expediente = Expediente::latest('id')->first();
+        $this->assertSame([$director->id, $hospital->id], [$expediente->emisor_id, $expediente->institucion_id]);
+
+        // La institución tiene que ser una institución, no una persona.
+        $otro = $this->prellenar(UploadedFile::fake()->createWithContent('otro.pdf', self::pdf(['OFICIO N° 121-2026-HQ'])))->json('sha256');
+        $this->registrar($otro, ['institucion_id' => $director->id])->assertSessionHasErrors('institucion_id');
+    }
+
+    public function test_el_alta_en_linea_distingue_persona_de_institucion_por_el_nombre(): void
+    {
+        $this->actingAs($this->administrativo)->postJson('/emisores/rapido', ['nombre' => 'Municipalidad Distrital de Echarati', 'tipo' => 'externo'])
+            ->assertCreated()->assertJsonPath('clase', 'institucion');
+        $this->actingAs($this->administrativo)->postJson('/emisores/rapido', ['nombre' => 'Mgtr. Redy Demetrio Delgado Sequeiros', 'tipo' => 'externo'])
+            ->assertCreated()->assertJsonPath('clase', 'persona');
+        $this->actingAs($this->administrativo)->postJson('/emisores/rapido', ['nombre' => 'Clínica Santa Rosa', 'tipo' => 'externo', 'clase' => 'institucion'])
+            ->assertCreated()->assertJsonPath('clase', 'institucion');
+    }
+
     public function test_registrar_asigna_numero_y_conserva_el_hash_del_original(): void
     {
         $sha = $this->prellenar($this->oficio())->json('sha256');

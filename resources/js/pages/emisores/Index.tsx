@@ -22,12 +22,22 @@ import Formulario from './Form';
 
 type Filtros = { q?: string; tipo?: string; estado?: string };
 
-const filtrar = (x: Emisor, f: Filtros) => coincide(f.q, x.nombre) && (!f.tipo || x.tipo === f.tipo) && (!f.estado || x.activo === (f.estado === 'activos'));
+const filtrar = (x: Emisor, f: Filtros) => coincide(f.q, x.nombre, x.institucion) && (!f.tipo || x.tipo === f.tipo) && (!f.estado || x.activo === (f.estado === 'activos'));
 
 const TIPOS = { interno: 'Interno', externo: 'Externo' };
 
 const columnas: Columna<Emisor>[] = [
-    { clave: 'nombre', titulo: 'Nombre', celda: (e) => <span className="font-semibold">{e.nombre}</span> },
+    {
+        clave: 'nombre',
+        titulo: 'Nombre',
+        celda: (e) => (
+            <div>
+                <p className="font-semibold">{e.nombre}</p>
+                {e.institucion && <p className="text-sm text-fg-muted">{e.institucion}</p>}
+            </div>
+        ),
+    },
+    { clave: 'clase', titulo: 'Es', ancho: '8rem', celda: (e) => (e.clase === 'persona' ? 'Persona' : 'Institución') },
     { clave: 'tipo', titulo: 'Tipo', ancho: '8rem', celda: (e) => TIPOS[e.tipo] },
     { clave: 'expedientes', titulo: 'Expedientes', ancho: '8rem', celda: (e) => e.expedientes ?? 0 },
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (e) => <ActivoBadge activo={e.activo} /> },

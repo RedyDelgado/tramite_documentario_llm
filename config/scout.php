@@ -145,7 +145,7 @@ return [
         // Aplicar con `php artisan scout:sync-index-settings` tras cambiarlos (7.4).
         'index-settings' => [
             Expediente::class => [
-                'searchableAttributes' => ['codigo', 'numero_registro', 'asunto', 'remitente_nombre', 'remitente_email', 'texto'],
+                'searchableAttributes' => ['codigo', 'numero_registro', 'asunto', 'remitente_nombre', 'institucion', 'remitente_email', 'texto'],
                 // visible_para: filtro de permisos dentro de Meilisearch (área o responsable).
                 'filterableAttributes' => ['estado', 'semaforo', 'visible_para'],
                 'sortableAttributes' => ['fecha_ingreso'],

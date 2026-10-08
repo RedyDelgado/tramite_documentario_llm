@@ -24,6 +24,7 @@ function Remitente({ e }: { e: ExpedienteFila }) {
     return (
         <span className="flex flex-wrap items-center gap-1">
             {e.remitente_nombre ?? e.remitente_email}
+            {e.institucion && <span>· {e.institucion}</span>}
             {e.remitente_por_confirmar && <Badge>Remitente por confirmar</Badge>}
         </span>
     );

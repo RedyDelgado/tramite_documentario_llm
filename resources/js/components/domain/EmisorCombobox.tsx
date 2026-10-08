@@ -1,36 +1,42 @@
 import { useHttp } from '@inertiajs/react';
 import { useState } from 'react';
 import { Combobox } from '@/components/ui/Combobox';
-import type { Opcion } from '@/types';
+import type { OpcionEmisor } from '@/types';
 
 type Props = {
-    opciones: Opcion<number>[];
+    opciones: OpcionEmisor[];
     value: number | null;
     onChange: (value: number | null) => void;
     // El error del alta en línea («Ya existe», «Parecido a…») se muestra en el FormField.
     onError: (mensaje: string | undefined) => void;
     // Nombre leído del documento que aún no está en el catálogo: se ofrece crearlo con un clic.
     sugerido?: string;
+    // Al crear desde «Institución» se crea institución; si no, el servidor la deduce del nombre.
+    clase?: 'persona' | 'institucion';
+    onCreado?: (opcion: OpcionEmisor) => void;
+    placeholder?: string;
+    disabled?: boolean;
     id?: string;
     'aria-invalid'?: boolean;
     'aria-describedby'?: string;
 };
 
 /** Emisor con alta en línea (7.3.5): si el servidor avisa de un parecido, crear otra vez lo confirma. */
-export function EmisorCombobox({ opciones: iniciales, value, onChange, onError, sugerido, ...campo }: Props) {
+export function EmisorCombobox({ opciones: iniciales, value, onChange, onError, sugerido, clase, onCreado, placeholder, ...campo }: Props) {
     const [opciones, setOpciones] = useState(iniciales);
     const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
-    const alta = useHttp<{ nombre: string; tipo: string; confirmado: boolean }, Opcion<number>>('post', '/emisores/rapido', {
+    const alta = useHttp<{ nombre: string; tipo: string; clase?: string; confirmado: boolean }, OpcionEmisor>('post', '/emisores/rapido', {
         nombre: '',
         tipo: 'externo',
         confirmado: false,
     });
 
     const crear = (nombre: string) => {
-        alta.transform(() => ({ nombre, tipo: 'externo', confirmado: porConfirmar === nombre }));
+        alta.transform(() => ({ nombre, tipo: 'externo', ...(clase ? { clase } : {}), confirmado: porConfirmar === nombre }));
         alta.post('/emisores/rapido', {
             onSuccess: (nuevo) => {
                 setOpciones((o) => [...o, nuevo].sort((a, b) => a.label.localeCompare(b.label)));
+                onCreado?.(nuevo);
                 onChange(nuevo.value);
                 setPorConfirmar(null);
                 onError(undefined);
@@ -54,7 +60,7 @@ export function EmisorCombobox({ opciones: iniciales, value, onChange, onError, 
                 }}
                 onCrear={crear}
                 creando={alta.processing}
-                placeholder="Escribe para buscar o crear"
+                placeholder={placeholder ?? 'Escribe para buscar o crear'}
             />
             {sugerido && value === null && (
                 <button

@@ -21,7 +21,7 @@ class ExtraccionService
     private const REMITENTE = '/^\s*(?:DE|DEL|REMITE|REMITENTE)\s*:\s*(.+)$/mui';
 
     /**
-     * @return array{tipo_documento_id: ?int, numero_documento_original: ?string, fecha_documento: ?string, asunto: ?string, emisor_id: ?int, emisor_sugerido: ?string}
+     * @return array{tipo_documento_id: ?int, numero_documento_original: ?string, fecha_documento: ?string, asunto: ?string, emisor_id: ?int, emisor_sugerido: ?string, institucion_id: ?int}
      */
     public function extraer(string $texto): array
     {
@@ -44,9 +44,17 @@ class ExtraccionService
         $asunto = preg_match('/^\s*ASUNTO\s*:?\s*(.+)$/mui', $inicio, $a) || preg_match('/^\s*SOLICIT[OA]\s*:\s*(.+)$/mui', $inicio, $a)
             ? Str::limit(trim($a[1]), 500, '') : null;
 
-        // El emisor del catálogo; si no está, el nombre de la línea «DE:» para crearlo con un clic.
-        $remitente = preg_match(self::REMITENTE, $inicio, $r) ? Str::limit(trim(Str::before($r[1], ',')), 150, '') : null;
-        $emisor = ($remitente ? $this->emisor($remitente) : null) ?? $this->emisor($inicio);
+        // Con línea «DE:», quien firma es esa persona (del catálogo o para crearla con un clic) y su institución la que
+        // nombre esa línea o el encabezado. Sin ella, emite lo que el encabezado nombre (p. ej. la municipalidad).
+        $linea = preg_match(self::REMITENTE, $inicio, $r) ? trim($r[1]) : null;
+        $remitente = $linea ? Str::limit(trim(Str::before($linea, ',')), 150, '') : null;
+        if ($remitente) {
+            $emisor = $this->emisor($remitente, 'persona');
+            $institucion = $this->emisor($linea, 'institucion') ?? $this->emisor($inicio, 'institucion') ?? ($emisor ? Emisor::find($emisor)?->institucion_id : null);
+        } else {
+            $emisor = $this->emisor($inicio);
+            $institucion = $emisor && Emisor::find($emisor)?->clase === 'persona' ? Emisor::find($emisor)->institucion_id : null;
+        }
 
         return [
             'tipo_documento_id' => $tipo,
@@ -55,6 +63,7 @@ class ExtraccionService
             'asunto' => $asunto,
             'emisor_id' => $emisor,
             'emisor_sugerido' => $emisor ? null : $remitente,
+            'institucion_id' => $institucion,
         ];
     }
 
@@ -103,11 +112,11 @@ class ExtraccionService
     }
 
     /** Emisor vigente cuyo nombre aparece en el texto; el más largo, para no confundir «Dirección» con «Dirección General». */
-    public function emisor(string $texto): ?int
+    public function emisor(string $texto, ?string $clase = null): ?int
     {
         $normalizado = ' '.Emisor::normalizar($texto).' ';
 
-        return Emisor::vigentes()->get(['id', 'nombre_normalizado'])
+        return Emisor::vigentes()->when($clase, fn ($q) => $q->where('clase', $clase))->get(['id', 'nombre_normalizado'])
             ->filter(fn (Emisor $e) => str_contains($normalizado, " {$e->nombre_normalizado} "))
             ->sortByDesc(fn (Emisor $e) => mb_strlen($e->nombre_normalizado))
             ->first()?->id;

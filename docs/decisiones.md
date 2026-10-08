@@ -2,6 +2,14 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-13 — Emisor e institución por separado (decisión del usuario)
+
+- Un emisor es una **persona** (el director del hospital, un docente, un estudiante) o una **institución** (la municipalidad que emite sin firma personal). Una persona puede tener una **institución habitual**.
+- Cada expediente guarda **quién lo emite** y, aparte, **la institución en ese documento** (`expedientes.institucion_id`): si la persona cambia de trabajo, lo anterior conserva la suya. Vacía si emite la propia institución o una persona sin institución (un ciudadano).
+- Al registrar: la línea «DE:» da la persona (del catálogo o para crearla con un clic) y su institución la que nombre esa línea o el encabezado; si no, la institución habitual de la persona. Al elegir una persona se propone su institución habitual.
+- El alta en línea deduce persona o institución por el nombre («Municipalidad…», «Hospital…», «UGEL…» son instituciones); se corrige en Emisores. Lo cargado antes quedó como institución.
+- La institución entra en la búsqueda de expedientes y se ve junto al remitente.
+
 ## 2026-10-12 — Buzón central con varias cuentas y un solo botón para descargar (decisión del usuario)
 
 - **Un botón, «Descargar correos», con una fecha «desde»**: un clic trae en segundo plano todo lo recibido desde esa fecha que aún no está en el sistema; los lotes se encadenan solos hasta terminar (`IngestarCorreos` se vuelve a encolar mientras quede). Se quita «Volver a descargar».

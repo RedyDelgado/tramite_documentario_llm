@@ -148,7 +148,7 @@ class FilialSeeder extends Seeder
             ['Hospital de Quillabamba', 'externo'], ['Vicerrectorado Académico', 'interno'], ['Dirección General de Administración', 'interno'],
             ['Dirección de Servicios Académicos', 'interno'], ['Oficina de Grados y Títulos', 'interno'], ['Dirección de Recursos Humanos', 'interno'],
         ] as [$nombre, $tipo]) {
-            Emisor::firstOrCreate(['nombre' => $nombre], ['tipo' => $tipo, 'activo' => true]);
+            Emisor::firstOrCreate(['nombre' => $nombre], ['tipo' => $tipo, 'clase' => 'institucion', 'activo' => true]);
         }
 
         foreach (['Atender y responder', 'Para conocimiento y fines', 'Informar a la brevedad', 'Coordinar con el área', 'Emitir constancia',

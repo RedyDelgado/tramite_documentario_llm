@@ -1,6 +1,6 @@
 import { Link, useForm, useHttp } from '@inertiajs/react';
 import { useState } from 'react';
-import { EmisorCombobox } from '@/components/domain/EmisorCombobox';
+import { RemitenteCampos } from '@/components/domain/RemitenteCampos';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
 import { FormDialog } from '@/components/layouts/FormDialog';
@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { Textarea } from '@/components/ui/Textarea';
-import type { Opcion } from '@/types';
+import type { Opcion, OpcionEmisor } from '@/types';
 
-type Props = { opcionesEmisor: Opcion<number>[]; opcionesTipoDocumento: Opcion<number>[]; opcionesUbicacion: Opcion<number>[]; ultimoNumeroEnPapel: number };
+type Props = { opcionesEmisor: OpcionEmisor[]; opcionesTipoDocumento: Opcion<number>[]; opcionesUbicacion: Opcion<number>[]; ultimoNumeroEnPapel: number };
 
 /** RegistroFisicoService::prellenar. */
 type Prellenado = {
@@ -26,6 +26,7 @@ type Prellenado = {
         emisor_id: number | null;
         // Quien firma, si no está en el catálogo: se crea con un clic.
         emisor_sugerido: string | null;
+        institucion_id: number | null;
         folios: number | null;
     }>;
     mismo_archivo: { id: number; numero: string | null } | null;
@@ -33,12 +34,12 @@ type Prellenado = {
 
 export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, opcionesUbicacion, ultimoNumeroEnPapel, onCerrar }: Props & { onCerrar: () => void }) {
     const [escaneo, setEscaneo] = useState<Prellenado | null>(null);
-    const [errorEmisor, setErrorEmisor] = useState<string>();
     const subida = useHttp<{ archivo: File | null }, Prellenado>('post', '/registro/prellenar', { archivo: null });
     const form = useForm({
         sha256: '',
         asunto: '',
         emisor_id: null as number | null,
+        institucion_id: null as number | null,
         tipo_documento_id: '',
         numero_documento: '',
         fecha_documento: '',
@@ -69,6 +70,7 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
                         sha256: r.sha256,
                         asunto: c.asunto ?? '',
                         emisor_id: c.emisor_id ?? null,
+                        institucion_id: c.institucion_id ?? null,
                         tipo_documento_id: c.tipo_documento_id ? String(c.tipo_documento_id) : '',
                         numero_documento: c.numero_documento_original ?? '',
                         fecha_documento: c.fecha_documento ?? '',
@@ -141,19 +143,17 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
 
             <fieldset disabled={subida.processing} aria-busy={subida.processing} className="flex min-w-0 flex-col gap-4 transition-opacity disabled:opacity-50">
                 <FormSection titulo="Documento" descripcion="Revisa lo propuesto; corrige solo lo que no coincida con el papel.">
-                    <FormField etiqueta="Emisor" requerido error={errorEmisor ?? errors.emisor_id}>
-                        {(c) => (
-                            <EmisorCombobox
-                                {...c}
-                                opciones={opcionesEmisor}
-                                value={data.emisor_id}
-                                sugerido={escaneo?.campos.emisor_sugerido ?? undefined}
-                                onChange={(v) => setData('emisor_id', v)}
-                                onError={setErrorEmisor}
-                            />
-                        )}
-                    </FormField>
-                    <FormField etiqueta="Tipo de documento" requerido error={errors.tipo_documento_id}>
+                    <RemitenteCampos
+                    opciones={opcionesEmisor}
+                    emisorId={data.emisor_id}
+                    institucionId={data.institucion_id}
+                    onEmisor={(v) => setData('emisor_id', v)}
+                    onInstitucion={(v) => setData('institucion_id', v)}
+                    errores={{ emisor: errors.emisor_id, institucion: errors.institucion_id }}
+                    sugerido={escaneo?.campos.emisor_sugerido ?? undefined}
+                    requerido
+                />
+                <FormField etiqueta="Tipo de documento" requerido error={errors.tipo_documento_id}>
                         {(c) => (
                             <Select
                                 {...c}

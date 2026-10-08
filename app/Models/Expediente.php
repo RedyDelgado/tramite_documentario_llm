@@ -23,7 +23,7 @@ use Laravel\Scout\Searchable;
 
 #[Fillable([
     'origen', 'estado', 'asunto', 'remitente_nombre', 'remitente_email', 'remitente_por_confirmar',
-    'fecha_ingreso', 'area_principal_id', 'responsable_id', 'emisor_id', 'tipo_documento_id', 'numero_documento',
+    'fecha_ingreso', 'area_principal_id', 'responsable_id', 'emisor_id', 'institucion_id', 'tipo_documento_id', 'numero_documento',
     'numero_documento_original', 'fecha_documento', 'folios', 'motivo_folios', 'requiere_respuesta', 'ubicacion_fisica_id', 'custodio_id', 'grupo_id',
 ])]
 // Con desfase: fecha_ingreso viene del correo, en la zona del remitente (ver Correo).
@@ -45,7 +45,7 @@ class Expediente extends Model
     /** @return array<string, mixed> */
     public function toSearchableArray(): array
     {
-        $this->loadMissing(['correos', 'documentos', 'areasCopia']);
+        $this->loadMissing(['correos', 'documentos', 'areasCopia', 'institucion']);
 
         return [
             'id' => $this->id,
@@ -54,6 +54,7 @@ class Expediente extends Model
             'asunto' => $this->asunto,
             'remitente_nombre' => $this->remitente_nombre,
             'remitente_email' => $this->remitente_email,
+            'institucion' => $this->institucion?->nombre,
             'estado' => $this->estado->value,
             'semaforo' => $this->semaforo?->value,
             'fecha_ingreso' => $this->fecha_ingreso->getTimestamp(),
@@ -236,6 +237,12 @@ class Expediente extends Model
     public function emisor(): BelongsTo
     {
         return $this->belongsTo(Emisor::class);
+    }
+
+    /** @return BelongsTo<Emisor, $this> la institución del emisor en este documento */
+    public function institucion(): BelongsTo
+    {
+        return $this->belongsTo(Emisor::class, 'institucion_id');
     }
 
     /** @return BelongsTo<TipoDocumento, $this> */

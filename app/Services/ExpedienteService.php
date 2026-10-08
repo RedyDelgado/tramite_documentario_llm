@@ -40,7 +40,7 @@ class ExpedienteService
     /**
      * Confirma como trámite y asigna el número de registro del año en curso (6.2).
      *
-     * @param  array{emisor_id?: ?int, tipo_documento_id?: ?int}  $datos  datos del documento (6.1) que se fijan al registrar
+     * @param  array{emisor_id?: ?int, institucion_id?: ?int, tipo_documento_id?: ?int}  $datos  datos del documento (6.1) que se fijan al registrar
      * @param  int|null  $numeroPapel  trámite en curso que conserva su N° del registro en papel, sin consumir el correlativo
      *
      * @throws ReglaDeNegocio si el estado no admite confirmación.
@@ -57,7 +57,7 @@ class ExpedienteService
 
             $estadoPrevio = $expediente->estado;
             $anio = now()->year;
-            $documento = array_intersect_key($datos, array_flip(['emisor_id', 'tipo_documento_id']));
+            $documento = array_intersect_key($datos, array_flip(['emisor_id', 'institucion_id', 'tipo_documento_id']));
             $expediente->forceFill([
                 ...$documento,
                 'anio' => $anio,

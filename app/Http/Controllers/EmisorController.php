@@ -25,6 +25,7 @@ class EmisorController extends Controller
 
         $emisores = Emisor::query()
             ->whereNull('fusionado_en_id')
+            ->with('institucion:id,nombre')
             ->withCount('expedientes')
             ->orderBy('nombre')
             ->get();
@@ -40,7 +41,7 @@ class EmisorController extends Controller
     {
         Gate::authorize('create', Emisor::class);
 
-        return $this->index($request)->with('formulario', ['emisor' => null, 'opcionesTipo' => $this->opcionesTipo()]);
+        return $this->index($request)->with('formulario', ['emisor' => null, ...$this->opcionesFormulario()]);
     }
 
     public function store(EmisorRequest $request): RedirectResponse
@@ -57,14 +58,14 @@ class EmisorController extends Controller
     {
         $emisor = $this->catalogo->crear(new Emisor($request->datos()), 'emisor.creado');
 
-        return response()->json(['value' => $emisor->id, 'label' => $emisor->nombre], 201);
+        return response()->json(['value' => $emisor->id, 'label' => $emisor->nombre, 'clase' => $emisor->clase, 'institucion_id' => $emisor->institucion_id], 201);
     }
 
     public function edit(Request $request, Emisor $emisor): Response
     {
         Gate::authorize('update', $emisor);
 
-        return $this->index($request)->with('formulario', ['emisor' => $this->fila($emisor), 'opcionesTipo' => $this->opcionesTipo()]);
+        return $this->index($request)->with('formulario', ['emisor' => $this->fila($emisor), ...$this->opcionesFormulario()]);
     }
 
     public function update(EmisorRequest $request, Emisor $emisor): RedirectResponse
@@ -95,15 +96,24 @@ class EmisorController extends Controller
             'id' => $e->id,
             'nombre' => $e->nombre,
             'tipo' => $e->tipo,
+            'clase' => $e->clase,
+            'institucion_id' => $e->institucion_id,
+            'institucion' => $e->institucion?->nombre,
             'activo' => $e->activo,
             'expedientes' => $e->expedientes_count ?? null,
             'actualizado' => $e->updated_at?->toIso8601String(),
         ];
     }
 
-    /** @return list<array{value: string, label: string}> */
-    private function opcionesTipo(): array
+    /** @return array{opcionesTipo: list<array{value: string, label: string}>, opcionesClase: list<array{value: string, label: string}>, opcionesInstitucion: list<array{value: int, label: string}>} */
+    private function opcionesFormulario(): array
     {
-        return collect(Emisor::TIPOS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all();
+        $opciones = fn (array $mapa) => collect($mapa)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all();
+
+        return [
+            'opcionesTipo' => $opciones(Emisor::TIPOS),
+            'opcionesClase' => $opciones(Emisor::CLASES),
+            'opcionesInstitucion' => collect(Emisor::opciones())->where('clase', 'institucion')->values()->all(),
+        ];
     }
 }
