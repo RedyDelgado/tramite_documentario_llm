@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Fase 6: sugiere el texto de una respuesta con un modelo de lenguaje local (Ollama), sin enviar nada a terceros.
@@ -55,6 +56,40 @@ class BorradorIaService
         ]);
 
         return $texto;
+    }
+
+    /**
+     * Lee el encabezado de un documento y devuelve sus datos (tipo, número, fecha, asunto, remitente) para completar lo
+     * que las reglas no encontraron al registrar en papel. Sin IA activa o si no responde, devuelve [] y se sigue a mano.
+     *
+     * @return array{tipo?: ?string, numero?: ?string, fecha?: ?string, asunto?: ?string, remitente?: ?string}
+     */
+    public function campos(string $texto): array
+    {
+        if (! self::activo()) {
+            return [];
+        }
+
+        try {
+            $respuesta = Http::timeout(120)->post(rtrim(config('tramite.llm.url'), '/').'/api/generate', [
+                'model' => config('tramite.llm.modelo'),
+                'prompt' => 'Extrae los datos del encabezado de este documento universitario peruano. Responde solo JSON con las claves '
+                    .'tipo (oficio, informe, carta, memorando, solicitud…), numero (tal como figura, con su tipo, p. ej. «INFORME N° 001-2026-UAC»), '
+                    .'fecha (AAAA-MM-DD), asunto y remitente (quien lo firma o envía, sin el cargo). Usa null si un dato no figura; no inventes.'
+                    ."\n\nDocumento:\n".Str::limit($texto, 4000),
+                'stream' => false,
+                'format' => 'json',
+                'options' => ['temperature' => 0],
+            ])->throw()->json('response');
+        } catch (Throwable $e) {
+            report($e);
+
+            return [];
+        }
+
+        $campos = json_decode((string) $respuesta, true);
+
+        return is_array($campos) ? array_map(fn ($v) => is_string($v) && trim($v) !== '' ? trim($v) : null, array_intersect_key($campos, array_flip(['tipo', 'numero', 'fecha', 'asunto', 'remitente']))) : [];
     }
 
     private function indicacion(Expediente $e): string

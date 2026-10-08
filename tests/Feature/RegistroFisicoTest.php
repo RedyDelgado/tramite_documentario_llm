@@ -12,6 +12,7 @@ use App\Services\ExtraccionService;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -130,6 +131,43 @@ class RegistroFisicoTest extends TestCase
             ->assertJsonPath('campos.fecha_documento', '2026-10-02')
             // El N° del voucher no es el número del documento.
             ->assertJsonPath('campos.numero_documento_original', null);
+    }
+
+    public function test_un_informe_academico_se_reconoce_y_propone_crear_a_quien_lo_firma(): void
+    {
+        $informe = TipoDocumento::create(['nombre' => 'Informe']);
+        $escaneo = UploadedFile::fake()->createWithContent('informe.pdf', self::pdf([
+            'UNIVERSIDAD ANDINA DEL CUSCO',
+            'INFORME ACADÉMICO N° 001-2026-II-UAC-FQ-RDDS',
+            'A: Mgtr. Rocío Huaycochea Esquivel, Coordinadora Académica',
+            'DE: Mgtr. Redy Delgado, docente de Ingeniería de Sistemas',
+            'ASUNTO: Informe de la primera unidad académica 2026-II',
+            'Quillabamba, 26 de setiembre de 2026',
+        ]));
+
+        $this->prellenar($escaneo)->assertOk()
+            ->assertJsonPath('campos.tipo_documento_id', $informe->id)
+            ->assertJsonPath('campos.numero_documento_original', 'INFORME ACADÉMICO N° 001-2026-II-UAC-FQ-RDDS')
+            ->assertJsonPath('campos.emisor_id', null)
+            ->assertJsonPath('campos.emisor_sugerido', 'Mgtr. Redy Delgado');
+    }
+
+    public function test_lo_que_las_reglas_no_leen_lo_completa_la_ia_local_si_esta_activa(): void
+    {
+        config(['tramite.llm.url' => 'http://ollama:11434']);
+        $carta = TipoDocumento::create(['nombre' => 'Carta']);
+        Http::fake(['ollama:11434/api/generate' => Http::response(['response' => json_encode([
+            'tipo' => 'carta', 'numero' => 'CARTA 15-2026', 'fecha' => '2026-09-30', 'asunto' => 'Invitación a la feria', 'remitente' => 'Municipalidad Provincial',
+        ])])]);
+        $escaneo = UploadedFile::fake()->createWithContent('carta.pdf', self::pdf(['Estimados señores, los invitamos a la feria agropecuaria.']));
+
+        $this->prellenar($escaneo)->assertOk()
+            ->assertJsonPath('campos.tipo_documento_id', $carta->id)
+            ->assertJsonPath('campos.numero_documento_original', 'CARTA 15-2026')
+            ->assertJsonPath('campos.fecha_documento', '2026-09-30')
+            ->assertJsonPath('campos.asunto', 'Invitación a la feria')
+            ->assertJsonPath('campos.emisor_sugerido', 'Municipalidad Provincial');
+        Http::assertSent(fn ($r) => $r['format'] === 'json' && str_contains($r['prompt'], 'feria agropecuaria'));
     }
 
     public function test_registrar_asigna_numero_y_conserva_el_hash_del_original(): void

@@ -28,6 +28,7 @@ class RegistroFisicoService
         private readonly ExtraccionService $extraccion,
         private readonly ExpedienteService $expedientes,
         private readonly AuditoriaService $auditoria,
+        private readonly BorradorIaService $ia,
     ) {}
 
     /**
@@ -60,7 +61,7 @@ class RegistroFisicoService
             'texto' => $texto, 'por_ocr' => $porOcr,
         ], self::ESPERA);
 
-        $campos = $texto ? $this->extraccion->extraer($texto) : [];
+        $campos = $texto ? $this->completarConIa($this->extraccion->extraer($texto), $texto) : [];
         $igual = Documento::where('sha256', $sha256)->with('expediente')->first()?->expediente;
 
         return [
@@ -69,6 +70,31 @@ class RegistroFisicoService
             'paginas' => $paginas,
             'campos' => $campos + ['folios' => $paginas],
             'mismo_archivo' => $igual ? ['id' => $igual->id, 'numero' => $igual->numero_registro] : null,
+        ];
+    }
+
+    /**
+     * Lo que las reglas no encontraron lo propone la IA local, si está activa (fase 6); la persona confirma igual.
+     *
+     * @param  array<string, mixed>  $campos
+     * @return array<string, mixed>
+     */
+    private function completarConIa(array $campos, string $texto): array
+    {
+        $faltan = array_filter(['tipo_documento_id', 'numero_documento_original', 'fecha_documento', 'asunto'], fn ($c) => empty($campos[$c]));
+        if (! BorradorIaService::activo() || ($faltan === [] && ($campos['emisor_id'] || $campos['emisor_sugerido']))) {
+            return $campos;
+        }
+        $ia = $this->ia->campos($texto);
+        $fecha = isset($ia['fecha']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ia['fecha']) ? $ia['fecha'] : null;
+
+        return [
+            'tipo_documento_id' => $campos['tipo_documento_id'] ?? (isset($ia['tipo']) ? $this->extraccion->tipoDocumento($ia['tipo']) : null),
+            'numero_documento_original' => $campos['numero_documento_original'] ?? $ia['numero'] ?? null,
+            'fecha_documento' => $campos['fecha_documento'] ?? $fecha,
+            'asunto' => $campos['asunto'] ?? $ia['asunto'] ?? null,
+            'emisor_id' => $campos['emisor_id'] ?? (isset($ia['remitente']) ? $this->extraccion->emisor($ia['remitente']) : null),
+            'emisor_sugerido' => $campos['emisor_sugerido'] ?? $ia['remitente'] ?? null,
         ];
     }
 

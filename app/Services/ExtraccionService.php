@@ -6,7 +6,7 @@ use App\Models\Emisor;
 use App\Models\TipoDocumento;
 use Illuminate\Support\Str;
 
-/** Extracción por reglas de los campos de un documento (7.3.5): propone, la persona confirma. Sin IA. */
+/** Extracción por reglas de los campos de un documento (7.3.5): propone, la persona confirma. La IA local completa lo que falte (RegistroFisicoService). */
 class ExtraccionService
 {
     private const MESES = [
@@ -17,8 +17,11 @@ class ExtraccionService
     // Encabezado típico: «OFICIO MÚLTIPLE N° 045-2026-UNIQ/DGA». El tipo es lo anterior a N°/No/Nro.
     private const ENCABEZADO = '/^\s*([A-ZÁÉÍÓÚÑa-záéíóúñ ]{4,40}?)\s*(?:N\s*[°º.o]+|NRO\.?|No\.?|Nº)\s*[:.]?\s*([0-9][0-9A-Za-zÁÉÍÓÚÑ\-–—\/. ]{1,80})$/mu';
 
+    // Quién lo envía: «DE: Mgtr. …», «REMITE: …». Lo que sigue a una coma suele ser el cargo.
+    private const REMITENTE = '/^\s*(?:DE|DEL|REMITE|REMITENTE)\s*:\s*(.+)$/mui';
+
     /**
-     * @return array{tipo_documento_id: ?int, numero_documento_original: ?string, fecha_documento: ?string, asunto: ?string, emisor_id: ?int}
+     * @return array{tipo_documento_id: ?int, numero_documento_original: ?string, fecha_documento: ?string, asunto: ?string, emisor_id: ?int, emisor_sugerido: ?string}
      */
     public function extraer(string $texto): array
     {
@@ -41,12 +44,17 @@ class ExtraccionService
         $asunto = preg_match('/^\s*ASUNTO\s*:?\s*(.+)$/mui', $inicio, $a) || preg_match('/^\s*SOLICIT[OA]\s*:\s*(.+)$/mui', $inicio, $a)
             ? Str::limit(trim($a[1]), 500, '') : null;
 
+        // El emisor del catálogo; si no está, el nombre de la línea «DE:» para crearlo con un clic.
+        $remitente = preg_match(self::REMITENTE, $inicio, $r) ? Str::limit(trim(Str::before($r[1], ',')), 150, '') : null;
+        $emisor = ($remitente ? $this->emisor($remitente) : null) ?? $this->emisor($inicio);
+
         return [
             'tipo_documento_id' => $tipo,
             'numero_documento_original' => $numero,
             'fecha_documento' => $this->fecha($inicio),
             'asunto' => $asunto,
-            'emisor_id' => $this->emisor($inicio),
+            'emisor_id' => $emisor,
+            'emisor_sugerido' => $emisor ? null : $remitente,
         ];
     }
 
@@ -60,13 +68,15 @@ class ExtraccionService
         return $n->replaceMatches('/\s*([-\/])\s*/', '$1')->squish()->toString();
     }
 
-    private function tipoDocumento(string $texto): ?int
+    /** Tipo del catálogo al principio o al final del encabezado: «Informe académico» es un Informe, «Oficio múltiple» un Oficio múltiple. */
+    public function tipoDocumento(string $texto): ?int
     {
         $buscado = Emisor::normalizar($texto);
+        $palabra = fn (string $tipo) => preg_match('/(^|\s)'.preg_quote($tipo, '/').'(\s|$)/u', $buscado) === 1;
 
         // El nombre más largo que coincide gana: «oficio multiple» antes que «oficio».
         return TipoDocumento::where('activo', true)->get(['id', 'nombre'])
-            ->filter(fn (TipoDocumento $t) => str_ends_with($buscado, Emisor::normalizar($t->nombre)) || $buscado === Emisor::normalizar($t->nombre))
+            ->filter(fn (TipoDocumento $t) => ($n = Emisor::normalizar($t->nombre)) !== '' && (str_starts_with($buscado, $n) || str_ends_with($buscado, $n)) && $palabra($n))
             ->sortByDesc(fn (TipoDocumento $t) => mb_strlen($t->nombre))
             ->first()?->id;
     }
@@ -93,7 +103,7 @@ class ExtraccionService
     }
 
     /** Emisor vigente cuyo nombre aparece en el texto; el más largo, para no confundir «Dirección» con «Dirección General». */
-    private function emisor(string $texto): ?int
+    public function emisor(string $texto): ?int
     {
         $normalizado = ' '.Emisor::normalizar($texto).' ';
 
