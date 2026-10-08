@@ -12,12 +12,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/** Documento emitido por la institución (7.3.4): borrador → revisión → aprobado (numerado) → enviado. */
+/**
+ * Documento emitido por la institución (7.3.4): borrador → revisión → aprobado (numerado) → enviado. Se redacta en Word:
+ * se sube el borrador y, con el número de la aprobación, el documento final que es el que sale.
+ */
 #[UsePolicy(SalientePolicy::class)]
 #[Table('documentos_salientes')]
 #[Fillable([
-    'expediente_id', 'plantilla_id', 'tipo_documento_id', 'area_id', 'asunto', 'cuerpo', 'destinatarios', 'es_respuesta',
-    'requiere_respuesta', 'plazo_respuesta_dias', 'esperar_firma', 'creado_por',
+    'expediente_id', 'tipo_documento_id', 'area_id', 'asunto', 'cuerpo', 'destinatarios', 'es_respuesta',
+    'requiere_respuesta', 'plazo_respuesta_dias', 'creado_por',
 ])]
 class DocumentoSaliente extends Model
 {
@@ -28,7 +31,7 @@ class DocumentoSaliente extends Model
         'enviado' => 'Enviado',
     ];
 
-    protected $attributes = ['estado' => 'borrador', 'es_respuesta' => false, 'requiere_respuesta' => false, 'esperar_firma' => false];
+    protected $attributes = ['estado' => 'borrador', 'es_respuesta' => false, 'requiere_respuesta' => false, 'esperar_firma' => true];
 
     protected function casts(): array
     {
@@ -93,6 +96,16 @@ class DocumentoSaliente extends Model
     public function aprobador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'aprobado_por');
+    }
+
+    /** Tipo de archivo por la extensión del nombre original: Word o PDF (lo único que se admite al subir). */
+    public static function mime(?string $nombre): string
+    {
+        return match (strtolower(pathinfo((string) $nombre, PATHINFO_EXTENSION))) {
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc' => 'application/msword',
+            default => 'application/pdf',
+        };
     }
 
     /** @return HasMany<Envio, $this> */

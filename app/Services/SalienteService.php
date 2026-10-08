@@ -6,10 +6,9 @@ use App\Exceptions\ReglaDeNegocio;
 use App\Models\Area;
 use App\Models\Documento;
 use App\Models\DocumentoSaliente;
-use App\Models\Expediente;
-use App\Models\PlantillaDocumento;
 use App\Models\TipoDocumento;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,34 +17,16 @@ class SalienteService
 {
     public function __construct(
         private readonly SecuenciaService $secuencias,
-        private readonly GeneradorDocumentoService $generador,
         private readonly AuditoriaService $auditoria,
         private readonly EnvioService $envios,
     ) {}
 
-    /** Asunto y cuerpo de la plantilla con los datos del expediente de origen («un dato se escribe una sola vez», 7.3.5). */
-    public function desdePlantilla(PlantillaDocumento $plantilla, ?Expediente $expediente, string $area): array
-    {
-        $expediente?->loadMissing('emisor');
-        $valores = [
-            '{{expediente.codigo}}' => $expediente?->codigo ?? '',
-            '{{expediente.numero}}' => $expediente?->numero_registro ?? '',
-            '{{expediente.asunto}}' => $expediente?->asunto ?? '',
-            '{{expediente.documento}}' => $expediente?->numero_documento_original ?? $expediente?->numero_documento ?? '',
-            '{{expediente.fecha}}' => $expediente?->fecha_ingreso->setTimezone(config('app.timezone'))->format('d/m/Y') ?? '',
-            '{{remitente}}' => $expediente?->emisor?->nombre ?? $expediente?->remitente_nombre ?? '',
-            '{{fecha}}' => now()->locale('es')->isoFormat('D [de] MMMM [de] YYYY'),
-            '{{area}}' => $area,
-        ];
-
-        return ['asunto' => strtr($plantilla->asunto, $valores), 'cuerpo' => strtr($plantilla->cuerpo, $valores)];
-    }
-
     /** @param array<string, mixed> $datos validados por SalienteRequest */
-    public function crear(array $datos, User $autor): DocumentoSaliente
+    public function crear(array $datos, UploadedFile $borrador, User $autor): DocumentoSaliente
     {
-        return DB::transaction(function () use ($datos, $autor) {
-            $saliente = DocumentoSaliente::create([...$datos, 'creado_por' => $autor->id]);
+        return DB::transaction(function () use ($datos, $borrador, $autor) {
+            $saliente = new DocumentoSaliente([...$datos, 'creado_por' => $autor->id]);
+            $saliente->forceFill($this->guardarBorrador($borrador))->save();
             $this->auditoria->registrar('saliente.creado', $saliente, despues: ['expediente_id' => $saliente->expediente_id, 'asunto' => $saliente->asunto]);
 
             return $saliente;
@@ -53,12 +34,16 @@ class SalienteService
     }
 
     /** @param array<string, mixed> $datos */
-    public function actualizar(DocumentoSaliente $saliente, array $datos): DocumentoSaliente
+    public function actualizar(DocumentoSaliente $saliente, array $datos, ?UploadedFile $borrador = null): DocumentoSaliente
     {
         $this->exigirEstado($saliente, ['borrador'], 'editar');
 
-        return DB::transaction(function () use ($saliente, $datos) {
-            $saliente->update($datos);
+        return DB::transaction(function () use ($saliente, $datos, $borrador) {
+            $saliente->fill($datos);
+            if ($borrador) {
+                $saliente->forceFill($this->guardarBorrador($borrador));
+            }
+            $saliente->save();
             $this->auditoria->registrarCambios('saliente.editado', $saliente);
 
             return $saliente;
@@ -80,7 +65,8 @@ class SalienteService
     }
 
     /**
-     * Aprobación explícita: numera (tipo, área, año) y genera el PDF final en la misma transacción (7.3.4, 6.2).
+     * Aprobación explícita: numera (tipo, área, año) en una transacción (7.3.4, 6.2). El número va luego en el Word,
+     * y sale el documento final que se suba con él.
      *
      * @throws ReglaDeNegocio
      */
@@ -101,17 +87,16 @@ class SalienteService
                 'aprobado_at' => now(),
                 'observacion' => null,
             ]);
-            ['ruta' => $ruta, 'sha256' => $sha] = Documento::guardarArchivo($this->generador->pdf($saliente));
-            $saliente->forceFill(['ruta_pdf' => $ruta, 'sha256_pdf' => $sha])->save();
+            $saliente->save();
 
             $this->auditoria->registrar('saliente.aprobado', $saliente, antes: ['estado' => 'en_revision'], despues: [
-                'estado' => 'aprobado', 'numero' => $saliente->numero, 'aprobado_por' => $aprobador->id, 'sha256_pdf' => $sha,
+                'estado' => 'aprobado', 'numero' => $saliente->numero, 'aprobado_por' => $aprobador->id, 'sha256_borrador' => $saliente->sha256_borrador,
             ]);
 
             return $saliente;
         });
 
-        // Envío automático: aprobado, sale sin intervención manual, salvo que espere el PDF firmado (7.3.4).
+        // Sale solo cuando se suba el documento final con su número (EnvioService::subirFirmado).
         if (! $saliente->esperar_firma) {
             $this->envios->despachar($saliente);
         }
@@ -131,6 +116,14 @@ class SalienteService
             '{ANIO}' => (string) $anio,
             '{AREA}' => $siglas,
         ]);
+    }
+
+    /** @return array{ruta_borrador: string, sha256_borrador: string, nombre_borrador: string} */
+    private function guardarBorrador(UploadedFile $archivo): array
+    {
+        ['ruta' => $ruta, 'sha256' => $sha] = Documento::guardarArchivo($archivo->getContent());
+
+        return ['ruta_borrador' => $ruta, 'sha256_borrador' => $sha, 'nombre_borrador' => $archivo->getClientOriginalName()];
     }
 
     /** @param list<string> $estados */

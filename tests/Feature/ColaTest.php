@@ -14,6 +14,7 @@ use App\Models\Envio;
 use App\Models\Expediente;
 use App\Models\TipoDocumento;
 use App\Models\User;
+use App\Services\EnvioService;
 use App\Services\SalienteService;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,7 +35,7 @@ class ColaTest extends TestCase
         Queue::fake();
     }
 
-    private function saliente(array $datos = []): DocumentoSaliente
+    private function saliente(array $datos = [], bool $final = true): DocumentoSaliente
     {
         $s = DocumentoSaliente::create($datos + [
             'expediente_id' => Expediente::factory()->create(['estado' => EstadoExpediente::EnAtencion, 'anio' => 2026, 'secuencia' => 38])->id,
@@ -45,7 +46,13 @@ class ColaTest extends TestCase
         ]);
         $s->forceFill(['estado' => 'en_revision'])->save();
 
-        return app(SalienteService::class)->aprobar($s, User::factory()->create()->assignRole('director'));
+        $s = app(SalienteService::class)->aprobar($s, User::factory()->create()->assignRole('director'));
+        if ($final) {
+            // Con el documento final (el Word con su número), sale.
+            app(EnvioService::class)->subirFirmado($s, 'Word final', 'oficio.docx');
+        }
+
+        return $s;
     }
 
     /** En producción la cola y los candados de los jobs únicos viven en el mismo Redis. */
@@ -77,7 +84,7 @@ class ColaTest extends TestCase
 
     public function test_solo_reencola_lo_realmente_pendiente(): void
     {
-        $this->saliente(['esperar_firma' => true]);
+        $this->saliente(final: false);
         $documento = fn (array $datos) => Documento::create($datos + [
             'expediente_id' => Expediente::factory()->create()->id, 'nombre_original' => 'a.pdf', 'ruta' => 'a.pdf',
             'mime' => 'application/pdf', 'tamano' => 1, 'sha256' => str_repeat('a', 64),

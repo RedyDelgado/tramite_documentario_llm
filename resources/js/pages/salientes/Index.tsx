@@ -80,7 +80,7 @@ export default function SalientesIndex({ salientes, filtros: iniciales, estados,
                 acciones={
                     <Link href={rutaModal('/salientes/create')} preserveScroll className={botonClases({ variante: 'primario' })}>
                         <IcoAgregar />
-                        Redactar documento
+                        Emitir documento
                     </Link>
                 }
                 filtros={

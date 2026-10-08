@@ -15,6 +15,7 @@ use App\Services\AreaService;
 use App\Services\PanelService;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -85,7 +86,8 @@ class AreasCopiaTest extends TestCase
         $tipo = TipoDocumento::create(['nombre' => 'Oficio']);
         $datos = [
             'expediente_id' => $expediente->id, 'tipo_documento_id' => $tipo->id, 'area_id' => $this->copia->id, 'asunto' => 'Respuesta',
-            'cuerpo' => 'Texto', 'destinatarios' => [['email' => 'a@b.pe', 'nombre' => null]], 'requiere_respuesta' => false, 'esperar_firma' => false,
+            'cuerpo' => 'Texto', 'destinatarios' => [['email' => 'a@b.pe', 'nombre' => null]], 'requiere_respuesta' => false,
+            'archivo' => UploadedFile::fake()->create('respuesta.pdf', 20, 'application/pdf'),
         ];
 
         $this->actingAs($this->coordinadorCopia)->get("/expedientes/{$expediente->id}")->assertInertia(fn ($page) => $page->where('expediente.permisos.redactar', false));

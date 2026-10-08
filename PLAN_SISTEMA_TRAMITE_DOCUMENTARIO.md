@@ -110,7 +110,7 @@ Todo lo organizacional se administra desde el panel, **sin tocar código ni desp
 - **Tipos de trámite:** crear/editar/desactivar con su plazo.
 - **Plazos:** configurables **por tipo de trámite**, con **override opcional por área** (ej.: el mismo tipo tiene otro plazo en un área). Configuración de días hábiles vs calendario, **calendario de feriados** editable y umbrales del semáforo (porcentaje restante, días sin movimiento).
 - **Reglas de derivación editables:** tipo → área, palabras clave, remitentes o dominios conocidos → área/responsable, con prioridad y activación.
-- **Catálogos:** emisores, tipos de documento, instrucciones frecuentes de derivación, ubicaciones físicas, reglas de correo no trámite, plantillas de documentos salientes, y formato y valor inicial de las numeraciones.
+- **Catálogos:** emisores, tipos de documento, instrucciones frecuentes de derivación, ubicaciones físicas, reglas de correo no trámite, y formato y valor inicial de las numeraciones.
 - **Umbrales de IA y modo sombra** (ver sección 10).
 - **Permisos delegables:** el permiso `configuracion.gestionar` lo tiene el superadmin y puede delegarse a otro rol (ej. administrativo) sin dar acceso al resto.
 
@@ -238,7 +238,7 @@ Convenciones: PK `id` bigint, `created_at/updated_at`, `deleted_at` (soft delete
 - `correcciones_pendientes`: clasificación_id, valor_ia, valor_humano, usuario, estado (`pendiente`/`validada`/`rechazada`), validada_por. Solo las validadas alimentan el reentrenamiento.
 - `notificaciones_enviadas`: destinatario, canal, expediente_id/resumen, estado de entrega.
 - Catálogos y numeración (6.1, 6.2, 7.3): `emisores`, `tipos_documento`, `instrucciones_frecuentes`, `reglas_no_tramite`, `ubicaciones_fisicas`, `grupos` (series), `secuencias`.
-- Documentos salientes (7.3.4): `plantillas_documento`, `documentos_salientes` (tipo, área, `anio`, `secuencia`, estado de aprobación, aprobado_por, enviado_at, expediente_origen_id), `envios` (destinatario, estado de entrega, rebote).
+- Documentos salientes (7.3.4): `documentos_salientes` (borrador y documento final subidos) (tipo, área, `anio`, `secuencia`, estado de aprobación, aprobado_por, enviado_at, expediente_origen_id), `envios` (destinatario, estado de entrega, rebote).
 - `auditoria`: ver sección 9.
 - `configuraciones`: clave/valor (umbrales de confianza, modo sombra, etc.).
 
@@ -318,14 +318,14 @@ Campos nuevos para papel: `ubicacion_fisica` (archivador/caja/estante), `custodi
 - Comando `correo:estadisticas --desde=2026-01-01` que **solo cuenta** (correos por día y por remitente) sin guardar nada. Sirve para dimensionar el servidor antes de importar.
 
 ### 7.3.4 Documentos salientes y envío automático
-- Los documentos emitidos (oficios, cartas, informes, respuestas) se **generan, numeran y envían desde el sistema**.
+- Los documentos emitidos (oficios, cartas, informes, respuestas) **se redactan en Word fuera del sistema** (decisión del usuario) y el sistema los **revisa, numera y envía**.
 - **Numeración correlativa automática** por tipo, área y año, con formato configurable (ej. `OFICIO N.º 012-2026-<ÁREA>`), sin saltos ni duplicados (secuencia con bloqueo transaccional).
-- **Plantillas editables** desde el panel; generación en PDF y Word con datos del expediente de origen.
-- Flujo: borrador → revisión → aprobación → emisión → envío. **Ningún documento sale sin aprobación explícita y auditada.** El envío automático significa que, aprobado el documento, el sistema lo despacha sin intervención manual.
+- Se sube el **borrador** (Word o PDF) para la revisión; aprobado, recibe su número, quien lo redactó lo pone en el Word y sube el **documento final**, que es el que se envía como adjunto. El sistema no tiene plantillas ni genera el PDF.
+- Flujo: borrador → revisión → aprobación (número) → documento final → envío. **Ningún documento sale sin aprobación explícita y auditada.** El envío automático significa que, subido el documento final, el sistema lo despacha sin intervención manual.
 - Envío por Gmail API (cuenta del buzón central), con el **código de registro en el asunto** y **copia oculta al buzón central**, para enlazar la respuesta y cerrar el ciclo.
 - Circulares a varios destinatarios: un correo individual por destinatario (no una lista visible), en cola con ritmo controlado para respetar los límites de envío de Google.
 - Registro de entrega: envío, rebote y acuse cuando exista; un documento emitido que exige respuesta del destinatario genera su propio plazo y semáforo.
-- La firma se mantiene fuera del sistema (impresa y firmada, o firma digital externa) y se adjunta el PDF firmado como versión final. La firma digital integrada queda fuera de alcance en la v1.
+- La firma se mantiene fuera del sistema (impresa y firmada, o firma digital externa): el documento final puede ser el Word o el PDF firmado. La firma digital integrada queda fuera de alcance en la v1.
 
 ### 7.3.5 Captura mínima: el usuario confirma, no digita
 
@@ -491,7 +491,7 @@ Entregables: servicio FastAPI (`/classify`, `/extract`), clasificación por simi
 Aceptación: en modo sombra no se ejecuta ninguna acción automática; se puede medir % de acierto por categoría; revertir a una versión anterior del modelo es un comando; si `ai` está caído, el sistema sigue ingresando correos.
 
 ### Fase 5: Documentos salientes y envío automático
-Entregables: plantillas editables, generación de PDF/Word, numeración correlativa automática por tipo/área/año, flujo borrador → revisión → aprobación → emisión → envío por Gmail API con código de registro y CCO al buzón central, envío individual a múltiples destinatarios en cola, registro de entrega y rebotes, plazo y semáforo para documentos emitidos que exigen respuesta (7.3.4).
+Entregables: borrador y documento final subidos (Word o PDF), numeración correlativa automática por tipo/área/año, flujo borrador → revisión → aprobación → emisión → envío por Gmail API con código de registro y CCO al buzón central, envío individual a múltiples destinatarios en cola, registro de entrega y rebotes, plazo y semáforo para documentos emitidos que exigen respuesta (7.3.4).
 Aceptación: ningún documento sale sin aprobación auditada; la numeración no tiene saltos ni duplicados bajo envíos concurrentes (test); la respuesta del destinatario se anexa al expediente correcto; un rebote queda registrado y visible.
 
 ### Fase 6: Recomendaciones y borradores con IA (opcional)

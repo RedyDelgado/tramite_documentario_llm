@@ -6,13 +6,10 @@ use App\Http\Requests\SalienteRequest;
 use App\Models\Area;
 use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
-use App\Models\PlantillaDocumento;
 use App\Models\TipoDocumento;
 use App\Policies\SalientePolicy;
-use App\Rules\SinAmenazas;
 use App\Services\AuditoriaService;
 use App\Services\EnvioService;
-use App\Services\GeneradorDocumentoService;
 use App\Services\SalienteService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,24 +70,9 @@ class SalienteController extends Controller
         ]);
     }
 
-    /** Asunto y cuerpo de la plantilla con los datos del expediente, para prellenar el formulario. */
-    public function plantilla(Request $request, PlantillaDocumento $plantilla): array
-    {
-        Gate::authorize('create', DocumentoSaliente::class);
-        $expediente = $request->integer('expediente') ? Expediente::find($request->integer('expediente')) : null;
-        if ($expediente) {
-            Gate::authorize('view', $expediente);
-        }
-
-        return [
-            'tipo_documento_id' => $plantilla->tipo_documento_id,
-            ...$this->salientes->desdePlantilla($plantilla, $expediente, (string) Area::find($request->integer('area'))?->nombre),
-        ];
-    }
-
     public function store(SalienteRequest $request): RedirectResponse
     {
-        $saliente = $this->salientes->crear($request->validated(), $request->user());
+        $saliente = $this->salientes->crear($request->safe()->except('archivo'), $request->file('archivo'), $request->user());
 
         Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => 'Borrador guardado.']);
 
@@ -105,7 +87,10 @@ class SalienteController extends Controller
 
         return $this->index($request)->with('detalle', [
             ...$this->fila($saliente),
-            'cuerpo' => $saliente->cuerpo,
+            'mensaje' => $saliente->cuerpo,
+            'borrador' => $saliente->nombre_borrador,
+            'final' => $saliente->nombre_firmado,
+            'sha256_final' => $saliente->sha256_firmado,
             'destinatarios' => $saliente->destinatarios,
             'autor' => $saliente->autor->name,
             'aprobador' => $saliente->aprobador?->name,
@@ -114,9 +99,6 @@ class SalienteController extends Controller
             'es_respuesta' => $saliente->es_respuesta,
             'requiere_respuesta' => $saliente->requiere_respuesta,
             'plazo_respuesta_dias' => $saliente->plazo_respuesta_dias,
-            'esperar_firma' => $saliente->esperar_firma,
-            'firmado' => $saliente->ruta_firmado !== null,
-            'sha256_pdf' => $saliente->sha256_pdf,
             'envios' => $saliente->envios->map(fn ($e) => [
                 'id' => $e->id, 'email' => $e->email, 'nombre' => $e->nombre, 'estado' => $e->estado,
                 'enviado_at' => $e->enviado_at?->toIso8601String(), 'detalle' => $e->detalle,
@@ -136,11 +118,11 @@ class SalienteController extends Controller
 
         return $this->index($request)->with('formulario', [
             'saliente' => [
-                'id' => $saliente->id, 'expediente_id' => $saliente->expediente_id, 'plantilla_id' => $saliente->plantilla_id,
+                'id' => $saliente->id, 'expediente_id' => $saliente->expediente_id,
                 'tipo_documento_id' => $saliente->tipo_documento_id, 'area_id' => $saliente->area_id, 'asunto' => $saliente->asunto,
                 'cuerpo' => $saliente->cuerpo, 'destinatarios' => $saliente->destinatarios, 'es_respuesta' => $saliente->es_respuesta,
                 'requiere_respuesta' => $saliente->requiere_respuesta, 'plazo_respuesta_dias' => $saliente->plazo_respuesta_dias,
-                'esperar_firma' => $saliente->esperar_firma, 'observacion' => $saliente->observacion,
+                'borrador' => $saliente->nombre_borrador, 'observacion' => $saliente->observacion,
             ],
             'expediente' => null,
             ...$this->opciones($request),
@@ -149,7 +131,7 @@ class SalienteController extends Controller
 
     public function update(SalienteRequest $request, DocumentoSaliente $saliente): RedirectResponse
     {
-        $this->salientes->actualizar($saliente, $request->validated());
+        $this->salientes->actualizar($saliente, $request->safe()->except('archivo'), $request->file('archivo'));
 
         Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => 'Borrador actualizado.']);
 
@@ -184,28 +166,28 @@ class SalienteController extends Controller
     public function firmado(Request $request, DocumentoSaliente $saliente, EnvioService $envios): RedirectResponse
     {
         Gate::authorize('firmar', $saliente);
-        $archivo = $request->validate(['archivo' => ['required', 'file', 'max:40960', 'mimetypes:application/pdf', new SinAmenazas]], attributes: ['archivo' => 'PDF firmado'])['archivo'];
-        $envios->subirFirmado($saliente, $archivo->getContent());
+        $archivo = $request->validate(['archivo' => SalienteRequest::reglasArchivo(true)], attributes: ['archivo' => 'documento final'])['archivo'];
+        $envios->subirFirmado($saliente, $archivo->getContent(), $archivo->getClientOriginalName());
 
-        return $this->listo($saliente->esperar_firma ? 'PDF firmado adjuntado: el documento se está enviando.' : 'PDF firmado adjuntado como versión final.');
+        return $this->listo('Documento final subido: se está enviando a sus destinatarios.');
     }
 
-    /** PDF (el aprobado con hash, o la vista previa del borrador) o Word; cada descarga queda auditada (9). */
-    public function descargar(Request $request, DocumentoSaliente $saliente, string $formato, GeneradorDocumentoService $generador, AuditoriaService $auditoria): HttpResponse
+    /** El borrador que se revisó o el documento final que salió, tal como se subieron; cada descarga queda auditada (9). */
+    public function descargar(Request $request, DocumentoSaliente $saliente, string $formato, AuditoriaService $auditoria): HttpResponse
     {
         Gate::authorize('view', $saliente);
-        abort_unless(in_array($formato, ['pdf', 'docx', 'firmado'], true), 404);
-        $nombre = str($saliente->numero ?? "borrador-{$saliente->id}")->slug();
-
-        [$contenido, $tipo, $extension] = match ($formato) {
-            'pdf' => [$saliente->ruta_pdf ? Storage::disk('originales')->get($saliente->ruta_pdf) : $generador->pdf($saliente), 'application/pdf', 'pdf'],
-            'docx' => [$generador->docx($saliente), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'docx'],
-            'firmado' => [$saliente->ruta_firmado ? Storage::disk('originales')->get($saliente->ruta_firmado) : abort(404), 'application/pdf', 'pdf'],
+        [$ruta, $original] = match ($formato) {
+            'borrador' => [$saliente->ruta_borrador, $saliente->nombre_borrador],
+            'final' => [$saliente->ruta_firmado, $saliente->nombre_firmado],
+            default => abort(404),
         };
+        abort_unless($ruta !== null, 404);
+        $extension = strtolower(pathinfo((string) $original, PATHINFO_EXTENSION)) ?: 'pdf';
+        $nombre = str($saliente->numero ?? "borrador-{$saliente->id}")->slug();
         $auditoria->registrar('saliente.descargado', $saliente, despues: ['formato' => $formato]);
 
-        return response($contenido, 200, [
-            'Content-Type' => $tipo,
+        return response(Storage::disk('originales')->get($ruta), 200, [
+            'Content-Type' => DocumentoSaliente::mime($original),
             'Content-Disposition' => "attachment; filename=\"{$nombre}.{$extension}\"",
         ]);
     }
@@ -245,8 +227,6 @@ class SalienteController extends Controller
         return [
             'opcionesTipo' => TipoDocumento::opciones(),
             'opcionesArea' => $areas === null ? Area::opciones() : collect(Area::opciones())->whereIn('value', $areas)->values()->all(),
-            'opcionesPlantilla' => PlantillaDocumento::where('activa', true)->orderBy('nombre')->get(['id', 'nombre'])
-                ->map(fn ($p) => ['value' => $p->id, 'label' => $p->nombre])->all(),
         ];
     }
 }

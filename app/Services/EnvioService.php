@@ -32,7 +32,7 @@ class EnvioService
             throw new ReglaDeNegocio('Solo se envía un documento aprobado.');
         }
         if ($saliente->esperar_firma && ! $saliente->ruta_firmado) {
-            throw new ReglaDeNegocio('Este documento espera el PDF firmado antes de enviarse.');
+            throw new ReglaDeNegocio('Falta subir el documento final con su número antes de enviarlo.');
         }
 
         DB::transaction(function () use ($saliente) {
@@ -45,15 +45,15 @@ class EnvioService
         });
     }
 
-    /** Sube el PDF firmado fuera del sistema como versión final; si el documento lo esperaba, se envía (7.3.4). */
-    public function subirFirmado(DocumentoSaliente $saliente, string $contenido): void
+    /** Sube el documento final (Word o PDF firmado, con su número) y lo envía (7.3.4). */
+    public function subirFirmado(DocumentoSaliente $saliente, string $contenido, string $nombre): void
     {
         if ($saliente->estado !== 'aprobado') {
-            throw new ReglaDeNegocio('El PDF firmado se adjunta a un documento aprobado y aún no enviado.');
+            throw new ReglaDeNegocio('El documento final se sube a un documento aprobado y aún no enviado.');
         }
         ['ruta' => $ruta, 'sha256' => $sha] = Documento::guardarArchivo($contenido);
-        $saliente->forceFill(['ruta_firmado' => $ruta, 'sha256_firmado' => $sha])->save();
-        $this->auditoria->registrar('saliente.firmado_adjunto', $saliente, despues: ['sha256' => $sha]);
+        $saliente->forceFill(['ruta_firmado' => $ruta, 'sha256_firmado' => $sha, 'nombre_firmado' => $nombre])->save();
+        $this->auditoria->registrar('saliente.firmado_adjunto', $saliente, despues: ['sha256' => $sha, 'nombre' => $nombre]);
 
         if ($saliente->esperar_firma) {
             $this->despachar($saliente);
@@ -70,15 +70,15 @@ class EnvioService
         $s = $envio->saliente;
         $central = config('tramite.salientes.buzon_central') ?: config('mail.from.address');
         $codigo = $s->expediente?->codigo;
-        $ruta = $s->ruta_firmado ?? $s->ruta_pdf;
+        $extension = strtolower(pathinfo((string) $s->nombre_firmado, PATHINFO_EXTENSION)) ?: 'pdf';
 
         $email = (new Email)
             ->from(new Address($central, config('app.name')))
             ->to(new Address($envio->email, (string) $envio->nombre))
             // El código en el asunto enlaza la respuesta con su expediente aunque el cliente pierda el hilo (7.1, 7.2).
             ->subject(($codigo ? "[{$codigo}] " : '')."{$s->numero} - {$s->asunto}")
-            ->text("Se adjunta {$s->numero}.\n\nAl responder, conserve el asunto de este correo.\n\n{$s->area->nombre}")
-            ->attach(Storage::disk('originales')->get($ruta), Str::slug($s->numero).'.pdf', 'application/pdf');
+            ->text(($s->cuerpo ? trim($s->cuerpo)."\n\n" : "Se adjunta {$s->numero}.\n\n")."Al responder, conserve el asunto de este correo.\n\n{$s->area->nombre}")
+            ->attach(Storage::disk('originales')->get($s->ruta_firmado), Str::slug($s->numero).".{$extension}", DocumentoSaliente::mime($s->nombre_firmado));
         if ($central) {
             $email->bcc($central);
         }

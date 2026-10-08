@@ -151,7 +151,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         {e.permisos.redactar && (
                             <Link href={`/salientes/create?expediente=${e.id}`} className={botonClases()}>
                                 <IcoEnviar />
-                                Redactar respuesta
+                                Responder con documento
                             </Link>
                         )}
                         <AccionesRegistro

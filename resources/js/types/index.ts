@@ -219,9 +219,6 @@ export type ReglaNoTramite = {
 /** UbicacionFisicaController@fila. */
 export type UbicacionFisica = { id: number; nombre: string; descripcion: string | null; activa: boolean; actualizado: string | null };
 
-/** PlantillaController@fila. */
-export type Plantilla = { id: number; nombre: string; tipo_documento_id: number; tipo: string | null; activa: boolean; actualizado: string | null };
-
 /** SalienteController@fila. */
 export type Saliente = {
     id: number;
@@ -241,7 +238,12 @@ export type Saliente = {
 
 /** SalienteController@show. */
 export type SalienteDetalle = Saliente & {
-    cuerpo: string;
+    // Mensaje opcional del correo; el documento es el archivo subido.
+    mensaje: string | null;
+    // Nombres originales del borrador revisado y del documento final que sale.
+    borrador: string | null;
+    final: string | null;
+    sha256_final: string | null;
     destinatarios: { email: string; nombre: string | null }[];
     autor: string;
     aprobador: string | null;
@@ -250,9 +252,6 @@ export type SalienteDetalle = Saliente & {
     es_respuesta: boolean;
     requiere_respuesta: boolean;
     plazo_respuesta_dias: number | null;
-    esperar_firma: boolean;
-    firmado: boolean;
-    sha256_pdf: string | null;
     envios: { id: number; email: string; nombre: string | null; estado: 'pendiente' | 'enviado' | 'rebotado' | 'fallido'; enviado_at: string | null; detalle: string | null }[];
     permisos: { editar: boolean; revision: boolean; aprobar: boolean; firmar: boolean };
 };

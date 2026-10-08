@@ -52,7 +52,6 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Instrucciones', href: '/instrucciones', icono: <IcoInstrucciones />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Ubicaciones físicas', href: '/ubicaciones', icono: <IcoArchivo />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Correo no trámite', href: '/reglas-no-tramite', icono: <IcoCorreoBloqueado />, permisos: ['configuracion.gestionar'] },
-            { etiqueta: 'Plantillas', href: '/plantillas', icono: <IcoDocumento />, permisos: ['configuracion.gestionar'] },
         ],
     },
     {

@@ -72,11 +72,7 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
                                     variante="primario"
                                     icono={<IcoCorrecto />}
                                     titulo="¿Aprobar y numerar?"
-                                    descripcion={
-                                        s.esperar_firma
-                                            ? 'Recibe su número y su PDF final; se enviará cuando se adjunte el PDF firmado. No se puede deshacer.'
-                                            : 'Recibe su número y su PDF final y se envía de inmediato a los destinatarios. No se puede deshacer.'
-                                    }
+                                    descripcion="Recibe su número; quien lo redactó lo pone en el Word y sube el documento final, que se envía. No se puede deshacer."
                                     confirmar="Aprobar"
                                     cargando={procesando}
                                     onConfirmar={(cerrar) => accion('aprobar', cerrar)}
@@ -85,52 +81,69 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
                                 </BotonConfirmado>
                             </>
                         )}
-                        {s.permisos.firmar && (
-                            <label className={botonClases({ variante: s.esperar_firma && !s.firmado ? 'primario' : 'secundario' })}>
+                        {s.permisos.firmar && !s.final && (
+                            <label className={botonClases({ variante: 'primario' })}>
                                 <IcoSubirDocumento />
-                                {s.firmado ? 'Reemplazar firmado' : 'Adjuntar PDF firmado'}
+                                Subir documento final
                                 <input
                                     type="file"
-                                    accept="application/pdf"
+                                    accept=".doc,.docx,.pdf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                     className="sr-only"
                                     onChange={(e) => e.target.files?.[0] && setFirmado(e.target.files[0])}
                                 />
                             </label>
                         )}
-                        {s.firmado && (
-                            <a href={`/salientes/${s.id}/descargar/firmado`} className={botonClases()}>
+                        {s.final && (
+                            <a href={`/salientes/${s.id}/descargar/final`} className={botonClases()}>
                                 <IcoDescargar />
-                                Firmado
+                                Documento final
                             </a>
                         )}
-                        <a href={`/salientes/${s.id}/descargar/pdf`} className={botonClases()}>
-                            <IcoDescargar />
-                            PDF
-                        </a>
-                        <a href={`/salientes/${s.id}/descargar/docx`} className={botonClases()}>
-                            <IcoDescargar />
-                            Word
-                        </a>
+                        {s.borrador && (
+                            <a href={`/salientes/${s.id}/descargar/borrador`} className={botonClases()}>
+                                <IcoDescargar />
+                                Borrador
+                            </a>
+                        )}
                     </>
                 }
         >
             <div className="grid items-start gap-4 lg:grid-cols-3">
-                <Card titulo="Texto" className="lg:col-span-2">
-                    {s.observacion && <p className="mb-3 text-base text-danger">Observación de la revisión: {s.observacion}</p>}
-                    <p className="text-base whitespace-pre-line">{s.cuerpo}</p>
+                <Card titulo="Documento" className="lg:col-span-2">
+                    <div className="flex flex-col gap-3 text-base">
+                        {s.observacion && <p className="text-danger">Observación de la revisión: {s.observacion}</p>}
+                        {s.estado.valor === 'aprobado' && !s.final && (
+                            <p className="rounded-card bg-primary-50 px-4 py-3 text-fg">
+                                Número asignado: <strong>{s.numero}</strong>. Ponlo en el Word, fírmalo si corresponde y súbelo con «Subir documento final»: ese archivo es el que se envía.
+                            </p>
+                        )}
+                        <DetalleLista
+                            items={[
+                                { etiqueta: 'Borrador revisado', valor: s.borrador ?? '—' },
+                                ...(s.final ? [{ etiqueta: 'Documento final', valor: s.final }] : []),
+                                ...(s.sha256_final ? [{ etiqueta: 'Huella del final', valor: <span title={s.sha256_final}>SHA-256 {s.sha256_final.slice(0, 12)}…</span> }] : []),
+                            ]}
+                        />
+                        {s.mensaje && (
+                            <div>
+                                <p className="mb-1 text-sm font-medium text-fg-muted">Mensaje del correo</p>
+                                <p className="whitespace-pre-line">{s.mensaje}</p>
+                            </div>
+                        )}
+                    </div>
                 </Card>
                 <div className="flex flex-col gap-4">
                     <Card titulo="Datos">
                         <DetalleLista
                             items={[
                                 { etiqueta: 'Estado', valor: <Badge tono={s.estado.valor === 'enviado' ? 'ok' : 'neutro'}>{s.estado.etiqueta}</Badge> },
-                                ...(s.estado.valor === 'aprobado' && s.esperar_firma && !s.firmado ? [{ etiqueta: 'Envío', valor: 'Espera el PDF firmado' }] : []),
+                                ...(s.estado.valor === 'aprobado' && !s.final ? [{ etiqueta: 'Envío', valor: 'Espera el documento final' }] : []),
                                 { etiqueta: 'Tipo', valor: s.tipo },
                                 { etiqueta: 'Área que emite', valor: s.area },
                                 ...(s.expediente
                                     ? [{ etiqueta: s.es_respuesta ? 'Responde a' : 'Expediente', valor: <Link href={`/expedientes/${s.expediente.id}`} className="text-primary-700 hover:underline">{s.expediente.numero_registro ?? 'Expediente'}</Link> }]
                                     : []),
-                                { etiqueta: 'Redactó', valor: s.autor },
+                                { etiqueta: 'Subió', valor: s.autor },
                                 ...(s.aprobador ? [{ etiqueta: 'Aprobó', valor: `${s.aprobador} · ${formatearFechaHora(s.aprobado_at)}` }] : []),
                                 ...(s.requiere_respuesta
                                     ? [{
@@ -146,7 +159,6 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
                                           ),
                                       }]
                                     : []),
-                                ...(s.sha256_pdf ? [{ etiqueta: 'PDF aprobado', valor: <span title={s.sha256_pdf}>SHA-256 {s.sha256_pdf.slice(0, 12)}…</span> }] : []),
                             ]}
                         />
                     </Card>
@@ -173,13 +185,9 @@ export default function SalienteShow({ saliente: s, onCerrar }: DetalleSalienteP
             <ConfirmDialog
                 abierto={firmado !== null}
                 onCambiar={(abierto) => !abierto && setFirmado(null)}
-                titulo="¿Adjuntar el PDF firmado?"
-                descripcion={
-                    s.esperar_firma && s.estado.valor === 'aprobado'
-                        ? `«${firmado?.name ?? ''}» será la versión final y el documento se enviará de inmediato a sus destinatarios.`
-                        : `«${firmado?.name ?? ''}» será la versión final del documento.`
-                }
-                confirmar="Adjuntar"
+                titulo="¿Subir el documento final y enviarlo?"
+                descripcion={`«${firmado?.name ?? ''}» debe llevar el número ${s.numero ?? ''}: será la versión final y se enviará de inmediato a sus destinatarios.`}
+                confirmar="Subir y enviar"
                 cargando={procesando}
                 onConfirmar={() => firmado && subirFirmado(firmado)}
             />

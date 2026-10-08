@@ -8,15 +8,14 @@ use App\Models\AreaResponsable;
 use App\Models\DocumentoSaliente;
 use App\Models\Emisor;
 use App\Models\Expediente;
-use App\Models\PlantillaDocumento;
 use App\Models\TipoDocumento;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
-use ZipArchive;
 
 class SalientesTest extends TestCase
 {
@@ -53,9 +52,10 @@ class SalientesTest extends TestCase
     {
         return $this->actingAs($autor ?? $this->administrativo)->post('/salientes', $extra + [
             'expediente_id' => $this->expediente->id, 'tipo_documento_id' => $this->oficio->id, 'area_id' => $this->area->id,
-            'asunto' => 'Respuesta al requerimiento', 'cuerpo' => "Señor alcalde:\n\nRemitimos la información solicitada.",
+            'asunto' => 'Respuesta al requerimiento', 'cuerpo' => 'Se adjunta la respuesta.',
+            'archivo' => UploadedFile::fake()->create('respuesta.docx', 20, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
             'destinatarios' => [['email' => 'mesa@municipalidad.gob.pe', 'nombre' => 'Mesa de partes']],
-            'es_respuesta' => true, 'requiere_respuesta' => false, 'plazo_respuesta_dias' => null, 'esperar_firma' => false,
+            'es_respuesta' => true, 'requiere_respuesta' => false, 'plazo_respuesta_dias' => null,
         ]);
     }
 
@@ -88,13 +88,19 @@ class SalientesTest extends TestCase
         $this->actingAs($this->director)->post("/salientes/{$s->id}/aprobar")->assertSessionHasNoErrors();
 
         $s->refresh();
-        // Aprobado sale solo (envío automático, 7.3.4); en el test la cola es síncrona.
-        $this->assertSame(['enviado', 'OFICIO N.º 001-2026-DGA', $this->director->id], [$s->estado, $s->numero, $s->aprobado_por]);
-        $this->assertStringStartsWith('%PDF', Storage::disk('originales')->get($s->ruta_pdf));
-        $this->assertSame($s->sha256_pdf, hash('sha256', Storage::disk('originales')->get($s->ruta_pdf)));
+        // Aprobado recibe su número y espera el documento final que lo lleva; el borrador revisado queda guardado.
+        $this->assertSame(['aprobado', 'OFICIO N.º 001-2026-DGA', $this->director->id], [$s->estado, $s->numero, $s->aprobado_por]);
+        $this->assertSame(['respuesta.docx', $s->sha256_borrador], [$s->nombre_borrador, hash('sha256', Storage::disk('originales')->get($s->ruta_borrador))]);
         $this->assertDatabaseHas('auditoria', ['accion' => 'saliente.aprobado', 'usuario_id' => $this->director->id]);
         // Lo aprobado no se edita.
         $this->actingAs($this->administrativo)->get("/salientes/{$s->id}/edit")->assertForbidden();
+    }
+
+    public function test_sin_borrador_no_se_guarda_y_solo_se_admite_word_o_pdf(): void
+    {
+        $this->redactar(['archivo' => null])->assertSessionHasErrors('archivo');
+        $this->redactar(['archivo' => UploadedFile::fake()->create('foto.png', 20, 'image/png')])->assertSessionHasErrors('archivo');
+        $this->redactar(['archivo' => UploadedFile::fake()->create('oficio.pdf', 20, 'application/pdf')])->assertSessionHasNoErrors();
     }
 
     public function test_devolver_lo_regresa_a_borrador_con_la_observacion(): void
@@ -124,37 +130,16 @@ class SalientesTest extends TestCase
         $this->actingAs($coordinador)->post("/salientes/{$s->id}/aprobar")->assertSessionHasNoErrors();
     }
 
-    public function test_la_plantilla_se_llena_con_los_datos_del_expediente(): void
-    {
-        $plantilla = PlantillaDocumento::create([
-            'nombre' => 'Respuesta a requerimiento', 'tipo_documento_id' => $this->oficio->id,
-            'asunto' => 'Atención a su {{expediente.documento}}',
-            'cuerpo' => "Señores {{remitente}}:\n\nEn atención a su documento ({{expediente.codigo}}), {{area}} remite lo solicitado. {{fecha}}.",
-        ]);
-
-        $this->actingAs($this->administrativo)->getJson("/salientes/plantilla/{$plantilla->id}?expediente={$this->expediente->id}&area={$this->area->id}")
-            ->assertOk()
-            ->assertJsonPath('asunto', 'Atención a su OFICIO N° 120-2026-MPLC')
-            ->assertJsonPath('cuerpo', "Señores Municipalidad Provincial:\n\nEn atención a su documento (REG-2026-00038), Dirección General de Administración remite lo solicitado. 6 de octubre de 2026.");
-    }
-
-    public function test_se_descarga_en_pdf_y_en_word_y_queda_auditado(): void
+    public function test_se_descargan_el_borrador_y_el_final_tal_como_se_subieron_y_queda_auditado(): void
     {
         $this->redactar();
         $s = DocumentoSaliente::sole();
 
-        $this->actingAs($this->administrativo)->get("/salientes/{$s->id}/descargar/pdf")->assertOk()->assertHeader('Content-Type', 'application/pdf');
-        $docx = $this->actingAs($this->administrativo)->get("/salientes/{$s->id}/descargar/docx")->assertOk()->getContent();
-
-        $archivo = tempnam(sys_get_temp_dir(), 'docx');
-        file_put_contents($archivo, $docx);
-        $zip = new ZipArchive;
-        $this->assertTrue($zip->open($archivo));
-        $this->assertStringContainsString('Remitimos la información solicitada.', $zip->getFromName('word/document.xml'));
-        $this->assertStringContainsString('Referencia: OFICIO N° 120-2026-MPLC (REG-2026-00038)', $zip->getFromName('word/document.xml'));
-        $zip->close();
-        unlink($archivo);
-        $this->assertDatabaseCount('auditoria', 3);
+        $this->actingAs($this->administrativo)->get("/salientes/{$s->id}/descargar/borrador")->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            ->assertHeader('Content-Disposition', 'attachment; filename="borrador-'.$s->id.'.docx"');
+        $this->actingAs($this->administrativo)->get("/salientes/{$s->id}/descargar/final")->assertNotFound();
+        $this->assertDatabaseHas('auditoria', ['accion' => 'saliente.descargado']);
     }
 
     public function test_un_coordinador_emite_solo_desde_sus_areas_y_responde_solo_lo_que_ve(): void

@@ -14,6 +14,7 @@ use App\Models\Expediente;
 use App\Models\Movimiento;
 use App\Models\TipoDocumento;
 use App\Models\User;
+use App\Services\EnvioService;
 use App\Services\SalienteService;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,9 +72,18 @@ class EnvioSalientesTest extends TestCase
         return $s;
     }
 
-    public function test_aprobado_sale_solo_un_correo_por_destinatario_con_codigo_y_copia_oculta(): void
+    /** Aprobado y con el documento final (el Word con su número) subido: recién sale. */
+    private function aprobadoConFinal(): DocumentoSaliente
     {
         $s = app(SalienteService::class)->aprobar($this->enRevision(), $this->director);
+        app(EnvioService::class)->subirFirmado($s, 'Word con OFICIO N.º 001-2026-DGA', 'Oficio final.docx');
+
+        return $s;
+    }
+
+    public function test_aprobado_sale_solo_un_correo_por_destinatario_con_codigo_y_copia_oculta(): void
+    {
+        $s = $this->aprobadoConFinal();
 
         $this->assertCount(2, $this->enviados);
         $correo = $this->enviados[0];
@@ -81,7 +91,10 @@ class EnvioSalientesTest extends TestCase
         $this->assertSame(['mesa@muni.gob.pe'], array_map(fn ($a) => $a->getAddress(), $correo->getTo()));
         $this->assertSame(['tramite@uni.edu.pe'], array_map(fn ($a) => $a->getAddress(), $correo->getBcc()));
         $this->assertSame('tramite@uni.edu.pe', $correo->getFrom()[0]->getAddress());
-        $this->assertSame(hash('sha256', Storage::disk('originales')->get($s->ruta_pdf)), hash('sha256', $correo->getAttachments()[0]->getBody()));
+        $adjunto = $correo->getAttachments()[0];
+        $this->assertSame(['Word con OFICIO N.º 001-2026-DGA', 'oficio-no-001-2026-dga.docx'], [$adjunto->getBody(), $adjunto->getFilename()]);
+        $this->assertSame('application/vnd.openxmlformats-officedocument.wordprocessingml.document', $adjunto->getMediaType().'/'.$adjunto->getMediaSubtype());
+        $this->assertStringStartsWith('Texto', $correo->getTextBody());
 
         $s->refresh();
         $this->assertSame('enviado', $s->estado);
@@ -91,7 +104,7 @@ class EnvioSalientesTest extends TestCase
 
     public function test_enviar_la_respuesta_deja_atendido_el_expediente(): void
     {
-        app(SalienteService::class)->aprobar($this->enRevision(), $this->director);
+        $this->aprobadoConFinal();
 
         $this->expediente->refresh();
         $this->assertSame(EstadoExpediente::Atendido, $this->expediente->estado);
@@ -99,9 +112,9 @@ class EnvioSalientesTest extends TestCase
         $this->assertSame('Respuesta enviada: OFICIO N.º 001-2026-DGA', Movimiento::where('tipo', 'respuesta')->sole()->nota);
     }
 
-    public function test_si_espera_el_pdf_firmado_no_sale_hasta_que_se_adjunta(): void
+    public function test_no_sale_hasta_que_se_sube_el_documento_final(): void
     {
-        $s = app(SalienteService::class)->aprobar($this->enRevision(['esperar_firma' => true]), $this->director);
+        $s = app(SalienteService::class)->aprobar($this->enRevision(), $this->director);
         $this->assertCount(0, $this->enviados);
         $this->assertSame('aprobado', $s->fresh()->estado);
 
@@ -118,7 +131,7 @@ class EnvioSalientesTest extends TestCase
     {
         $this->assertInstanceOf(RateLimited::class, (new EnviarDocumento(1))->middleware()[0]);
 
-        $s = app(SalienteService::class)->aprobar($this->enRevision(['esperar_firma' => true]), $this->director);
+        $s = app(SalienteService::class)->aprobar($this->enRevision(), $this->director);
         $envio = Envio::create(['documento_saliente_id' => $s->id, 'email' => 'x@y.pe']);
         (new EnviarDocumento($envio->id))->failed(new RuntimeException('Gmail rechazó el destinatario'));
 
