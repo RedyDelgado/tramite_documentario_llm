@@ -8,10 +8,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([RolesSeeder::class, ReglasNoTramiteSeeder::class]);
-
-        if (app()->isLocal()) {
-            $this->call(DemoSeeder::class);
-        }
+        // Estructura real de la filial: también en producción (los correos se completan en Usuarios).
+        $this->call([RolesSeeder::class, ReglasNoTramiteSeeder::class, FilialSeeder::class]);
     }
 }
