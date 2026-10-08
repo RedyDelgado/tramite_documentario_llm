@@ -16,6 +16,9 @@ interface MailboxDriver
 
     public function marcarProcesado(MensajeCrudo $mensaje): void;
 
+    /** Quita la marca de procesado a lo recibido desde la fecha, para volver a leerlo; devuelve cuántos. */
+    public function reabrir(CarbonInterface $desde): int;
+
     /**
      * Fecha y remitente de cada mensaje desde la fecha, para dimensionar sin guardar nada (7.3.3).
      *

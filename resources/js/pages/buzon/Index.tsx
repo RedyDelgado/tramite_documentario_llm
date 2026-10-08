@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
 import { Button, botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { IcoCorreo, IcoDescargar } from '@/components/ui/iconos';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 
@@ -30,7 +31,8 @@ type Buzon = {
 
 export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
     const [enviando, setEnviando] = useState<string | null>(null);
-    const post = (ruta: string, datos: Record<string, boolean>, cerrar?: () => void) =>
+    const [desde, setDesde] = useState(b.inicio_operacion ?? b.desde);
+    const post = (ruta: string, datos: Record<string, string | boolean>, cerrar?: () => void) =>
         router.post(ruta, datos, {
             preserveScroll: true,
             onStart: () => setEnviando(ruta),
@@ -172,6 +174,26 @@ export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
                         <p className="text-sm text-fg-muted">
                             Lee hasta 50 correos por vez; lo ya descargado no se repite. Si hay más, vuelve a pulsar o enciende la descarga automática.
                         </p>
+                        <div className="flex flex-col gap-2 border-t border-separador pt-4">
+                            <p className="text-base font-medium text-fg">Volver a descargar</p>
+                            <p className="text-sm text-fg-muted">
+                                En Gmail, lo ya leído queda con la etiqueta «tramite/procesado» y no se vuelve a leer. Si el sistema se vació, elige desde qué fecha leerlo otra vez; lo que ya está registrado no se duplica.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Input type="date" aria-label="Volver a descargar desde" className="w-44" value={desde} onChange={(e) => setDesde(e.target.value)} />
+                                <BotonConfirmado
+                                    variante="secundario"
+                                    titulo="¿Volver a descargar los correos?"
+                                    descripcion={`Se quita la etiqueta de procesado a los correos recibidos desde el ${desde ? formatearFecha(desde) : '—'} y se leen otra vez, de a 50 por minuto. Lo ya registrado no se duplica.`}
+                                    confirmar="Volver a descargar"
+                                    disabled={!desde}
+                                    cargando={enviando === '/buzon/reabrir'}
+                                    onConfirmar={(cerrar) => post('/buzon/reabrir', { desde }, cerrar)}
+                                >
+                                    Volver a descargar
+                                </BotonConfirmado>
+                            </div>
+                        </div>
                     </div>
                 </Card>
             </div>

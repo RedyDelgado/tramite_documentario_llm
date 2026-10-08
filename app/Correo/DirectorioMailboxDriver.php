@@ -33,6 +33,14 @@ class DirectorioMailboxDriver implements MailboxDriver
         File::put($this->directorio.DIRECTORY_SEPARATOR.$mensaje->uid.'.procesado', now()->toIso8601String());
     }
 
+    public function reabrir(CarbonInterface $desde): int
+    {
+        $marcas = File::glob($this->directorio.DIRECTORY_SEPARATOR.'*.eml.procesado');
+        File::delete($marcas);
+
+        return count($marcas);
+    }
+
     public function resumen(CarbonInterface $desde): iterable
     {
         $lector = new LectorEml;

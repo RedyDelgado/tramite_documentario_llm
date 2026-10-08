@@ -44,6 +44,17 @@ class GmailMailboxDriver implements MailboxDriver
         $this->api()->post("messages/{$mensaje->uid}/modify", ['addLabelIds' => [$this->idEtiqueta()]])->throw();
     }
 
+    public function reabrir(CarbonInterface $desde): int
+    {
+        $ids = iterator_to_array($this->ids('after:'.$desde->format('Y/m/d').' label:'.str_replace(['/', ' '], '-', $this->config['etiqueta']), PHP_INT_MAX), false);
+        // batchModify admite hasta 1000 mensajes por llamada.
+        foreach (array_chunk($ids, 1000) as $lote) {
+            $this->api()->post('messages/batchModify', ['ids' => $lote, 'removeLabelIds' => [$this->idEtiqueta()]])->throw();
+        }
+
+        return count($ids);
+    }
+
     public function resumen(CarbonInterface $desde): iterable
     {
         foreach ($this->ids('after:'.$desde->format('Y/m/d').' -in:chats', PHP_INT_MAX) as $id) {

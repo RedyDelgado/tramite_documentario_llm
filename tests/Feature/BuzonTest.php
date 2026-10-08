@@ -14,6 +14,7 @@ use Carbon\CarbonInterface;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as CuentaGoogle;
@@ -99,6 +100,24 @@ class BuzonTest extends TestCase
         Queue::assertPushed(IngestarCorreos::class);
     }
 
+    public function test_volver_a_descargar_quita_la_marca_de_procesado_y_empieza_a_leer(): void
+    {
+        Queue::fake();
+        $buzon = sys_get_temp_dir().'/buzon-'.uniqid();
+        File::ensureDirectoryExists($buzon);
+        File::put("{$buzon}/a.eml", 'x');
+        File::put("{$buzon}/a.eml.procesado", 'ayer');
+        config(['tramite.correo.directorio' => $buzon]);
+
+        $this->actingAs($this->superadmin)->post('/buzon/reabrir', ['desde' => '2026-10-01'])->assertRedirect('/buzon');
+
+        $this->assertFileDoesNotExist("{$buzon}/a.eml.procesado");
+        Queue::assertPushed(IngestarCorreos::class);
+        $this->assertSame(['desde' => '2026-10-01', 'correos' => 1], json_decode(DB::table('auditoria')->where('accion', 'buzon.reabierto')->value('valor_nuevo'), true));
+        $this->post('/buzon/reabrir', ['desde' => now()->addDay()->toDateString()])->assertSessionHasErrors('desde');
+        File::deleteDirectory($buzon);
+    }
+
     public function test_la_descarga_automatica_del_panel_manda_sobre_el_env(): void
     {
         $this->assertFalse(app(BuzonService::class)->activo());
@@ -121,6 +140,11 @@ class BuzonTest extends TestCase
             }
 
             public function marcarProcesado(MensajeCrudo $mensaje): void {}
+
+            public function reabrir(CarbonInterface $desde): int
+            {
+                return 0;
+            }
 
             public function resumen(CarbonInterface $desde): iterable
             {

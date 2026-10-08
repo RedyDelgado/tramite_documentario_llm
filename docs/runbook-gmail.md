@@ -18,6 +18,8 @@ Se conecta desde el sistema: **Administración → Buzón central** (solo el sup
 3. Revisar los primeros expedientes; si están bien, **Encender descarga automática** (cada minuto; requiere el programador, `schedule:work`).
 4. La pantalla muestra la última lectura: cuántos entraron, cuántos fallaron y, si Google rechazó el acceso, el motivo (por ejemplo `invalid_grant`: volver a conectar).
 
+**Volver a descargar** (Buzón central): lo leído queda en Gmail con la etiqueta `tramite/procesado` y no se vuelve a leer. Si se vació la base (o se restauró un respaldo anterior), elegir una fecha y pulsar «Volver a descargar»: quita esa etiqueta a lo recibido desde esa fecha y lo lee otra vez, de a `CORREO_LOTE` por minuto. No duplica: cada correo se reconoce por su Message-ID y su hash.
+
 `CORREO_BACKFILL_DESDE` fija desde qué fecha se lee; lo anterior a `CORREO_INICIO_OPERACION` entra como histórico. Para dimensionar sin guardar nada: `docker compose exec app php artisan correo:estadisticas`.
 
 ### Alternativa sin panel (`.env`)

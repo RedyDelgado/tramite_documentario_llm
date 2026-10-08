@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Correo\MailboxDriver;
 use App\Models\Configuracion;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
@@ -88,6 +90,18 @@ class BuzonService
         $antes = $this->activo();
         Configuracion::updateOrCreate(['clave' => self::ACTIVO], ['valor' => $activo]);
         $this->auditoria->registrar('buzon.descarga_automatica', 'buzon', antes: ['activa' => $antes], despues: ['activa' => $activo]);
+    }
+
+    /**
+     * Vuelve a leer lo recibido desde la fecha (p. ej. tras vaciar la base): quita la etiqueta de procesado en Gmail.
+     * No duplica: cada correo se reconoce por su Message-ID y su hash al ingresar (7.3.5).
+     */
+    public function reabrir(MailboxDriver $buzon, CarbonInterface $desde): int
+    {
+        $cantidad = $buzon->reabrir($desde);
+        $this->auditoria->registrar('buzon.reabierto', 'buzon', despues: ['desde' => $desde->toDateString(), 'correos' => $cantidad]);
+
+        return $cantidad;
     }
 
     /** @param array{procesados: int, fallidos: int} $resultado */

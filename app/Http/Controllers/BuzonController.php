@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Correo\MailboxDriver;
 use App\Jobs\IngestarCorreos;
 use App\Services\BuzonService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -68,6 +70,19 @@ class BuzonController extends Controller
         IngestarCorreos::dispatch();
 
         return $this->aviso('info', 'Descargando correos. En unos segundos aparecen en Expedientes, como «Por revisar».');
+    }
+
+    /** Vuelve a leer desde una fecha lo que el buzón ya tenía marcado como procesado, y empieza a descargarlo. */
+    public function reabrir(Request $request, MailboxDriver $buzon): RedirectResponse
+    {
+        Gate::authorize('gestionar-buzon');
+        $desde = $request->validate(['desde' => ['required', 'date', 'before_or_equal:today']], attributes: ['desde' => 'fecha'])['desde'];
+        $cantidad = $this->buzon->reabrir($buzon, CarbonImmutable::parse($desde));
+        IngestarCorreos::dispatch();
+
+        return $this->aviso('ok', $cantidad
+            ? "Se volverán a descargar {$cantidad} correos, de a ".config('tramite.correo.lote').' por minuto. Lo ya registrado no se duplica.'
+            : 'No había correos procesados desde esa fecha.');
     }
 
     public function activar(Request $request): RedirectResponse
