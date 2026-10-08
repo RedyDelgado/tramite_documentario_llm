@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Correo\MailboxDriver;
+use App\Services\BuzonService;
 use App\Services\IngestaCorreoService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -12,9 +12,13 @@ use Illuminate\Console\Command;
 #[Description('Procesa ahora los correos pendientes del buzón central (mismo proceso que el job programado)')]
 class ImportarCorreos extends Command
 {
-    public function handle(MailboxDriver $buzon, IngestaCorreoService $ingesta): int
+    public function handle(BuzonService $buzones, IngestaCorreoService $ingesta): int
     {
-        $resultado = $ingesta->procesarPendientes($buzon, (int) ($this->option('limite') ?: config('tramite.correo.lote')));
+        $resultado = ['procesados' => 0, 'fallidos' => 0];
+        foreach ($buzones->lectores() as [$nombre, $lector, $cuenta]) {
+            $r = $ingesta->procesarPendientes($lector, (int) ($this->option('limite') ?: config('tramite.correo.lote')), $nombre, $cuenta);
+            $resultado = ['procesados' => $resultado['procesados'] + $r['procesados'], 'fallidos' => $resultado['fallidos'] + $r['fallidos']];
+        }
 
         $this->info("Procesados: {$resultado['procesados']}. Con error: {$resultado['fallidos']} (se reintentan en la próxima pasada).");
 

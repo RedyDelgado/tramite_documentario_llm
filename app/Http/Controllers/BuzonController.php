@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Correo\MailboxDriver;
-use App\Jobs\IngestarCorreos;
+use App\Models\Buzon;
 use App\Services\BuzonService;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -15,7 +13,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
 use Symfony\Component\HttpFoundation\RedirectResponse as RedireccionExterna;
 
-/** Buzón central (7.1) desde el panel: conectar la cuenta de Google, descargar ahora y la descarga automática. Solo el superadmin. */
+/** Buzón central (7.1) desde el panel: una o varias cuentas de Google, descargar desde una fecha y la descarga automática. Solo el superadmin. */
 class BuzonController extends Controller
 {
     // Leer, etiquetar lo procesado y enviar desde el buzón (7.1, 7.3.4).
@@ -30,7 +28,7 @@ class BuzonController extends Controller
         return Inertia::render('buzon/Index', ['buzon' => $this->buzon->estado()]);
     }
 
-    /** A Google, con el permiso de Gmail y acceso permanente (refresh token): se elige la cuenta del buzón central. */
+    /** A Google, con el permiso de Gmail y acceso permanente (refresh token): se elige la cuenta que se agrega. */
     public function conectar(): RedireccionExterna
     {
         Gate::authorize('gestionar-buzon');
@@ -38,7 +36,7 @@ class BuzonController extends Controller
         return Socialite::driver('google')
             ->redirectUrl($this->buzon->redireccion())
             ->scopes([self::PERMISO_GMAIL])
-            ->with(array_filter(['access_type' => 'offline', 'prompt' => 'consent select_account', 'login_hint' => config('tramite.salientes.buzon_central')]))
+            ->with(['access_type' => 'offline', 'prompt' => 'consent select_account'])
             ->redirect();
     }
 
@@ -58,31 +56,19 @@ class BuzonController extends Controller
             return $this->aviso('error', 'Google no entregó el acceso permanente. Quita el acceso de la app en tu cuenta de Google y vuelve a conectar.');
         }
 
-        $this->buzon->conectar((string) $cuenta->getEmail(), $cuenta->refreshToken);
+        $buzon = $this->buzon->conectar((string) $cuenta->getEmail(), $cuenta->refreshToken);
 
-        return $this->aviso('ok', "Buzón conectado: {$cuenta->getEmail()}. Ya puedes descargar los correos.");
+        return $this->aviso('ok', "Cuenta agregada: {$buzon->cuenta}. Pulsa «Descargar correos» para traer lo recibido.");
     }
 
-    /** Lee un lote ahora, en la cola; si ya hay una lectura en curso, no se duplica (IngestarCorreos es único). */
-    public function descargar(): RedirectResponse
-    {
-        Gate::authorize('gestionar-buzon');
-        IngestarCorreos::dispatch();
-
-        return $this->aviso('info', 'Descargando correos. En unos segundos aparecen en Expedientes, como «Por revisar».');
-    }
-
-    /** Vuelve a leer desde una fecha lo que el buzón ya tenía marcado como procesado, y empieza a descargarlo. */
-    public function reabrir(Request $request, MailboxDriver $buzon): RedirectResponse
+    /** Un clic: desde la fecha elegida, todo lo que aún no se leyó de todas las cuentas, en segundo plano. */
+    public function descargar(Request $request): RedirectResponse
     {
         Gate::authorize('gestionar-buzon');
         $desde = $request->validate(['desde' => ['required', 'date', 'before_or_equal:today']], attributes: ['desde' => 'fecha'])['desde'];
-        $cantidad = $this->buzon->reabrir($buzon, CarbonImmutable::parse($desde));
-        IngestarCorreos::dispatch();
+        $this->buzon->descargar($desde);
 
-        return $this->aviso('ok', $cantidad
-            ? "Se volverán a descargar {$cantidad} correos, de a ".config('tramite.correo.lote').' por minuto. Lo ya registrado no se duplica.'
-            : 'No había correos procesados desde esa fecha.');
+        return $this->aviso('info', 'Descargando los correos en segundo plano, de '.config('tramite.correo.lote').' en '.config('tramite.correo.lote').'. Van apareciendo en Expedientes.');
     }
 
     public function activar(Request $request): RedirectResponse
@@ -91,15 +77,23 @@ class BuzonController extends Controller
         $activo = $request->validate(['activo' => ['required', 'boolean']])['activo'];
         $this->buzon->activar((bool) $activo);
 
-        return $this->aviso('ok', $activo ? 'Descarga automática encendida: se lee el buzón cada minuto.' : 'Descarga automática apagada.');
+        return $this->aviso('ok', $activo ? 'Descarga automática encendida: se leen las cuentas cada minuto.' : 'Descarga automática apagada.');
     }
 
-    public function desconectar(): RedirectResponse
+    public function principal(Buzon $buzon): RedirectResponse
     {
         Gate::authorize('gestionar-buzon');
-        $this->buzon->desconectar();
+        $this->buzon->hacerPrincipal($buzon);
 
-        return $this->aviso('ok', 'Buzón desconectado. Lo ya descargado se conserva.');
+        return $this->aviso('ok', "Los documentos ahora salen desde {$buzon->cuenta}.");
+    }
+
+    public function quitar(Buzon $buzon): RedirectResponse
+    {
+        Gate::authorize('gestionar-buzon');
+        $this->buzon->quitar($buzon);
+
+        return $this->aviso('ok', "Se quitó {$buzon->cuenta}. Lo ya descargado se conserva.");
     }
 
     private function aviso(string $tipo, string $mensaje): RedirectResponse

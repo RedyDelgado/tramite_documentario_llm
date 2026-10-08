@@ -47,7 +47,6 @@ class GmailMailboxDriverTest extends TestCase
                 str_ends_with($url, '/labels') && $r->method() === 'GET' => Http::response(['labels' => array_map(fn ($n) => ['id' => 'L1', 'name' => $n], $this->etiquetas)]),
                 str_ends_with($url, '/labels') => tap(Http::response(['id' => 'L1']), fn () => $this->etiquetas[] = $r['name']),
                 str_ends_with($url, '/modify') => Http::response(['id' => 'm1']),
-                str_ends_with($url, '/batchModify') => Http::response(),
                 default => Http::response('no simulado: '.$url, 500),
             };
         });
@@ -63,11 +62,21 @@ class GmailMailboxDriverTest extends TestCase
         $this->assertSame(['m1', 'm2', 'm3'], array_map(fn (MensajeCrudo $m) => $m->uid, $mensajes));
         $this->assertSame(File::get(base_path('tests/fixtures/correos/oficio-con-pdf.eml')), $mensajes[0]->contenido);
         Http::assertSent(fn (Request $r) => str_contains($r->url(), '/messages?')
-            && $r['q'] === 'after:2026/01/01 -label:tramite-procesado -in:chats'
+            && $r['q'] === 'after:2026/01/01 -in:chats'
             && $r->hasHeader('Authorization', 'Bearer acceso'));
         // Un solo token para todas las llamadas.
         Http::assertSentCount(1 + 2 + 3);
         $this->assertCount(1, Http::recorded(fn (Request $r) => str_contains($r->url(), 'oauth2.googleapis.com')));
+    }
+
+    public function test_salta_lo_ya_leido_sin_descargarlo(): void
+    {
+        $this->simularGoogle();
+
+        $mensajes = iterator_to_array((new GmailMailboxDriver(self::CONFIG))->pendientes(CarbonImmutable::parse('2026-01-01'), 50, fn (string $id) => $id === 'm2'), false);
+
+        $this->assertSame(['m1', 'm3'], array_map(fn (MensajeCrudo $m) => $m->uid, $mensajes));
+        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'messages/m2'));
     }
 
     public function test_respeta_el_limite_del_lote(): void
@@ -90,19 +99,6 @@ class GmailMailboxDriverTest extends TestCase
 
         $this->assertSame(['tramite/procesado'], $this->etiquetas);
         Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'messages/m2/modify') && $r['addLabelIds'] === ['L1']);
-        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'delete') || str_contains($r->url(), 'trash'));
-    }
-
-    public function test_volver_a_leer_quita_la_etiqueta_a_lo_procesado_desde_la_fecha(): void
-    {
-        $this->simularGoogle();
-        $this->etiquetas = ['tramite/procesado'];
-
-        $cantidad = (new GmailMailboxDriver(self::CONFIG))->reabrir(CarbonImmutable::parse('2026-10-01'));
-
-        $this->assertSame(3, $cantidad);
-        Http::assertSent(fn (Request $r) => str_contains($r->url(), '/messages?') && $r['q'] === 'after:2026/10/01 label:tramite-procesado');
-        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/batchModify') && $r['ids'] === ['m1', 'm2', 'm3'] && $r['removeLabelIds'] === ['L1']);
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'delete') || str_contains($r->url(), 'trash'));
     }
 

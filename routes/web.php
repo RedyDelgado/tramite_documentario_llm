@@ -151,9 +151,9 @@ Route::middleware('auth')->group(function () {
     Route::get('buzon/conectar', [BuzonController::class, 'conectar'])->name('buzon.conectar');
     Route::get('buzon/google/callback', [BuzonController::class, 'volver'])->middleware('throttle:10,1')->name('buzon.callback');
     Route::post('buzon/descargar', [BuzonController::class, 'descargar'])->middleware('throttle:6,1')->name('buzon.descargar');
-    Route::post('buzon/reabrir', [BuzonController::class, 'reabrir'])->middleware('throttle:6,1')->name('buzon.reabrir');
     Route::post('buzon/activar', [BuzonController::class, 'activar'])->name('buzon.activar');
-    Route::post('buzon/desconectar', [BuzonController::class, 'desconectar'])->name('buzon.desconectar');
+    Route::post('buzon/cuentas/{buzon}/principal', [BuzonController::class, 'principal'])->name('buzon.principal');
+    Route::post('buzon/cuentas/{buzon}/quitar', [BuzonController::class, 'quitar'])->name('buzon.quitar');
 
     Route::get('documentos/{documento}/descargar', [OriginalController::class, 'documento'])->name('documentos.descargar');
     Route::get('correos/{correo}/eml', [OriginalController::class, 'correo'])->name('correos.eml');

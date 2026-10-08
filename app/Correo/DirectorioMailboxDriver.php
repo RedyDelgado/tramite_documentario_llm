@@ -3,6 +3,7 @@
 namespace App\Correo;
 
 use Carbon\CarbonInterface;
+use Closure;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -14,14 +15,14 @@ class DirectorioMailboxDriver implements MailboxDriver
 {
     public function __construct(private readonly string $directorio) {}
 
-    public function pendientes(CarbonInterface $desde, int $limite): iterable
+    public function pendientes(CarbonInterface $desde, int $limite, ?Closure $leido = null): iterable
     {
         $enviados = 0;
         foreach ($this->archivos() as $archivo) {
             if ($enviados >= $limite) {
                 return;
             }
-            if (! File::exists($archivo.'.procesado')) {
+            if (! File::exists($archivo.'.procesado') && ! ($leido && $leido(basename($archivo)))) {
                 $enviados++;
                 yield new MensajeCrudo(basename($archivo), File::get($archivo));
             }
@@ -31,14 +32,6 @@ class DirectorioMailboxDriver implements MailboxDriver
     public function marcarProcesado(MensajeCrudo $mensaje): void
     {
         File::put($this->directorio.DIRECTORY_SEPARATOR.$mensaje->uid.'.procesado', now()->toIso8601String());
-    }
-
-    public function reabrir(CarbonInterface $desde): int
-    {
-        $marcas = File::glob($this->directorio.DIRECTORY_SEPARATOR.'*.eml.procesado');
-        File::delete($marcas);
-
-        return count($marcas);
     }
 
     public function resumen(CarbonInterface $desde): iterable

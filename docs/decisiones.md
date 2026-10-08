@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-12 — Buzón central con varias cuentas y un solo botón para descargar (decisión del usuario)
+
+- **Un botón, «Descargar correos», con una fecha «desde»**: un clic trae en segundo plano todo lo recibido desde esa fecha que aún no está en el sistema; los lotes se encadenan solos hasta terminar (`IngestarCorreos` se vuelve a encolar mientras quede). Se quita «Volver a descargar».
+- **Lo ya leído lo recuerda la base** (`correos_leidos`: cuenta + id del mensaje), no la etiqueta de Gmail. Antes, tras vaciar la base, los correos etiquetados no volvían a entrar. La etiqueta `tramite/procesado` se sigue poniendo, solo como referencia en Gmail. La deduplicación de fondo sigue siendo por Message-ID: un mismo correo que llega a dos cuentas entra una vez.
+- **Varias cuentas de Google** (tabla `buzones`, token cifrado): todas se leen y entran al mismo sistema; una es la **principal**, desde la que salen los documentos y su copia oculta. La cuenta que ya estaba conectada pasó a ser la principal.
+- Una cuenta con el acceso revocado no frena a las demás; su error queda a la vista en Buzón central.
+
 ## 2026-10-11 — Paginación de 10 y búsqueda en el navegador para los catálogos (decisión del usuario)
 
 - **Toda lista pagina de a 10** con el mismo componente `Pagination`, que sirve paginada en el servidor o en el navegador.

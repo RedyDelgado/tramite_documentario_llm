@@ -4,6 +4,7 @@ namespace App\Correo;
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Closure;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
@@ -12,7 +13,7 @@ use RuntimeException;
 
 /**
  * Buzón central por Gmail API con OAuth2 (refresh token de la cuenta del sistema, scope gmail.modify).
- * Lo procesado se marca con una etiqueta; nunca se mueve ni se borra un correo (7.1).
+ * Lo procesado se marca con una etiqueta, solo para verlo en Gmail; nunca se mueve ni se borra un correo (7.1).
  */
 class GmailMailboxDriver implements MailboxDriver
 {
@@ -28,31 +29,26 @@ class GmailMailboxDriver implements MailboxDriver
         }
     }
 
-    public function pendientes(CarbonInterface $desde, int $limite): iterable
+    public function pendientes(CarbonInterface $desde, int $limite, ?Closure $leido = null): iterable
     {
-        // En la búsqueda de Gmail, «tramite/procesado» se escribe «tramite-procesado».
-        $consulta = 'after:'.$desde->format('Y/m/d').' -label:'.str_replace(['/', ' '], '-', $this->config['etiqueta']).' -in:chats';
-
-        foreach ($this->ids($consulta, $limite) as $id) {
+        // Lo ya leído lo sabe la base, no la etiqueta: se lista todo desde la fecha (solo ids, barato) y se salta lo conocido.
+        $entregados = 0;
+        foreach ($this->ids('after:'.$desde->format('Y/m/d').' -in:chats', PHP_INT_MAX) as $id) {
+            if ($leido && $leido($id)) {
+                continue;
+            }
             $raw = $this->api()->get("messages/{$id}", ['format' => 'raw'])->throw()->json('raw');
             yield new MensajeCrudo($id, $this->base64url($raw));
+            // Se corta al completar el lote, sin pedir la página siguiente.
+            if (++$entregados >= $limite) {
+                return;
+            }
         }
     }
 
     public function marcarProcesado(MensajeCrudo $mensaje): void
     {
         $this->api()->post("messages/{$mensaje->uid}/modify", ['addLabelIds' => [$this->idEtiqueta()]])->throw();
-    }
-
-    public function reabrir(CarbonInterface $desde): int
-    {
-        $ids = iterator_to_array($this->ids('after:'.$desde->format('Y/m/d').' label:'.str_replace(['/', ' '], '-', $this->config['etiqueta']), PHP_INT_MAX), false);
-        // batchModify admite hasta 1000 mensajes por llamada.
-        foreach (array_chunk($ids, 1000) as $lote) {
-            $this->api()->post('messages/batchModify', ['ids' => $lote, 'removeLabelIds' => [$this->idEtiqueta()]])->throw();
-        }
-
-        return count($ids);
     }
 
     public function resumen(CarbonInterface $desde): iterable

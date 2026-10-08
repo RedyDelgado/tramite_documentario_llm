@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Correo\MailboxDriver;
+use App\Services\BuzonService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -14,7 +15,7 @@ class EstadisticasCorreo extends Command
 {
     public function handle(MailboxDriver $buzon): int
     {
-        $desde = CarbonImmutable::parse($this->option('desde') ?: config('tramite.correo.backfill_desde'))->startOfDay();
+        $desde = CarbonImmutable::parse($this->option('desde') ?: app(BuzonService::class)->desde()->toDateString())->startOfDay();
         $porDia = [];
         $porRemitente = [];
 

@@ -8,7 +8,9 @@ use App\Correo\MailboxDriver;
 use App\Correo\MensajeLeido;
 use App\Enums\EstadoExpediente;
 use App\Enums\OrigenExpediente;
+use App\Models\Buzon;
 use App\Models\Correo;
+use App\Models\CorreoLeido;
 use App\Models\Documento;
 use App\Models\Expediente;
 use App\Models\ReglaNoTramite;
@@ -35,19 +37,22 @@ class IngestaCorreoService
     ) {}
 
     /**
-     * Procesa los pendientes del buzón; un mensaje que falla queda sin marcar y se reintenta en la próxima pasada.
+     * Procesa un lote de lo aún no leído de un buzón; un mensaje que falla no queda como leído y se reintenta en la
+     * próxima pasada. `$nombre` identifica el buzón (la cuenta de Google) en lo ya leído.
      *
      * @return array{procesados: int, fallidos: int}
      */
-    public function procesarPendientes(MailboxDriver $buzon, int $limite): array
+    public function procesarPendientes(MailboxDriver $buzon, int $limite, ?string $nombre = null, ?Buzon $cuenta = null): array
     {
-        $desde = CarbonImmutable::parse(config('tramite.correo.backfill_desde'))->startOfDay();
+        $nombre ??= (string) config('tramite.correo.driver');
         $resultado = ['procesados' => 0, 'fallidos' => 0];
+        $leido = fn (string $uid) => CorreoLeido::where('buzon', $nombre)->where('uid', $uid)->exists();
 
         try {
-            foreach ($buzon->pendientes($desde, $limite) as $mensaje) {
+            foreach ($buzon->pendientes(app(BuzonService::class)->desde(), $limite, $leido) as $mensaje) {
                 try {
                     $this->procesar($mensaje->contenido, $mensaje->uid);
+                    CorreoLeido::firstOrCreate(['buzon' => $nombre, 'uid' => $mensaje->uid]);
                     $buzon->marcarProcesado($mensaje);
                     $resultado['procesados']++;
                 } catch (Throwable $e) {
@@ -57,10 +62,10 @@ class IngestaCorreoService
             }
         } catch (Throwable $e) {
             // No se pudo ni leer el buzón (token revocado, sin red): queda a la vista en Buzón central.
-            app(BuzonService::class)->registrarLectura($resultado, $e->getMessage());
+            app(BuzonService::class)->registrarLectura($resultado, $e->getMessage(), $cuenta);
             throw $e;
         }
-        app(BuzonService::class)->registrarLectura($resultado);
+        app(BuzonService::class)->registrarLectura($resultado, cuenta: $cuenta);
 
         return $resultado;
     }

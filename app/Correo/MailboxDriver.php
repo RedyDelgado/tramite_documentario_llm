@@ -3,21 +3,21 @@
 namespace App\Correo;
 
 use Carbon\CarbonInterface;
+use Closure;
 
 /** Acceso al buzón central; cambiar de Gmail API a IMAP no toca el resto del sistema (7.1). */
 interface MailboxDriver
 {
     /**
-     * Mensajes aún no marcados como procesados, desde la fecha dada, sin borrarlos ni moverlos.
+     * Mensajes desde la fecha dada que aún no se leyeron, sin borrarlos ni moverlos. `$leido` dice si un uid ya
+     * entró (la base lo recuerda): se salta sin descargarlo.
      *
+     * @param  (Closure(string): bool)|null  $leido
      * @return iterable<MensajeCrudo>
      */
-    public function pendientes(CarbonInterface $desde, int $limite): iterable;
+    public function pendientes(CarbonInterface $desde, int $limite, ?Closure $leido = null): iterable;
 
     public function marcarProcesado(MensajeCrudo $mensaje): void;
-
-    /** Quita la marca de procesado a lo recibido desde la fecha, para volver a leerlo; devuelve cuántos. */
-    public function reabrir(CarbonInterface $desde): int;
 
     /**
      * Fecha y remitente de cada mensaje desde la fecha, para dimensionar sin guardar nada (7.3.3).

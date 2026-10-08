@@ -68,7 +68,8 @@ class EnvioService
             return;
         }
         $s = $envio->saliente;
-        $central = config('tramite.salientes.buzon_central') ?: config('mail.from.address');
+        // Sale desde la cuenta principal del buzón central, si hay una conectada.
+        $central = app(BuzonService::class)->principal()?->cuenta ?? (config('tramite.salientes.buzon_central') ?: config('mail.from.address'));
         $codigo = $s->expediente?->codigo;
         $extension = strtolower(pathinfo((string) $s->nombre_firmado, PATHINFO_EXTENSION)) ?: 'pdf';
 

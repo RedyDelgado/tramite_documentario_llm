@@ -13,14 +13,13 @@ Se conecta desde el sistema: **Administración → Buzón central** (solo el sup
 
 ## 2. Conectar y descargar
 
-1. Entrar como superadmin → **Buzón central** → **Conectar con Google** → elegir la **cuenta del buzón central** → marcar el permiso de Gmail → *Continuar*. El acceso queda cifrado en la base (con `APP_KEY`), nunca en la auditoría.
-2. **Descargar ahora**: lee un lote (`CORREO_LOTE`, 50 por defecto) en la cola; cada correo nuevo aparece en Expedientes como «Por revisar» y en Gmail queda con la etiqueta `tramite/procesado`. Horizon debe estar corriendo.
-3. Revisar los primeros expedientes; si están bien, **Encender descarga automática** (cada minuto; requiere el programador, `schedule:work`).
-4. La pantalla muestra la última lectura: cuántos entraron, cuántos fallaron y, si Google rechazó el acceso, el motivo (por ejemplo `invalid_grant`: volver a conectar).
+1. Entrar como superadmin → **Buzón central** → **Agregar cuenta de Google** → elegir la cuenta → marcar el permiso de Gmail → *Continuar*. Se pueden agregar **varias cuentas** (por ejemplo, mesa de partes y la personal): todas se descargan en el mismo sistema. La primera es la **principal**, desde la que salen los documentos; se cambia con «Hacer principal». El acceso queda cifrado en la base (con `APP_KEY`), nunca en la auditoría.
+2. En **Descargar correos**, elegir la fecha **Desde** y pulsar el botón **una vez**: trae en segundo plano, de todas las cuentas, todo lo recibido desde esa fecha que aún no está en el sistema (de a `CORREO_LOTE` por vez, encadenando lotes hasta terminar). Horizon debe estar corriendo.
+3. Lo ya leído lo recuerda la base (`correos_leidos`), no la etiqueta de Gmail: pulsar otra vez no repite nada, y si se vacía la base vuelve a traerlo. En Gmail, cada correo leído queda además con la etiqueta `tramite/procesado`, solo para verlo.
+4. **Descarga automática**: encendida, lee las cuentas cada minuto (requiere el programador, `schedule:work`).
+5. Cada cuenta muestra cuántos correos se descargaron y su última lectura; si Google rechazó el acceso, el motivo (por ejemplo `invalid_grant`: volver a agregar la cuenta).
 
-**Volver a descargar** (Buzón central): lo leído queda en Gmail con la etiqueta `tramite/procesado` y no se vuelve a leer. Si se vació la base (o se restauró un respaldo anterior), elegir una fecha y pulsar «Volver a descargar»: quita esa etiqueta a lo recibido desde esa fecha y lo lee otra vez, de a `CORREO_LOTE` por minuto. No duplica: cada correo se reconoce por su Message-ID y su hash.
-
-`CORREO_BACKFILL_DESDE` fija desde qué fecha se lee; lo anterior a `CORREO_INICIO_OPERACION` entra como histórico. Para dimensionar sin guardar nada: `docker compose exec app php artisan correo:estadisticas`.
+`CORREO_BACKFILL_DESDE` es la fecha por defecto hasta que se elija otra en el panel; lo anterior a `CORREO_INICIO_OPERACION` entra como histórico. Para dimensionar sin guardar nada: `docker compose exec app php artisan correo:estadisticas`.
 
 ### Alternativa sin panel (`.env`)
 
@@ -38,4 +37,4 @@ El scope `gmail.modify` ya permite enviar (`users.messages.send`): no hace falta
 ## 4. Revocar el acceso
 
 1. <https://myaccount.google.com/permissions> con la cuenta del buzón → quitar el acceso del cliente, o eliminar el ID de cliente en Google Cloud.
-2. En **Buzón central → Desconectar** (o, si se usó el `.env`, `CORREO_ACTIVO=false` y borrar `GMAIL_REFRESH_TOKEN`).
+2. En **Buzón central → Quitar** la cuenta (o, si se usó el `.env`, `CORREO_ACTIVO=false` y borrar `GMAIL_REFRESH_TOKEN`).
