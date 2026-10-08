@@ -14,32 +14,20 @@ use Inertia\Response;
 
 class TipoTramiteController extends Controller
 {
-    private const ORDEN = ['nombre' => 'nombre', 'plazo' => 'plazo_dias'];
-
     public function __construct(private readonly CatalogoService $catalogo) {}
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', TipoTramite::class);
 
-        $filtros = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'estado' => ['nullable', 'in:activos,inactivos'],
-            'orden' => ['nullable', 'in:'.implode(',', array_keys(self::ORDEN))],
-            'dir' => ['nullable', 'in:asc,desc'],
-        ]);
-
         $tipos = TipoTramite::query()
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->whereLike('nombre', "%{$texto}%"))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activo', $estado === 'activos'))
-            ->orderBy(self::ORDEN[$filtros['orden'] ?? 'nombre'], $filtros['dir'] ?? 'asc')
+            ->orderBy('nombre')
             ->orderBy('id')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('tipos-tramite/Index', [
-            'tipos' => TipoTramiteResource::collection($tipos),
-            'filtros' => (object) $filtros,
+            'tipos' => TipoTramiteResource::collection($tipos)->resolve($request),
         ]);
     }
 

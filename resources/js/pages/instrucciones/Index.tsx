@@ -7,13 +7,15 @@ import { botonClases } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
-import type { InstruccionFrecuente, Paginado } from '@/types';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
+import type { InstruccionFrecuente } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { q?: string; estado?: string };
+
+const filtrar = (x: InstruccionFrecuente, f: Filtros) => coincide(f.q, x.texto) && (!f.estado || x.activa === (f.estado === 'activas'));
 
 const columnas: Columna<InstruccionFrecuente>[] = [
     { clave: 'orden', titulo: 'Orden', ancho: '6rem', celda: (i) => i.orden },
@@ -21,10 +23,10 @@ const columnas: Columna<InstruccionFrecuente>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (i) => <ActivoBadge activo={i.activa} femenino /> },
 ];
 
-type Props = { instrucciones: Paginado<InstruccionFrecuente>; filtros: Filtros };
+type Props = { instrucciones: InstruccionFrecuente[] };
 
-export default function InstruccionesIndex({ instrucciones, filtros: iniciales, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function InstruccionesIndex({ instrucciones, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<InstruccionFrecuente, Filtros>(instrucciones, { filtrar });
     const hayFiltros = Boolean(filtros.q || filtros.estado);
 
     return (
@@ -59,17 +61,16 @@ export default function InstruccionesIndex({ instrucciones, filtros: iniciales, 
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Instrucciones frecuentes',
                     columnas,
-                    filas: instrucciones.data,
+                    filas,
                     claveFila: (i) => i.id,
                     onElegirFila: (i) => router.visit(rutaModal(`/instrucciones/${i.id}/edit`), { preserveScroll: true }),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoInstrucciones />}
@@ -78,7 +79,7 @@ export default function InstruccionesIndex({ instrucciones, filtros: iniciales, 
                         />
                     ),
                 }}
-                paginacion={instrucciones}
+                paginacion={paginacion}
             />
         </>
     );

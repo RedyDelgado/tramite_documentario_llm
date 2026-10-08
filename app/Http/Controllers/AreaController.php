@@ -15,33 +15,17 @@ use Inertia\Response;
 class AreaController extends Controller
 {
     /** Columnas ordenables expuestas a la tabla => columna real. */
-    private const ORDEN = ['nombre' => 'nombre', 'orden' => 'orden', 'actualizada' => 'updated_at'];
-
     public function __construct(private readonly AreaService $areas) {}
 
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Area::class);
 
-        $filtros = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'estado' => ['nullable', 'in:activas,inactivas'],
-            'orden' => ['nullable', 'in:'.implode(',', array_keys(self::ORDEN))],
-            'dir' => ['nullable', 'in:asc,desc'],
-        ]);
-
-        $areas = Area::query()
-            ->with('padre:id,nombre')
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->whereLike('nombre', "%{$texto}%"))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activa', $estado === 'activas'))
-            ->orderBy(self::ORDEN[$filtros['orden'] ?? 'orden'], $filtros['dir'] ?? 'asc')
-            ->orderBy('nombre')
-            ->paginate(25)
-            ->withQueryString();
+        // Catálogo chico: va completo y se busca, ordena y pagina en el navegador (useListaLocal).
+        $areas = Area::with('padre:id,nombre')->orderBy('orden')->orderBy('nombre')->get();
 
         return Inertia::render('areas/Index', [
-            'areas' => AreaResource::collection($areas),
-            'filtros' => (object) $filtros,
+            'areas' => AreaResource::collection($areas)->resolve($request),
             'opcionesArea' => Area::opciones(),
         ]);
     }

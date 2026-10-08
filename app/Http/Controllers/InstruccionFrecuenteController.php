@@ -7,7 +7,6 @@ use App\Models\InstruccionFrecuente;
 use App\Services\CatalogoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,21 +17,16 @@ class InstruccionFrecuenteController extends Controller
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', InstruccionFrecuente::class);
 
-        $filtros = $request->validate(['q' => ['nullable', 'string', 'max:100'], 'estado' => ['nullable', 'in:activas,inactivas']]);
-
         $instrucciones = InstruccionFrecuente::query()
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->whereLike('texto', "%{$texto}%"))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activa', $estado === 'activas'))
             ->orderBy('orden')
             ->orderBy('texto')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('instrucciones/Index', [
-            'instrucciones' => JsonResource::collection($instrucciones->through(fn (InstruccionFrecuente $i) => $this->fila($i))),
-            'filtros' => (object) $filtros,
+            'instrucciones' => $instrucciones->map(fn (InstruccionFrecuente $i) => $this->fila($i))->values(),
         ]);
     }
 

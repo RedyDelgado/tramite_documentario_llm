@@ -109,13 +109,14 @@ class PanelIaTest extends TestCase
         $this->actingAs($admin)->put('/umbrales', [...$datos, 'ia_umbral_alta' => 0.5])->assertSessionHasErrors('ia_umbral_alta');
     }
 
-    public function test_las_listas_paginadas_llegan_con_meta_y_links(): void
+    public function test_los_catalogos_llegan_completos_como_lista(): void
     {
         $admin = User::factory()->create()->assignRole('superadmin');
 
+        // Sin paginar en el servidor: el navegador busca y pagina de a 10 (useListaLocal).
         foreach (['emisores' => 'emisores', 'tipos-documento' => 'tipos', 'instrucciones' => 'instrucciones', 'reglas-no-tramite' => 'reglas', 'ubicaciones' => 'ubicaciones'] as $ruta => $prop) {
             $this->actingAs($admin)->get("/{$ruta}")->assertOk()
-                ->assertInertia(fn ($page) => $page->has("{$prop}.meta.total")->has("{$prop}.links.next"));
+                ->assertInertia(fn ($page) => $page->has($prop)->missing("{$prop}.meta"));
         }
     }
 }

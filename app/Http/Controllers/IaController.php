@@ -24,7 +24,7 @@ class IaController extends Controller
     {
         Gate::authorize('viewAny', CorreccionPendiente::class);
 
-        $pendientes = CorreccionPendiente::where('estado', 'pendiente')->with(['clasificacion.expediente', 'usuario:id,name'])->orderBy('id')->paginate(25);
+        $pendientes = CorreccionPendiente::where('estado', 'pendiente')->with(['clasificacion.expediente', 'usuario:id,name'])->orderBy('id')->paginate(10);
         $areas = Area::pluck('nombre', 'id');
         $tipos = TipoTramite::pluck('nombre', 'id');
         $nombre = fn (string $campo, ?int $id) => $id === null ? null : ($campo === 'area' ? $areas[$id] ?? null : $tipos[$id] ?? null);

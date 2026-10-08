@@ -15,14 +15,17 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
-import { useFiltros } from '@/hooks/useFiltros';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFechaHora } from '@/lib/fechas';
-import type { Area, Opcion, Paginado } from '@/types';
+import type { Area, Opcion } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
-type Filtros = { q?: string; estado?: string; orden?: string; dir?: 'asc' | 'desc' };
+type Filtros = { q?: string; estado?: string };
+
+const ordenes = { nombre: (a: Area) => a.nombre, orden: (a: Area) => a.orden };
+const filtrar = (a: Area, f: Filtros) => coincide(f.q, a.nombre, a.descripcion) && (!f.estado || a.activa === (f.estado === 'activas'));
 
 const columnas: Columna<Area>[] = [
     {
@@ -42,19 +45,16 @@ const columnas: Columna<Area>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (a) => <ActivoBadge activo={a.activa} femenino /> },
 ];
 
-type Props = { areas: Paginado<Area>; filtros: Filtros; opcionesArea: Opcion<number>[] };
+type Props = { areas: Area[]; opcionesArea: Opcion<number>[] };
 
-export default function AreasIndex({ areas, filtros: iniciales, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function AreasIndex({ areas, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, orden, ordenar, filas, paginacion } = useListaLocal<Area, Filtros>(areas, { filtrar, ordenes, orden: { clave: 'orden', dir: 'asc' } });
     const [elegidaId, setElegidaId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [procesando, setProcesando] = useState(false);
     const [destino, setDestino] = useState<string | null>(null);
-    const elegida = areas.data.find((a) => a.id === elegidaId) ?? null;
+    const elegida = areas.find((a) => a.id === elegidaId) ?? null;
     const hayFiltros = Boolean(filtros.q || filtros.estado);
-
-    const ordenar = (clave: string) =>
-        cambiar({ orden: clave, dir: (filtros.orden ?? 'orden') === clave && filtros.dir !== 'desc' ? 'desc' : 'asc' });
 
     const cambiarEstado = (area: Area) =>
         router.patch(
@@ -118,20 +118,19 @@ export default function AreasIndex({ areas, filtros: iniciales, opcionesArea, fo
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Áreas',
                     columnas,
-                    filas: areas.data,
+                    filas,
                     claveFila: (a) => a.id,
-                    orden: { clave: filtros.orden ?? 'orden', dir: filtros.dir ?? 'asc' },
+                    orden,
                     onOrdenar: ordenar,
                     seleccionada: elegidaId,
                     onElegirFila: (a) => setElegidaId(a.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoAreas />}
@@ -140,7 +139,7 @@ export default function AreasIndex({ areas, filtros: iniciales, opcionesArea, fo
                         />
                     ),
                 }}
-                paginacion={areas}
+                paginacion={paginacion}
                 detalle={
                     elegida && (
                         <DetalleDialog

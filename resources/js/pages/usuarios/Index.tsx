@@ -12,14 +12,17 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
-import { useFiltros } from '@/hooks/useFiltros';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFechaHora } from '@/lib/fechas';
-import type { Opcion, Paginado, UsuarioFila } from '@/types';
+import type { Opcion, UsuarioFila } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
-type Filtros = { q?: string; rol?: string; estado?: string; orden?: string; dir?: 'asc' | 'desc' };
+type Filtros = { q?: string; rol?: string; estado?: string };
+
+const filtrar = (x: UsuarioFila, f: Filtros) => coincide(f.q, x.name, x.email) && (!f.rol || x.rol === f.rol) && (!f.estado || x.activo === (f.estado === 'activos'));
+const ordenes = { nombre: (x: UsuarioFila) => x.name, correo: (x: UsuarioFila) => x.email, actualizado: (x: UsuarioFila) => x.actualizado };
 
 const columnas: Columna<UsuarioFila>[] = [
     {
@@ -37,19 +40,17 @@ const columnas: Columna<UsuarioFila>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (u) => <ActivoBadge activo={u.activo} /> },
 ];
 
-type Props = { usuarios: Paginado<UsuarioFila>; filtros: Filtros; opcionesRol: Opcion<string>[] };
+type Props = { usuarios: UsuarioFila[]; opcionesRol: Opcion<string>[] };
 
-export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRol, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+export default function UsuariosIndex({ usuarios, opcionesRol, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
     const { auth } = usePage().props;
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+    const { filtros, cambiar, orden, ordenar, filas, paginacion } = useListaLocal<UsuarioFila, Filtros>(usuarios, { filtrar, ordenes, orden: { clave: 'nombre', dir: 'asc' } });
     const [elegidoId, setElegidoId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [procesando, setProcesando] = useState(false);
-    const elegido = usuarios.data.find((u) => u.id === elegidoId) ?? null;
+    const elegido = usuarios.find((u) => u.id === elegidoId) ?? null;
     const hayFiltros = Boolean(filtros.q || filtros.rol || filtros.estado);
 
-    const ordenar = (clave: string) =>
-        cambiar({ orden: clave, dir: (filtros.orden ?? 'nombre') === clave && filtros.dir !== 'desc' ? 'desc' : 'asc' });
 
     const cambiarEstado = (usuario: UsuarioFila) =>
         router.patch(
@@ -106,20 +107,19 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Usuarios',
                     columnas,
-                    filas: usuarios.data,
+                    filas,
                     claveFila: (u) => u.id,
-                    orden: { clave: filtros.orden ?? 'nombre', dir: filtros.dir ?? 'asc' },
+                    orden,
                     onOrdenar: ordenar,
                     seleccionada: elegidoId,
                     onElegirFila: (u) => setElegidoId(u.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoUsuarios />}
@@ -128,7 +128,7 @@ export default function UsuariosIndex({ usuarios, filtros: iniciales, opcionesRo
                         />
                     ),
                 }}
-                paginacion={usuarios}
+                paginacion={paginacion}
                 detalle={
                     elegido && (
                         <DetalleDialog

@@ -23,27 +23,17 @@ class ReglaDerivacionController extends Controller
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', ReglaDerivacion::class);
-
-        $filtros = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'area' => ['nullable', 'integer'],
-            'estado' => ['nullable', 'in:activas,inactivas'],
-        ]);
 
         $reglas = ReglaDerivacion::query()
             ->with(self::RELACIONES)
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->whereLike('nombre', "%{$texto}%"))
-            ->when($filtros['area'] ?? null, fn ($q, $id) => $q->where('area_destino_id', $id))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activa', $estado === 'activas'))
             ->orderBy('prioridad')
             ->orderBy('id')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('reglas-derivacion/Index', [
-            'reglas' => ReglaDerivacionResource::collection($reglas),
-            'filtros' => (object) $filtros,
+            'reglas' => ReglaDerivacionResource::collection($reglas)->resolve($request),
             'opcionesArea' => Area::opciones(),
         ]);
     }

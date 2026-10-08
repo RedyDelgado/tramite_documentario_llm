@@ -50,7 +50,7 @@ class UsuarioTest extends TestCase
         $this->assertSame(['director'], $director->fresh()->getRoleNames()->all());
         $this->actingAs($director->fresh())->get('/usuarios')->assertForbidden();
         $this->actingAs($this->admin)->get('/usuarios')
-            ->assertInertia(fn ($page) => $page->where('usuarios.data', fn ($u) => collect($u)->firstWhere('id', $director->id)['administra_configuracion'] === true));
+            ->assertInertia(fn ($page) => $page->where('usuarios', fn ($u) => collect($u)->firstWhere('id', $director->id)['administra_configuracion'] === true));
 
         $this->actingAs($this->admin)->put("/usuarios/{$director->id}", $this->datos(['email' => 'directora@uni.edu.pe', 'rol' => 'director', 'administra_configuracion' => false]));
         $this->actingAs($director->fresh())->get('/areas')->assertForbidden();
@@ -111,19 +111,17 @@ class UsuarioTest extends TestCase
         $this->assertDatabaseHas('auditoria', ['accion' => 'usuario.desactivado', 'entidad_id' => (string) $ana->id]);
     }
 
-    public function test_lista_filtra_por_rol_estado_y_texto(): void
+    public function test_la_lista_va_completa_con_rol_y_estado(): void
     {
         User::factory()->create(['name' => 'Ana Quispe'])->assignRole('coordinador');
         User::factory()->create(['name' => 'Luis Mamani', 'activo' => false])->assignRole('coordinador');
         User::factory()->create(['name' => 'Rosa Huamán'])->assignRole('director');
 
-        $this->actingAs($this->admin)->get('/usuarios?rol=coordinador&estado=activos')
+        // Van todos (activos e inactivos) con su rol: el filtro lo hace el navegador (useListaLocal).
+        $this->actingAs($this->admin)->get('/usuarios')
             ->assertInertia(fn (AssertableInertia $p) => $p->component('usuarios/Index')
-                ->has('usuarios.data', 1)
-                ->where('usuarios.data.0.name', 'Ana Quispe')
-                ->where('usuarios.data.0.rol_etiqueta', 'Coordinador'));
-
-        $this->actingAs($this->admin)->get('/usuarios?q=mamani')
-            ->assertInertia(fn (AssertableInertia $p) => $p->has('usuarios.data', 1)->where('usuarios.data.0.name', 'Luis Mamani'));
+                ->has('usuarios', User::count())
+                ->where('usuarios', fn ($u) => collect($u)->firstWhere('name', 'Ana Quispe')['rol'] === 'coordinador'
+                    && collect($u)->firstWhere('name', 'Luis Mamani')['activo'] === false));
     }
 }

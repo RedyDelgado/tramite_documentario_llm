@@ -7,7 +7,6 @@ use App\Models\UbicacionFisica;
 use App\Services\CatalogoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,20 +18,15 @@ class UbicacionFisicaController extends Controller
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', UbicacionFisica::class);
 
-        $filtros = $request->validate(['q' => ['nullable', 'string', 'max:100'], 'estado' => ['nullable', 'in:activas,inactivas']]);
-
         $ubicaciones = UbicacionFisica::query()
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->whereLike('nombre', "%{$texto}%"))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activa', $estado === 'activas'))
             ->orderBy('nombre')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('ubicaciones/Index', [
-            'ubicaciones' => JsonResource::collection($ubicaciones->through(fn (UbicacionFisica $i) => $this->fila($i))),
-            'filtros' => (object) $filtros,
+            'ubicaciones' => $ubicaciones->map(fn (UbicacionFisica $i) => $this->fila($i))->values(),
         ]);
     }
 

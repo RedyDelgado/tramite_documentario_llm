@@ -19,25 +19,16 @@ class FeriadoController extends Controller
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', Feriado::class);
-
-        $filtros = $request->validate([
-            'anio' => ['nullable', 'integer', 'min:2000', 'max:2100'],
-            'area' => ['nullable', 'integer'],
-        ]);
-        $anio = (int) ($filtros['anio'] ?? now()->year);
 
         $feriados = Feriado::query()
             ->with('area:id,nombre')
-            ->whereYear('fecha', $anio)
-            ->when($filtros['area'] ?? null, fn ($q, $id) => $q->where('area_id', $id))
             ->orderBy('fecha')
-            ->paginate(50)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('feriados/Index', [
-            'feriados' => FeriadoResource::collection($feriados),
-            'filtros' => (object) [...$filtros, 'anio' => (string) $anio],
+            'feriados' => FeriadoResource::collection($feriados)->resolve($request),
             'opcionesArea' => Area::opciones(),
         ]);
     }

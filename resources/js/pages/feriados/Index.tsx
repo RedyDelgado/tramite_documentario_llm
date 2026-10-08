@@ -10,14 +10,16 @@ import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
+import { useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
-import type { Feriado, Opcion, Paginado } from '@/types';
+import type { Feriado, Opcion } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { anio?: string; area?: string };
+
+const filtrar = (x: Feriado, f: Filtros) => (!f.anio || x.fecha.startsWith(f.anio)) && (!f.area || String(x.area_id) === f.area);
 
 const alcance = (f: Feriado) => f.area ?? 'Toda la institución';
 
@@ -27,14 +29,14 @@ const columnas: Columna<Feriado>[] = [
     { clave: 'alcance', titulo: 'Alcance', celda: alcance },
 ];
 
-type Props = { feriados: Paginado<Feriado>; filtros: Filtros; opcionesArea: Opcion<number>[] };
+type Props = { feriados: Feriado[]; opcionesArea: Opcion<number>[] };
 
-export default function FeriadosIndex({ feriados, filtros: iniciales, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function FeriadosIndex({ feriados, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<Feriado, Filtros>(feriados, { filtrar, filtros: { anio: String(new Date().getFullYear()) } });
     const [elegidoId, setElegidoId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [procesando, setProcesando] = useState(false);
-    const elegido = feriados.data.find((f) => f.id === elegidoId) ?? null;
+    const elegido = feriados.find((f) => f.id === elegidoId) ?? null;
 
     const quitar = (feriado: Feriado) =>
         router.delete(`/feriados/${feriado.id}`, {
@@ -68,7 +70,7 @@ export default function FeriadosIndex({ feriados, filtros: iniciales, opcionesAr
                             min={2000}
                             max={2100}
                             value={filtros.anio ?? ''}
-                            onChange={(e) => cambiar({ anio: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ anio: e.target.value })}
                         />
                         <Select
                             aria-label="Área"
@@ -83,11 +85,10 @@ export default function FeriadosIndex({ feriados, filtros: iniciales, opcionesAr
                 tabla={{
                     titulo: 'Feriados',
                     columnas,
-                    filas: feriados.data,
+                    filas,
                     claveFila: (f) => f.id,
                     seleccionada: elegidoId,
                     onElegirFila: (f) => setElegidoId(f.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoFeriado />}
@@ -96,7 +97,7 @@ export default function FeriadosIndex({ feriados, filtros: iniciales, opcionesAr
                         />
                     ),
                 }}
-                paginacion={feriados}
+                paginacion={paginacion}
                 detalle={
                     elegido && (
                         <DetalleDialog

@@ -52,20 +52,16 @@ class AreaTest extends TestCase
         $this->actingAs($administrativo)->get('/areas')->assertOk();
     }
 
-    public function test_lista_filtra_por_nombre_y_estado(): void
+    public function test_la_lista_va_completa_para_buscar_y_paginar_en_el_navegador(): void
     {
-        Area::factory()->create(['nombre' => 'Mesa de partes']);
-        Area::factory()->create(['nombre' => 'Dirección']);
+        Area::factory()->count(12)->create();
         Area::factory()->create(['nombre' => 'Archivo', 'activa' => false]);
 
+        // Activas e inactivas, sin paginar: el filtro y las páginas de 10 los hace useListaLocal.
         $this->actingAs($this->admin)->get('/areas?q=mesa')->assertInertia(fn (AssertableInertia $p) => $p
             ->component('areas/Index')
-            ->has('areas.data', 1)
-            ->where('areas.data.0.nombre', 'Mesa de partes'));
-
-        $this->actingAs($this->admin)->get('/areas?estado=inactivas')->assertInertia(fn (AssertableInertia $p) => $p
-            ->has('areas.data', 1)
-            ->where('areas.data.0.nombre', 'Archivo'));
+            ->has('areas', 13)
+            ->missing('filtros'));
     }
 
     public function test_crea_un_area_con_sus_palabras_clave(): void

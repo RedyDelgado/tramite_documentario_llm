@@ -7,13 +7,15 @@ import { botonClases } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
-import type { Opcion, Paginado, ReglaNoTramite } from '@/types';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
+import type { Opcion, ReglaNoTramite } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { q?: string; campo?: string; estado?: string };
+
+const filtrar = (x: ReglaNoTramite, f: Filtros) => coincide(f.q, x.nombre, x.valor) && (!f.campo || x.campo === f.campo) && (!f.estado || x.activa === (f.estado === 'activas'));
 
 const columnas: Columna<ReglaNoTramite>[] = [
     { clave: 'nombre', titulo: 'Regla', celda: (r) => <span className="font-semibold">{r.nombre}</span> },
@@ -29,10 +31,10 @@ const columnas: Columna<ReglaNoTramite>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (r) => <ActivoBadge activo={r.activa} femenino /> },
 ];
 
-type Props = { reglas: Paginado<ReglaNoTramite>; filtros: Filtros; opcionesCampo: Opcion<string>[] };
+type Props = { reglas: ReglaNoTramite[]; opcionesCampo: Opcion<string>[] };
 
-export default function ReglasNoTramiteIndex({ reglas, filtros: iniciales, opcionesCampo, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function ReglasNoTramiteIndex({ reglas, opcionesCampo, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<ReglaNoTramite, Filtros>(reglas, { filtrar });
     const hayFiltros = Boolean(filtros.q || filtros.campo || filtros.estado);
 
     return (
@@ -75,17 +77,16 @@ export default function ReglasNoTramiteIndex({ reglas, filtros: iniciales, opcio
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Reglas de correo no trámite',
                     columnas,
-                    filas: reglas.data,
+                    filas,
                     claveFila: (r) => r.id,
                     onElegirFila: (r) => router.visit(rutaModal(`/reglas-no-tramite/${r.id}/edit`), { preserveScroll: true }),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoCorreoBloqueado />}
@@ -94,7 +95,7 @@ export default function ReglasNoTramiteIndex({ reglas, filtros: iniciales, opcio
                         />
                     ),
                 }}
-                paginacion={reglas}
+                paginacion={paginacion}
             />
         </>
     );

@@ -10,44 +10,27 @@ use Database\Seeders\RolesSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class UsuarioController extends Controller
 {
     /** Columnas ordenables expuestas a la tabla => columna real. */
-    private const ORDEN = ['nombre' => 'name', 'correo' => 'email', 'actualizado' => 'updated_at'];
-
     public function __construct(private readonly UsuarioService $usuarios) {}
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', User::class);
-
-        $filtros = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'rol' => ['nullable', Rule::in(array_keys(RolesSeeder::ROLES))],
-            'estado' => ['nullable', 'in:activos,inactivos'],
-            'orden' => ['nullable', 'in:'.implode(',', array_keys(self::ORDEN))],
-            'dir' => ['nullable', 'in:asc,desc'],
-        ]);
 
         $usuarios = User::query()
             ->with(['roles:id,name', 'roles.permissions:id,name', 'permissions:id,name'])
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->where(fn ($q) => $q
-                ->whereLike('name', "%{$texto}%")
-                ->orWhereLike('email', "%{$texto}%")))
-            ->when($filtros['rol'] ?? null, fn ($q, $rol) => $q->role($rol))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activo', $estado === 'activos'))
-            ->orderBy(self::ORDEN[$filtros['orden'] ?? 'nombre'], $filtros['dir'] ?? 'asc')
+            ->orderBy('name')
             ->orderBy('id')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('usuarios/Index', [
-            'usuarios' => UsuarioResource::collection($usuarios),
-            'filtros' => (object) $filtros,
+            'usuarios' => UsuarioResource::collection($usuarios)->resolve($request),
             'opcionesRol' => $this->opcionesRol(),
         ]);
     }

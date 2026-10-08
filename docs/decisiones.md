@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-11 — Paginación de 10 y búsqueda en el navegador para los catálogos (decisión del usuario)
+
+- **Toda lista pagina de a 10** con el mismo componente `Pagination`, que sirve paginada en el servidor o en el navegador.
+- **Catálogos** (áreas, responsables, usuarios, tipos, plazos, feriados, reglas, emisores, instrucciones, ubicaciones): el servidor los manda completos una vez y buscar, filtrar, ordenar y paginar ocurre en el navegador (`useListaLocal`), al instante y sin distinguir tildes ni mayúsculas.
+- **Objeción aceptada para lo que crece sin límite** (expedientes, documentos emitidos, notificaciones, correcciones de la IA): siguen buscándose y paginándose en el servidor. Buscar solo en lo ya cargado encontraría únicamente la página visible; además la búsqueda de expedientes es de texto completo en los PDF (Meilisearch) y filtrada por permisos, cosas que no pueden hacerse con datos que el navegador no tiene, y mandar miles de expedientes en cada visita sería más lento, no más rápido.
+- La demora que se nota en local (0,3 a 0,9 s por petición) es de Docker sobre Windows; en el VPS con Linux cada petición ronda las decenas de milisegundos.
+
 ## 2026-10-11 — Fase 6: respuesta sugerida por un modelo local
 
 - **Sugerir respuesta** en el expediente (solo quien lo atiende) pide a Ollama, en el mismo servidor, el cuerpo de un oficio de respuesta con el asunto, el remitente, la instrucción de la derivación y el texto del documento. Se muestra para revisar y copiar al Word; no se guarda ni se envía (los documentos se redactan en Word).

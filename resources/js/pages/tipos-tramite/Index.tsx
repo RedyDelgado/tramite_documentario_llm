@@ -12,14 +12,17 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
-import { useFiltros } from '@/hooks/useFiltros';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFechaHora, formatearPlazo } from '@/lib/fechas';
-import type { Paginado, TipoTramite } from '@/types';
+import type { TipoTramite } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
-type Filtros = { q?: string; estado?: string; orden?: string; dir?: 'asc' | 'desc' };
+type Filtros = { q?: string; estado?: string };
+
+const filtrar = (x: TipoTramite, f: Filtros) => coincide(f.q, x.nombre, x.descripcion) && (!f.estado || x.activo === (f.estado === 'activos'));
+const ordenes = { nombre: (x: TipoTramite) => x.nombre, plazo: (x: TipoTramite) => x.plazo_dias ?? -1 };
 
 const columnas: Columna<TipoTramite>[] = [
     {
@@ -38,16 +41,14 @@ const columnas: Columna<TipoTramite>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (t) => <ActivoBadge activo={t.activo} /> },
 ];
 
-export default function TiposTramiteIndex({ tipos, filtros: iniciales, formulario }: { tipos: Paginado<TipoTramite>; filtros: Filtros } & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function TiposTramiteIndex({ tipos, formulario }: { tipos: TipoTramite[] } & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, orden, ordenar, filas, paginacion } = useListaLocal<TipoTramite, Filtros>(tipos, { filtrar, ordenes, orden: { clave: 'nombre', dir: 'asc' } });
     const [elegidoId, setElegidoId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [procesando, setProcesando] = useState(false);
-    const elegido = tipos.data.find((t) => t.id === elegidoId) ?? null;
+    const elegido = tipos.find((t) => t.id === elegidoId) ?? null;
     const hayFiltros = Boolean(filtros.q || filtros.estado);
 
-    const ordenar = (clave: string) =>
-        cambiar({ orden: clave, dir: (filtros.orden ?? 'nombre') === clave && filtros.dir !== 'desc' ? 'desc' : 'asc' });
 
     const cambiarEstado = (tipo: TipoTramite) =>
         router.patch(
@@ -96,20 +97,19 @@ export default function TiposTramiteIndex({ tipos, filtros: iniciales, formulari
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Tipos de trámite',
                     columnas,
-                    filas: tipos.data,
+                    filas,
                     claveFila: (t) => t.id,
-                    orden: { clave: filtros.orden ?? 'nombre', dir: filtros.dir ?? 'asc' },
+                    orden,
                     onOrdenar: ordenar,
                     seleccionada: elegidoId,
                     onElegirFila: (t) => setElegidoId(t.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoDocumento />}
@@ -118,7 +118,7 @@ export default function TiposTramiteIndex({ tipos, filtros: iniciales, formulari
                         />
                     ),
                 }}
-                paginacion={tipos}
+                paginacion={paginacion}
                 detalle={
                     elegido && (
                         <DetalleDialog

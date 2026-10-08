@@ -7,13 +7,15 @@ import { botonClases } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
-import type { Paginado, UbicacionFisica } from '@/types';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
+import type { UbicacionFisica } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { q?: string; estado?: string };
+
+const filtrar = (x: UbicacionFisica, f: Filtros) => coincide(f.q, x.nombre, x.descripcion) && (!f.estado || x.activa === (f.estado === 'activas'));
 
 const columnas: Columna<UbicacionFisica>[] = [
     {
@@ -29,10 +31,10 @@ const columnas: Columna<UbicacionFisica>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (u) => <ActivoBadge activo={u.activa} femenino /> },
 ];
 
-type Props = { ubicaciones: Paginado<UbicacionFisica>; filtros: Filtros };
+type Props = { ubicaciones: UbicacionFisica[] };
 
-export default function UbicacionesIndex({ ubicaciones, filtros: iniciales, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function UbicacionesIndex({ ubicaciones, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<UbicacionFisica, Filtros>(ubicaciones, { filtrar });
     const hayFiltros = Boolean(filtros.q || filtros.estado);
 
     return (
@@ -67,17 +69,16 @@ export default function UbicacionesIndex({ ubicaciones, filtros: iniciales, form
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Ubicaciones físicas',
                     columnas,
-                    filas: ubicaciones.data,
+                    filas,
                     claveFila: (u) => u.id,
                     onElegirFila: (u) => router.visit(rutaModal(`/ubicaciones/${u.id}/edit`), { preserveScroll: true }),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoArchivo />}
@@ -86,7 +87,7 @@ export default function UbicacionesIndex({ ubicaciones, filtros: iniciales, form
                         />
                     ),
                 }}
-                paginacion={ubicaciones}
+                paginacion={paginacion}
             />
         </>
     );

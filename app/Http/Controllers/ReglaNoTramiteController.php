@@ -7,7 +7,6 @@ use App\Models\ReglaNoTramite;
 use App\Services\CatalogoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,25 +18,15 @@ class ReglaNoTramiteController extends Controller
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', ReglaNoTramite::class);
 
-        $filtros = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'campo' => ['nullable', 'in:'.implode(',', array_keys(ReglaNoTramite::CAMPOS))],
-            'estado' => ['nullable', 'in:activas,inactivas'],
-        ]);
-
         $reglas = ReglaNoTramite::query()
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->where(fn ($q) => $q->whereLike('nombre', "%{$texto}%")->orWhereLike('valor', "%{$texto}%")))
-            ->when($filtros['campo'] ?? null, fn ($q, $campo) => $q->where('campo', $campo))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activa', $estado === 'activas'))
             ->orderBy('id')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('reglas-no-tramite/Index', [
-            'reglas' => JsonResource::collection($reglas->through(fn (ReglaNoTramite $r) => $this->fila($r))),
-            'filtros' => (object) $filtros,
+            'reglas' => $reglas->map(fn (ReglaNoTramite $r) => $this->fila($r))->values(),
             'opcionesCampo' => $this->opcionesCampo(),
         ]);
     }

@@ -7,14 +7,16 @@ import { botonClases } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFechaHora } from '@/lib/fechas';
-import type { Paginado, TipoDocumento } from '@/types';
+import type { TipoDocumento } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { q?: string; estado?: string };
+
+const filtrar = (x: TipoDocumento, f: Filtros) => coincide(f.q, x.nombre) && (!f.estado || x.activo === (f.estado === 'activos'));
 
 const columnas: Columna<TipoDocumento>[] = [
     { clave: 'nombre', titulo: 'Nombre', celda: (t) => <span className="font-semibold">{t.nombre}</span> },
@@ -22,8 +24,8 @@ const columnas: Columna<TipoDocumento>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (t) => <ActivoBadge activo={t.activo} /> },
 ];
 
-export default function TiposDocumentoIndex({ tipos, filtros: iniciales, formulario }: { tipos: Paginado<TipoDocumento>; filtros: Filtros } & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function TiposDocumentoIndex({ tipos, formulario }: { tipos: TipoDocumento[] } & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<TipoDocumento, Filtros>(tipos, { filtrar });
     const hayFiltros = Boolean(filtros.q || filtros.estado);
 
     return (
@@ -58,17 +60,16 @@ export default function TiposDocumentoIndex({ tipos, filtros: iniciales, formula
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Tipos de documento',
                     columnas,
-                    filas: tipos.data,
+                    filas,
                     claveFila: (t) => t.id,
                     onElegirFila: (t) => router.visit(rutaModal(`/tipos-documento/${t.id}/edit`), { preserveScroll: true }),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoDocumentos />}
@@ -77,7 +78,7 @@ export default function TiposDocumentoIndex({ tipos, filtros: iniciales, formula
                         />
                     ),
                 }}
-                paginacion={tipos}
+                paginacion={paginacion}
             />
         </>
     );

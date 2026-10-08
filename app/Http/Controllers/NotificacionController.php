@@ -22,7 +22,7 @@ class NotificacionController extends Controller
         $notificaciones = NotificacionEnviada::query()
             ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
             ->latest('id')
-            ->paginate(50)
+            ->paginate(10)
             ->withQueryString()
             ->through(fn (NotificacionEnviada $n) => [
                 'id' => $n->id,

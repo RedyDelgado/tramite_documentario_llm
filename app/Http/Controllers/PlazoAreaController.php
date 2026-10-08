@@ -20,26 +20,18 @@ class PlazoAreaController extends Controller
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', PlazoArea::class);
-
-        $filtros = $request->validate([
-            'tipo' => ['nullable', 'integer'],
-            'area' => ['nullable', 'integer'],
-        ]);
 
         $plazos = PlazoArea::query()
             ->with(['tipoTramite:id,nombre,plazo_dias,tipo_dias', 'area:id,nombre'])
-            ->when($filtros['tipo'] ?? null, fn ($q, $id) => $q->where('tipo_tramite_id', $id))
-            ->when($filtros['area'] ?? null, fn ($q, $id) => $q->where('area_id', $id))
             ->join('tipos_tramite', 'tipos_tramite.id', '=', 'plazos_area.tipo_tramite_id')
             ->orderBy('tipos_tramite.nombre')
             ->select('plazos_area.*')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('plazos/Index', [
-            'plazos' => PlazoAreaResource::collection($plazos),
-            'filtros' => (object) $filtros,
+            'plazos' => PlazoAreaResource::collection($plazos)->resolve($request),
             'opcionesTipo' => TipoTramite::opciones(),
             'opcionesArea' => Area::opciones(),
         ]);

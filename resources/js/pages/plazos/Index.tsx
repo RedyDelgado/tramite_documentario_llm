@@ -9,14 +9,16 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
+import { useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFechaHora, formatearPlazo } from '@/lib/fechas';
-import type { Opcion, Paginado, PlazoArea } from '@/types';
+import type { Opcion, PlazoArea } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { tipo?: string; area?: string };
+
+const filtrar = (x: PlazoArea, f: Filtros) => (!f.tipo || String(x.tipo_tramite_id) === f.tipo) && (!f.area || String(x.area_id) === f.area);
 
 const columnas: Columna<PlazoArea>[] = [
     { clave: 'tipo', titulo: 'Tipo de trámite', celda: (p) => <span className="font-semibold">{p.tipo}</span> },
@@ -25,14 +27,14 @@ const columnas: Columna<PlazoArea>[] = [
     { clave: 'base', titulo: 'Plazo del tipo', celda: (p) => <span className="text-fg-muted">{formatearPlazo(p.plazo_del_tipo, p.tipo_dias)}</span> },
 ];
 
-type Props = { plazos: Paginado<PlazoArea>; filtros: Filtros; opcionesTipo: Opcion<number>[]; opcionesArea: Opcion<number>[] };
+type Props = { plazos: PlazoArea[]; opcionesTipo: Opcion<number>[]; opcionesArea: Opcion<number>[] };
 
-export default function PlazosIndex({ plazos, filtros: iniciales, opcionesTipo, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function PlazosIndex({ plazos, opcionesTipo, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<PlazoArea, Filtros>(plazos, { filtrar });
     const [elegidoId, setElegidoId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [procesando, setProcesando] = useState(false);
-    const elegido = plazos.data.find((p) => p.id === elegidoId) ?? null;
+    const elegido = plazos.find((p) => p.id === elegidoId) ?? null;
     const hayFiltros = Boolean(filtros.tipo || filtros.area);
 
     const quitar = (plazo: PlazoArea) =>
@@ -81,11 +83,10 @@ export default function PlazosIndex({ plazos, filtros: iniciales, opcionesTipo, 
                 tabla={{
                     titulo: 'Plazos por área',
                     columnas,
-                    filas: plazos.data,
+                    filas,
                     claveFila: (p) => p.id,
                     seleccionada: elegidoId,
                     onElegirFila: (p) => setElegidoId(p.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoPlazo />}
@@ -94,7 +95,7 @@ export default function PlazosIndex({ plazos, filtros: iniciales, opcionesTipo, 
                         />
                     ),
                 }}
-                paginacion={plazos}
+                paginacion={paginacion}
                 detalle={
                     elegido && (
                         <DetalleDialog

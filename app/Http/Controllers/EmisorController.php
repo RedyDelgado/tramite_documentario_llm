@@ -9,7 +9,6 @@ use App\Services\EmisorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,27 +19,18 @@ class EmisorController extends Controller
 
     public function index(Request $request): Response
     {
+        // ponytail: catálogo completo al navegador; si los emisores pasan de unos miles, buscar en el servidor.
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', Emisor::class);
-
-        $filtros = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'tipo' => ['nullable', 'in:'.implode(',', array_keys(Emisor::TIPOS))],
-            'estado' => ['nullable', 'in:activos,inactivos'],
-        ]);
 
         $emisores = Emisor::query()
             ->whereNull('fusionado_en_id')
             ->withCount('expedientes')
-            ->when($filtros['q'] ?? null, fn ($q, $texto) => $q->whereLike('nombre_normalizado', '%'.Emisor::normalizar($texto).'%'))
-            ->when($filtros['tipo'] ?? null, fn ($q, $tipo) => $q->where('tipo', $tipo))
-            ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('activo', $estado === 'activos'))
             ->orderBy('nombre')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('emisores/Index', [
-            'emisores' => JsonResource::collection($emisores->through(fn (Emisor $e) => $this->fila($e))),
-            'filtros' => (object) $filtros,
+            'emisores' => $emisores->map(fn (Emisor $e) => $this->fila($e))->values(),
             'duplicados' => Emisor::posiblesDuplicados(),
             'opcionesEmisor' => Emisor::opciones(),
         ]);

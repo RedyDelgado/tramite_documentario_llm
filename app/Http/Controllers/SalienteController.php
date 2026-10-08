@@ -41,7 +41,7 @@ class SalienteController extends Controller
                 ->orWhereIn('expediente_id', Expediente::visiblesPara($user)->select('id'))))
             ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
             ->latest('id')
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('salientes/Index', [

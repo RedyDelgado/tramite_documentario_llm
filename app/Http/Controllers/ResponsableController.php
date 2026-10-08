@@ -20,28 +20,20 @@ class ResponsableController extends Controller
 
     public function index(Request $request): Response
     {
+        // Catálogo chico: va completo y se busca, filtra y pagina en el navegador (useListaLocal).
         Gate::authorize('viewAny', AreaResponsable::class);
-
-        $filtros = $request->validate([
-            'area' => ['nullable', 'integer'],
-            'estado' => ['nullable', 'in:vigentes,todos'],
-        ]);
 
         $responsables = AreaResponsable::query()
             ->with(['area:id,nombre', 'user:id,name,email'])
-            ->when($filtros['area'] ?? null, fn ($q, $id) => $q->where('area_id', $id))
-            ->when(($filtros['estado'] ?? 'vigentes') === 'vigentes', fn ($q) => $q->vigentes())
             ->join('areas', 'areas.id', '=', 'area_responsables.area_id')
             ->orderBy('areas.nombre')
             ->orderBy('area_responsables.tipo', 'desc')
             ->orderByDesc('area_responsables.vigente_desde')
             ->select('area_responsables.*')
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('responsables/Index', [
-            'responsables' => ResponsableResource::collection($responsables),
-            'filtros' => (object) $filtros,
+            'responsables' => ResponsableResource::collection($responsables)->resolve($request),
             'opcionesArea' => Area::opciones(),
         ]);
     }

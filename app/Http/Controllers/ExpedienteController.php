@@ -99,7 +99,7 @@ class ExpedienteController extends Controller
             if ($semaforo = $filtros['semaforo'] ?? null) {
                 $busqueda->where('semaforo', $semaforo);
             }
-            $pagina = $busqueda->paginate(25);
+            $pagina = $busqueda->paginate(10);
         } else {
             $pagina = Expediente::visiblesPara($user)
                 ->with('area:id,nombre')
@@ -109,7 +109,7 @@ class ExpedienteController extends Controller
                 ->when($filtros['semaforo'] ?? null, fn ($q, $semaforo) => $q->where('semaforo', $semaforo))
                 ->orderBy('fecha_ingreso', $filtros['dir'] ?? 'desc')
                 ->orderByDesc('id')
-                ->paginate(25);
+                ->paginate(10);
         }
 
         return Inertia::render('expedientes/Index', [

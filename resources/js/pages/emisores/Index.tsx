@@ -13,14 +13,16 @@ import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFechaHora } from '@/lib/fechas';
-import type { Emisor, Opcion, Paginado, ParDuplicado } from '@/types';
+import type { Emisor, Opcion, ParDuplicado } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { q?: string; tipo?: string; estado?: string };
+
+const filtrar = (x: Emisor, f: Filtros) => coincide(f.q, x.nombre) && (!f.tipo || x.tipo === f.tipo) && (!f.estado || x.activo === (f.estado === 'activos'));
 
 const TIPOS = { interno: 'Interno', externo: 'Externo' };
 
@@ -31,15 +33,15 @@ const columnas: Columna<Emisor>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (e) => <ActivoBadge activo={e.activo} /> },
 ];
 
-type Props = { emisores: Paginado<Emisor>; filtros: Filtros; duplicados: ParDuplicado[]; opcionesEmisor: Opcion<number>[] };
+type Props = { emisores: Emisor[]; duplicados: ParDuplicado[]; opcionesEmisor: Opcion<number>[] };
 
-export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados, opcionesEmisor, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function EmisoresIndex({ emisores, duplicados, opcionesEmisor, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<Emisor, Filtros>(emisores, { filtrar });
     const [elegidoId, setElegidoId] = useState<number | null>(null);
     // Emisor que se fusiona y destino propuesto.
     const [fusion, setFusion] = useState<{ id: number; nombre: string; destino: string } | null>(null);
     const [procesando, setProcesando] = useState(false);
-    const elegido = emisores.data.find((e) => e.id === elegidoId) ?? null;
+    const elegido = emisores.find((e) => e.id === elegidoId) ?? null;
     const hayFiltros = Boolean(filtros.q || filtros.tipo || filtros.estado);
 
     const fusionar = () =>
@@ -119,18 +121,17 @@ export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Emisores',
                     columnas,
-                    filas: emisores.data,
+                    filas,
                     claveFila: (e) => e.id,
                     seleccionada: elegidoId,
                     onElegirFila: (e) => setElegidoId(e.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoInstitucion />}
@@ -139,7 +140,7 @@ export default function EmisoresIndex({ emisores, filtros: iniciales, duplicados
                         />
                     ),
                 }}
-                paginacion={emisores}
+                paginacion={paginacion}
                 detalle={
                     <>
                         {elegido && (

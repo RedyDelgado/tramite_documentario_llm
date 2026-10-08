@@ -13,14 +13,16 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { BotonConfirmado } from '@/components/ui/BotonConfirmado';
-import { useFiltros } from '@/hooks/useFiltros';
+import { coincide, useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFechaHora } from '@/lib/fechas';
-import type { Opcion, Paginado, ReglaDerivacion } from '@/types';
+import type { Opcion, ReglaDerivacion } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { q?: string; area?: string; estado?: string };
+
+const filtrar = (x: ReglaDerivacion, f: Filtros) => coincide(f.q, x.nombre) && (!f.area || String(x.area_destino_id) === f.area) && (!f.estado || x.activa === (f.estado === 'activas'));
 
 const condiciones = (r: ReglaDerivacion) =>
     [r.tipo && `Tipo: ${r.tipo}`, r.palabras_clave.length > 0 && 'Palabras clave', r.remitentes.length > 0 && 'Remitentes'].filter(Boolean).join(' · ');
@@ -50,14 +52,14 @@ const columnas: Columna<ReglaDerivacion>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (r) => <ActivoBadge activo={r.activa} femenino /> },
 ];
 
-type Props = { reglas: Paginado<ReglaDerivacion>; filtros: Filtros; opcionesArea: Opcion<number>[] };
+type Props = { reglas: ReglaDerivacion[]; opcionesArea: Opcion<number>[] };
 
-export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function ReglasDerivacionIndex({ reglas, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<ReglaDerivacion, Filtros>(reglas, { filtrar });
     const [elegidaId, setElegidaId] = useState<number | null>(null);
     const [confirmando, setConfirmando] = useState(false);
     const [procesando, setProcesando] = useState(false);
-    const elegida = reglas.data.find((r) => r.id === elegidaId) ?? null;
+    const elegida = reglas.find((r) => r.id === elegidaId) ?? null;
     const hayFiltros = Boolean(filtros.q || filtros.area || filtros.estado);
 
     const cambiarEstado = (regla: ReglaDerivacion) =>
@@ -115,18 +117,17 @@ export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opci
                             iconoInicio={<IcoBuscar />}
                             className="w-64"
                             value={filtros.q ?? ''}
-                            onChange={(e) => cambiar({ q: e.target.value }, { diferido: true })}
+                            onChange={(e) => cambiar({ q: e.target.value })}
                         />
                     </>
                 }
                 tabla={{
                     titulo: 'Reglas de derivación',
                     columnas,
-                    filas: reglas.data,
+                    filas,
                     claveFila: (r) => r.id,
                     seleccionada: elegidaId,
                     onElegirFila: (r) => setElegidaId(r.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoRuta />}
@@ -135,7 +136,7 @@ export default function ReglasDerivacionIndex({ reglas, filtros: iniciales, opci
                         />
                     ),
                 }}
-                paginacion={reglas}
+                paginacion={paginacion}
                 detalle={
                     elegida && (
                         <DetalleDialog

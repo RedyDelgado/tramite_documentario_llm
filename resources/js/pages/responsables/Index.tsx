@@ -9,14 +9,16 @@ import { botonClases } from '@/components/ui/Button';
 import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
-import { useFiltros } from '@/hooks/useFiltros';
+import { useListaLocal } from '@/hooks/useListaLocal';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
-import type { Opcion, Paginado, Responsable } from '@/types';
+import type { Opcion, Responsable } from '@/types';
 import type { ComponentProps } from 'react';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import Formulario from './Form';
 
 type Filtros = { area?: string; estado?: string };
+
+const filtrar = (x: Responsable, f: Filtros) => (f.estado === 'todos' || x.vigente) && (!f.area || String(x.area_id) === f.area);
 
 const TIPOS = { titular: 'Titular', suplente: 'Suplente' };
 
@@ -39,12 +41,12 @@ const columnas: Columna<Responsable>[] = [
     { clave: 'estado', titulo: 'Estado', ancho: '8rem', celda: (r) => <ActivoBadge activo={r.vigente} /> },
 ];
 
-type Props = { responsables: Paginado<Responsable>; filtros: Filtros; opcionesArea: Opcion<number>[] };
+type Props = { responsables: Responsable[]; opcionesArea: Opcion<number>[] };
 
-export default function ResponsablesIndex({ responsables, filtros: iniciales, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
-    const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+export default function ResponsablesIndex({ responsables, opcionesArea, formulario }: Props & { formulario?: Omit<ComponentProps<typeof Formulario>, 'onCerrar'> }) {
+    const { filtros, cambiar, filas, paginacion } = useListaLocal<Responsable, Filtros>(responsables, { filtrar });
     const [elegidoId, setElegidoId] = useState<number | null>(null);
-    const elegido = responsables.data.find((r) => r.id === elegidoId) ?? null;
+    const elegido = responsables.find((r) => r.id === elegidoId) ?? null;
 
     return (
         <>
@@ -83,11 +85,10 @@ export default function ResponsablesIndex({ responsables, filtros: iniciales, op
                 tabla={{
                     titulo: 'Responsables por área',
                     columnas,
-                    filas: responsables.data,
+                    filas,
                     claveFila: (r) => r.id,
                     seleccionada: elegidoId,
                     onElegirFila: (r) => setElegidoId(r.id),
-                    cargando,
                     vacio: (
                         <EmptyState
                             icono={<IcoResponsables />}
@@ -96,7 +97,7 @@ export default function ResponsablesIndex({ responsables, filtros: iniciales, op
                         />
                     ),
                 }}
-                paginacion={responsables}
+                paginacion={paginacion}
                 detalle={
                     elegido && (
                         <DetalleDialog
