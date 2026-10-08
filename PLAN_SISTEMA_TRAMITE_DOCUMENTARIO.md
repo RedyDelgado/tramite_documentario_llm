@@ -497,6 +497,7 @@ Aceptación: ningún documento sale sin aprobación auditada; la numeración no 
 ### Fase 6: Recomendaciones y borradores con IA (opcional)
 Entregables: recomendaciones de derivación basadas en reglas + IA, borradores de respuesta con LLM local (Ollama), siempre con aprobación humana.
 Aceptación: ninguna respuesta sale sin aprobación explícita auditada.
+Hecho (2026-10-11): las recomendaciones de derivación son las reglas y la clasificación de la fase 4; el borrador es un texto sugerido por un modelo local (Ollama, opcional con `--profile llm`) que se copia al Word (docs/runbook-ia-borradores.md).
 
 ## 14. Pruebas
 

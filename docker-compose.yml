@@ -130,6 +130,15 @@ services:
       - clamav_data:/var/lib/clamav
     restart: unless-stopped
 
+  # Modelo de lenguaje local para sugerir respuestas (fase 6). Opcional: `--profile llm`, OLLAMA_URL=http://ollama:11434 y
+  # `docker compose exec ollama ollama pull qwen2.5:3b` (~2 GB). Sin puerto publicado; en CPU usa ~3 GB de RAM al responder.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["llm"]
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
@@ -137,3 +146,4 @@ volumes:
   clamav_data:
   node_modules:
   modelos_ia:
+  ollama_data:

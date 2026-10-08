@@ -1,5 +1,5 @@
-import { IcoAdjunto16, IcoAmenaza16, IcoCorreo, IcoCorreo16, IcoDescargar16, IcoEnviar, IcoImagen } from '@/components/ui/iconos';
-import { Link } from '@inertiajs/react';
+import { IcoAdjunto16, IcoAmenaza16, IcoCopiar, IcoCorreo, IcoCorreo16, IcoDescargar16, IcoEnviar, IcoIa, IcoImagen } from '@/components/ui/iconos';
+import { Link, useHttp } from '@inertiajs/react';
 import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
@@ -14,6 +14,8 @@ import { Button, botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Spinner } from '@/components/ui/Spinner';
+import { Textarea } from '@/components/ui/Textarea';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 import { formatearBytes } from '@/lib/formato';
 import type { CorreoDetalle, DocumentoDetalle, EventoHistorial, ExpedienteDetalle, Opcion, OpcionesAgrupacion, OpcionesDerivacion } from '@/types';
@@ -42,6 +44,59 @@ function EnlaceDocumento({ d }: { d: DocumentoDetalle }) {
             <IcoAdjunto16 aria-hidden />
             {d.nombre}
         </a>
+    );
+}
+
+/** Texto de respuesta sugerido por la IA local (fase 6): se revisa y se pega en el Word; nada se guarda ni se envía desde aquí. */
+function SugerenciaIa({ expedienteId }: { expedienteId: number }) {
+    const [abierto, setAbierto] = useState(false);
+    const [texto, setTexto] = useState('');
+    const [copiado, setCopiado] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const ruta = `/expedientes/${expedienteId}/borrador-ia`;
+    const pedido = useHttp<Record<string, never>, { texto: string }>('post', ruta, {});
+    const pedir = () => {
+        setAbierto(true);
+        setTexto('');
+        setError(null);
+        // El servidor responde 422 con un mensaje cuando el modelo no está o no contesta.
+        pedido
+            .post(ruta, { onSuccess: (r) => setTexto(r.texto), onError: (e) => setError(Object.values(e)[0] ?? 'No se pudo obtener la sugerencia.') })
+            .catch(() => setError((actual) => actual ?? 'El modelo de IA no responde. Inténtalo en unos minutos.'));
+    };
+    const copiar = () => navigator.clipboard.writeText(texto).then(() => setCopiado(true));
+
+    return (
+        <>
+            <Button icono={<IcoIa />} onClick={pedir}>
+                Sugerir respuesta
+            </Button>
+            <Dialog
+                abierto={abierto}
+                onCambiar={(a) => (setAbierto(a), setCopiado(false))}
+                titulo="Respuesta sugerida por la IA"
+                descripcion="Es un punto de partida: revísala, complétala donde dice [COMPLETAR] y pégala en tu Word. Nada se guarda ni se envía desde aquí."
+                tamano="lg"
+                pie={
+                    <>
+                        <Button onClick={() => setAbierto(false)}>Cerrar</Button>
+                        <Button variante="primario" icono={<IcoCopiar />} disabled={!texto} onClick={copiar}>
+                            {copiado ? 'Copiado' : 'Copiar texto'}
+                        </Button>
+                    </>
+                }
+            >
+                {pedido.processing ? (
+                    <p className="flex items-center gap-2 py-6 text-base text-fg-muted">
+                        <Spinner /> Redactando con el modelo local; puede tardar hasta un minuto…
+                    </p>
+                ) : error ? (
+                    <p className="py-6 text-base text-danger">{error}</p>
+                ) : (
+                    <Textarea aria-label="Texto sugerido" rows={16} value={texto} onChange={(e) => setTexto(e.target.value)} />
+                )}
+            </Dialog>
+        </>
     );
 }
 
@@ -154,6 +209,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                 Responder con documento
                             </Link>
                         )}
+                        {e.permisos.sugerir && <SugerenciaIa expedienteId={e.id} />}
                         <AccionesRegistro
                             expediente={e}
                             opciones={opcionesEmisor && opcionesTipoDocumento && { emisor: opcionesEmisor, tipoDocumento: opcionesTipoDocumento }}

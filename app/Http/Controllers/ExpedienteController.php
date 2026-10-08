@@ -22,10 +22,12 @@ use App\Models\TipoTramite;
 use App\Models\UbicacionFisica;
 use App\Models\User;
 use App\Services\AuditoriaService;
+use App\Services\BorradorIaService;
 use App\Services\ClasificacionService;
 use App\Services\ExpedienteService;
 use App\Services\SerieService;
 use App\Support\AccionesAuditoria;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -132,6 +134,14 @@ class ExpedienteController extends Controller
         ])->values()->all();
     }
 
+    /** Texto sugerido por la IA local para la respuesta (fase 6): solo se muestra; no se guarda ni se envía. */
+    public function borradorIa(Request $request, Expediente $expediente, BorradorIaService $borradores): JsonResponse
+    {
+        Gate::authorize('responder', $expediente);
+
+        return response()->json(['texto' => $borradores->sugerir($expediente, $request->user())]);
+    }
+
     public function show(Request $request, Expediente $expediente, AuditoriaService $auditoria, SerieService $series): Response|RedirectResponse
     {
         Gate::authorize('view', $expediente);
@@ -184,8 +194,9 @@ class ExpedienteController extends Controller
                     'custodiar' => $custodia,
                     'agrupar' => $agrupable,
                     // Responder desde el sistema (7.2): solo lo registrado y aún sin cerrar.
-                    'redactar' => $expediente->codigo !== null && ! in_array($expediente->estado, [EstadoExpediente::Anulado, EstadoExpediente::Cerrado], true)
+                    'redactar' => $redactar = $expediente->codigo !== null && ! in_array($expediente->estado, [EstadoExpediente::Anulado, EstadoExpediente::Cerrado], true)
                         && $user->can('create', DocumentoSaliente::class) && $user->can('responder', $expediente),
+                    'sugerir' => $redactar && BorradorIaService::activo(),
                 ],
                 'serie' => $expediente->grupo ? [
                     'id' => $expediente->grupo->id,

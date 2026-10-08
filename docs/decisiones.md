@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-11 — Fase 6: respuesta sugerida por un modelo local
+
+- **Sugerir respuesta** en el expediente (solo quien lo atiende) pide a Ollama, en el mismo servidor, el cuerpo de un oficio de respuesta con el asunto, el remitente, la instrucción de la derivación y el texto del documento. Se muestra para revisar y copiar al Word; no se guarda ni se envía (los documentos se redactan en Word).
+- Opcional y apagado por defecto: contenedor con `--profile llm` y `OLLAMA_URL`. Modelo por defecto `qwen2.5:3b` (buen español, corre en CPU). La indicación prohíbe inventar datos y marca lo que falta con `[COMPLETAR]`.
+- Llamada síncrona con 180 s de espera: suficiente para el volumen esperado; pasar a la cola si varios lo usan a la vez. Auditoría `ia.borrador_sugerido` sin el texto.
+- Las recomendaciones de derivación de la fase 6 ya las cubren las reglas (5.1) y la clasificación de la fase 4.
+
 ## 2026-10-11 — Documentos emitidos desde Word, sin plantillas (decisión del usuario)
 
 - Los informes y oficios se hacen en Word: se quitan las plantillas (catálogo, selector y su tabla) y la generación del PDF (dompdf).

@@ -53,6 +53,12 @@ return [
         'token' => env('AI_SERVICE_TOKEN'),
     ],
 
+    // Modelo de lenguaje local para sugerir respuestas (fase 6); sin URL, la función no aparece.
+    'llm' => [
+        'url' => env('OLLAMA_URL'),
+        'modelo' => env('LLM_MODELO') ?: 'qwen2.5:3b',
+    ],
+
     // ClamAV (11): sin host no se analiza; con host, un archivo sin analizar no entra.
     'antivirus' => [
         'host' => env('ANTIVIRUS_HOST'),
