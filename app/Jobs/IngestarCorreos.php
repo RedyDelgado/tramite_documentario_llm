@@ -17,17 +17,25 @@ class IngestarCorreos implements ShouldQueue
 {
     use Queueable;
 
+    private const SEGUNDOS = 40;
+
     public function handle(BuzonService $buzones, IngestaCorreoService $ingesta): void
     {
         $lote = (int) config('tramite.correo.lote');
 
-        // Una sola lectura a la vez (la programada y la del botón pueden coincidir).
-        $hayMas = Cache::lock('ingesta-correo', 300)->get(function () use ($buzones, $ingesta, $lote) {
+        // Trabaja hasta 40 s y deja que la siguiente pasada continúe: el worker corta los jobs al minuto.
+        $hasta = microtime(true) + self::SEGUNDOS;
+
+        // Una sola lectura a la vez (la programada y la del botón pueden coincidir); el candado vence si el job muere.
+        $hayMas = Cache::lock('ingesta-correo', 90)->get(function () use ($buzones, $ingesta, $lote, $hasta) {
             $hayMas = false;
             foreach ($buzones->lectores() as [$nombre, $lector, $cuenta]) {
+                if (microtime(true) > $hasta) {
+                    return true;
+                }
                 try {
-                    $r = $ingesta->procesarPendientes($lector, $lote, $nombre, $cuenta);
-                    $hayMas = $hayMas || ($r['procesados'] > 0 && $lote <= $r['procesados'] + $r['fallidos']);
+                    $r = $ingesta->procesarPendientes($lector, $lote, $nombre, $cuenta, $hasta);
+                    $hayMas = $hayMas || ($r['cortado'] ?? false) || ($r['procesados'] > 0 && $lote <= $r['procesados'] + $r['fallidos']);
                 } catch (Throwable $e) {
                     // Una cuenta caída (acceso revocado) no frena a las demás; su error queda en Buzón central.
                     report($e);

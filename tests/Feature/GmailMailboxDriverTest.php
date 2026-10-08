@@ -62,7 +62,7 @@ class GmailMailboxDriverTest extends TestCase
         $this->assertSame(['m1', 'm2', 'm3'], array_map(fn (MensajeCrudo $m) => $m->uid, $mensajes));
         $this->assertSame(File::get(base_path('tests/fixtures/correos/oficio-con-pdf.eml')), $mensajes[0]->contenido);
         Http::assertSent(fn (Request $r) => str_contains($r->url(), '/messages?')
-            && $r['q'] === 'after:2026/01/01 -in:chats'
+            && $r['q'] === 'after:2026/01/01 -in:sent -in:drafts -in:chats'
             && $r->hasHeader('Authorization', 'Bearer acceso'));
         // Un solo token para todas las llamadas.
         Http::assertSentCount(1 + 2 + 3);

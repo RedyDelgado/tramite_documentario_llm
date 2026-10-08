@@ -38,11 +38,12 @@ class IngestaCorreoService
 
     /**
      * Procesa un lote de lo aún no leído de un buzón; un mensaje que falla no queda como leído y se reintenta en la
-     * próxima pasada. `$nombre` identifica el buzón (la cuenta de Google) en lo ya leído.
+     * próxima pasada. `$nombre` identifica el buzón (la cuenta de Google) en lo ya leído. Con `$hasta` (microtime)
+     * se corta al vencer el tiempo, antes de que el worker mate el job: `cortado` dice que quedó trabajo.
      *
-     * @return array{procesados: int, fallidos: int}
+     * @return array{procesados: int, fallidos: int, cortado?: bool}
      */
-    public function procesarPendientes(MailboxDriver $buzon, int $limite, ?string $nombre = null, ?Buzon $cuenta = null): array
+    public function procesarPendientes(MailboxDriver $buzon, int $limite, ?string $nombre = null, ?Buzon $cuenta = null, ?float $hasta = null): array
     {
         $nombre ??= (string) config('tramite.correo.driver');
         $resultado = ['procesados' => 0, 'fallidos' => 0];
@@ -50,14 +51,25 @@ class IngestaCorreoService
 
         try {
             foreach ($buzon->pendientes(app(BuzonService::class)->desde(), $limite, $leido) as $mensaje) {
+                if ($hasta !== null && microtime(true) > $hasta) {
+                    $resultado['cortado'] = true;
+                    break;
+                }
                 try {
                     $this->procesar($mensaje->contenido, $mensaje->uid);
                     CorreoLeido::firstOrCreate(['buzon' => $nombre, 'uid' => $mensaje->uid]);
-                    $buzon->marcarProcesado($mensaje);
                     $resultado['procesados']++;
                 } catch (Throwable $e) {
                     report($e);
                     $resultado['fallidos']++;
+
+                    continue;
+                }
+                try {
+                    // La etiqueta en Gmail es solo referencia: si Google la rechaza, el correo ya entró igual.
+                    $buzon->marcarProcesado($mensaje);
+                } catch (Throwable $e) {
+                    report($e);
                 }
             }
         } catch (Throwable $e) {

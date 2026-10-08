@@ -33,7 +33,8 @@ class GmailMailboxDriver implements MailboxDriver
     {
         // Lo ya leído lo sabe la base, no la etiqueta: se lista todo desde la fecha (solo ids, barato) y se salta lo conocido.
         $entregados = 0;
-        foreach ($this->ids('after:'.$desde->format('Y/m/d').' -in:chats', PHP_INT_MAX) as $id) {
+        // Solo lo recibido: ni lo enviado desde la cuenta ni los borradores son trámites.
+        foreach ($this->ids('after:'.$desde->format('Y/m/d').' -in:sent -in:drafts -in:chats', PHP_INT_MAX) as $id) {
             if ($leido && $leido($id)) {
                 continue;
             }
