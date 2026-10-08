@@ -17,7 +17,7 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 
 ## 2026-10-11 — Estructura real de la Filial Quillabamba
 
-- Se borran todos los datos de prueba (personas ficticias, áreas de ejemplo, expedientes y correos descargados) y se carga la estructura que dio el usuario con `FilialSeeder`, que corre también en producción: Dirección de Filial (Dra. Estela Quispe Ramos), Administración (Enrique Florez Hurtado y Paola Indira Saldivar Nuñez, con rol de mesa de partes), Coordinación Académica (Mgtr. Rocío Huaycochea Esquivel) y las siete escuelas con su coordinador.
+- Se borran todos los datos de prueba (personas ficticias, áreas de ejemplo, expedientes y correos descargados) y se carga la estructura que dio el usuario con `FilialSeeder`, que corre también en producción: Dirección de Filial (Dra. Estela Quispe Ramos), Administración (Enrique Florez Hurtado y Paola Indira Saldivar Nuñez, con rol de mesa de partes), Coordinación Académica (Mgtr. Rocío Huaycochea Esquivel), Coordinación de Estudios Generales (sin coordinador aún) y las siete coordinaciones de escuela («Coordinación de la Escuela Profesional de …») con su coordinador.
 - Los correos de estas personas son provisionales (`@demo.example`) hasta cargar los institucionales en Usuarios: sin el correo real no pueden ingresar con Google ni recibir avisos.
 - La conexión del buzón central se conserva; los correos ya descargados no vuelven a bajar porque en Gmail llevan la etiqueta `tramite/procesado`.
 

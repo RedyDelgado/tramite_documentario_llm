@@ -16,7 +16,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Estructura real de la Filial Quillabamba de la UAC (datos del usuario): dirección, administración, coordinación
- * académica y escuelas con sus coordinadores, más el catálogo habitual de trámites. Los correos son provisionales
+ * académica, estudios generales y las coordinaciones de escuela, más el catálogo habitual de trámites. Los correos son provisionales
  * (@demo.example) hasta cargar los institucionales en Usuarios. Idempotente: reconoce por correo, siglas o nombre.
  */
 class FilialSeeder extends Seeder
@@ -26,13 +26,14 @@ class FilialSeeder extends Seeder
         'DIR' => ['Dirección de Filial', null, ['dirección', 'resolución', 'convenio', 'licencia']],
         'ADM' => ['Administración', 'DIR', ['inventario', 'compras', 'presupuesto', 'pago', 'equipos']],
         'CA' => ['Coordinación Académica', 'DIR', ['encuesta', 'carga lectiva', 'horario', 'sílabo', 'matrícula', 'constancia']],
-        'EPD' => ['Escuela Profesional de Derecho', 'DIR', ['derecho', 'consultorio jurídico', 'juzgado']],
-        'EPC' => ['Escuela Profesional de Contabilidad', 'DIR', ['contabilidad', 'tributación', 'auditoría']],
-        'EPE' => ['Escuela Profesional de Enfermería', 'DIR', ['enfermería', 'internado', 'campos clínicos', 'hospital']],
-        'EPIC' => ['Escuela Profesional de Ingeniería Civil', 'DIR', ['obra', 'topografía', 'laboratorio de suelos']],
-        'EPIS' => ['Escuela Profesional de Ingeniería de Sistemas', 'DIR', ['sistemas', 'software', 'laboratorio de cómputo']],
-        'EPPS' => ['Escuela Profesional de Psicología', 'DIR', ['psicología', 'tamizaje', 'consejería']],
-        'EPAD' => ['Escuela Profesional de Administración', 'DIR', ['administración de empresas', 'emprendimiento', 'marketing']],
+        'EG' => ['Coordinación de Estudios Generales', 'DIR', ['estudios generales', 'primer ciclo', 'cursos generales']],
+        'EPD' => ['Coordinación de la Escuela Profesional de Derecho', 'DIR', ['derecho', 'consultorio jurídico', 'juzgado']],
+        'EPC' => ['Coordinación de la Escuela Profesional de Contabilidad', 'DIR', ['contabilidad', 'tributación', 'auditoría']],
+        'EPE' => ['Coordinación de la Escuela Profesional de Enfermería', 'DIR', ['enfermería', 'internado', 'campos clínicos', 'hospital']],
+        'EPIC' => ['Coordinación de la Escuela Profesional de Ingeniería Civil', 'DIR', ['obra', 'topografía', 'laboratorio de suelos']],
+        'EPIS' => ['Coordinación de la Escuela Profesional de Ingeniería de Sistemas', 'DIR', ['sistemas', 'software', 'laboratorio de cómputo']],
+        'EPPS' => ['Coordinación de la Escuela Profesional de Psicología', 'DIR', ['psicología', 'tamizaje', 'consejería']],
+        'EPAD' => ['Coordinación de la Escuela Profesional de Administración', 'DIR', ['administración de empresas', 'emprendimiento', 'marketing']],
     ];
 
     /** Correo provisional => [nombre, rol, siglas del área, titular|suplente]. */
