@@ -2,11 +2,12 @@ import { IcoAlerta, IcoCorrecto, IcoCorreo, IcoEnviar, IcoExpedientes, IcoTabler
 import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { GraficoMensual } from '@/components/data/GraficoMensual';
-import { SemaforoBadge, type Semaforo } from '@/components/domain/SemaforoBadge';
+import { SemaforoBadge, SIGNIFICADO_SEMAFORO, type Semaforo } from '@/components/domain/SemaforoBadge';
 import { AppShell } from '@/components/layouts/AppShell';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 
 type Tiempo = { nombre: string; dias: number; total: number };
@@ -164,10 +165,12 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
                         <ul className="flex flex-col gap-2">
                             {ORDEN_SEMAFORO.map((s) => (
                                 <li key={s}>
-                                    <Link href={`/expedientes?semaforo=${s}`} className="flex items-center justify-between gap-2 rounded-control hover:opacity-80">
-                                        <SemaforoBadge estado={s} />
-                                        <span className="text-md font-semibold text-fg tabular-nums">{i.por_semaforo[s]}</span>
-                                    </Link>
+                                    <Tooltip texto={SIGNIFICADO_SEMAFORO[s]}>
+                                        <Link href={`/expedientes?semaforo=${s}`} className="flex items-center justify-between gap-2 rounded-control hover:opacity-80">
+                                            <SemaforoBadge estado={s} />
+                                            <span className="text-base font-semibold text-fg tabular-nums">{i.por_semaforo[s]}</span>
+                                        </Link>
+                                    </Tooltip>
                                 </li>
                             ))}
                         </ul>

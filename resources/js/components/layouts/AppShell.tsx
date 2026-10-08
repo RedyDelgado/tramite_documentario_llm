@@ -1,4 +1,4 @@
-import { IcoBuscar, IcoFlechaAbajo16, IcoPanelLateral, IcoSalir } from '@/components/ui/iconos';
+import { IcoBuscar, IcoExpedientes, IcoFlechaAbajo16, IcoPanelLateral, IcoSalir } from '@/components/ui/iconos';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { IconButton } from '@/components/ui/IconButton';
@@ -65,7 +65,7 @@ function ItemNavegacion({ item, activa, colapsada }: { item: ItemNav; activa: bo
     return colapsada ? <Tooltip texto={item.etiqueta}>{enlace}</Tooltip> : enlace;
 }
 
-/** Marco de toda página autenticada: barra lateral de marca con la persona y sus opciones, y barra de búsqueda translúcida. */
+/** Marco de toda página autenticada: barra lateral de marca con las opciones y barra superior translúcida con la búsqueda y la persona. */
 export function AppShell({ children }: { children: ReactNode }) {
     const { props, url } = usePage();
     const [colapsada, setColapsada] = useState(leerColapsada);
@@ -85,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
 
     const avatar = usuario && (
-        <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-on-primary text-base font-bold text-primary-700 shadow-card">
+        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-on-primary">
             {iniciales(usuario.name)}
         </span>
     );
@@ -104,46 +104,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                     href="/"
                     className={cn('flex h-14 shrink-0 items-center gap-2 font-titulos text-md font-bold tracking-tight', colapsada ? 'justify-center' : 'px-6')}
                 >
-                    <span aria-hidden className="flex size-7 items-center justify-center rounded-control bg-barra-activo text-sm">
-                        TD
-                    </span>
-                    <span className={colapsada ? 'sr-only' : 'truncate'}>{props.app.nombre}</span>
+                    {colapsada ? <IcoExpedientes aria-label={props.app.nombre} /> : <span className="truncate">{props.app.nombre}</span>}
                 </Link>
-
-                {usuario && (
-                    <div className={cn('mb-3', colapsada ? 'flex justify-center' : 'mx-3')}>
-                        <Menu
-                            disparador={
-                                <button
-                                    type="button"
-                                    aria-label={`${usuario.name}: opciones de la cuenta`}
-                                    className={cn(
-                                        'flex w-full cursor-pointer items-center gap-3 rounded-card text-left transition-colors hover:bg-barra-hover focus-visible:outline-2 focus-visible:outline-on-primary',
-                                        colapsada ? 'justify-center p-1' : 'bg-barra-hover p-2.5',
-                                    )}
-                                >
-                                    {avatar}
-                                    {!colapsada && (
-                                        <>
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-base font-semibold">{usuario.name}</span>
-                                                <span className="block truncate text-sm text-barra-suave">{rol}</span>
-                                            </span>
-                                            <IcoFlechaAbajo16 className="shrink-0 text-barra-suave" />
-                                        </>
-                                    )}
-                                </button>
-                            }
-                            encabezado={
-                                <>
-                                    <p className="text-base font-semibold text-fg">{usuario.name}</p>
-                                    <p className="text-sm text-fg-muted">{usuario.email}</p>
-                                </>
-                            }
-                            items={[{ etiqueta: 'Cerrar sesión', icono: <IcoSalir />, onSelect: () => router.post('/logout') }]}
-                        />
-                    </div>
-                )}
 
                 <div className="flex-1 overflow-y-auto pb-4">
                     {grupos.map((grupo, i) => (
@@ -207,6 +169,33 @@ export function AppShell({ children }: { children: ReactNode }) {
                             />
                         </div>
                     </form>
+                )}
+                {usuario && (
+                    <div className="ml-auto">
+                        <Menu
+                            disparador={
+                                <button
+                                    type="button"
+                                    aria-label={`${usuario.name}: opciones de la cuenta`}
+                                    className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-relleno focus-visible:outline-2 focus-visible:outline-primary-600"
+                                >
+                                    {avatar}
+                                    <span className="hidden min-w-0 sm:block">
+                                        <span className="block max-w-56 truncate text-base font-semibold text-fg">{usuario.name}</span>
+                                        <span className="block max-w-56 truncate text-sm text-fg-muted">{rol}</span>
+                                    </span>
+                                    <IcoFlechaAbajo16 className="shrink-0 text-fg-muted" />
+                                </button>
+                            }
+                            encabezado={
+                                <>
+                                    <p className="text-base font-semibold text-fg">{usuario.name}</p>
+                                    <p className="text-sm text-fg-muted">{usuario.email}</p>
+                                </>
+                            }
+                            items={[{ etiqueta: 'Cerrar sesión', icono: <IcoSalir />, onSelect: () => router.post('/logout') }]}
+                        />
+                    </div>
                 )}
             </header>
 
