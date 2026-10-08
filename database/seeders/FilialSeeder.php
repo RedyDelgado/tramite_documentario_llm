@@ -42,6 +42,7 @@ class FilialSeeder extends Seeder
         'enrique.florez@demo.example' => ['Enrique Florez Hurtado', 'administrativo', 'ADM', 'titular'],
         'paola.saldivar@demo.example' => ['Paola Indira Saldivar Nuñez', 'administrativo', 'ADM', 'suplente'],
         'rocio.huaycochea@demo.example' => ['Mgtr. Rocío Huaycochea Esquivel', 'coordinador', 'CA', 'titular'],
+        'losorio@uandina.edu.pe' => ['Luis Alberto Osorio Chirinos', 'coordinador', 'EG', 'titular'],
         'flor.acuna@demo.example' => ['Mgtr. Flor de María Acuña Palomino', 'coordinador', 'EPD', 'titular'],
         'cristian.contabilidad@demo.example' => ['Mgtr. Cristian', 'coordinador', 'EPC', 'titular'],
         'lisbeth.castro@demo.example' => ['Mgtr. Lisbeth Castro Cabrera', 'coordinador', 'EPE', 'titular'],
