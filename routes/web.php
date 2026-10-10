@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('registro/nuevo', [RegistroFisicoController::class, 'create'])->name('registro.create');
     Route::post('registro/prellenar', [RegistroFisicoController::class, 'prellenar'])->name('registro.prellenar');
+    Route::post('registro/prellenar/ia', [RegistroFisicoController::class, 'completarConIa'])->name('registro.prellenar.ia');
     Route::post('registro', [RegistroFisicoController::class, 'store'])->name('registro.store');
 
     // Destino del QR impreso (7.3): abre el expediente; los permisos los aplica su vista.

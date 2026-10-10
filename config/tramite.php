@@ -57,6 +57,8 @@ return [
     'llm' => [
         'url' => env('OLLAMA_URL'),
         'modelo' => env('LLM_MODELO') ?: 'qwen2.5:3b',
+        // Hilos de CPU para el modelo; sin valor, los que Ollama detecte.
+        'hilos' => (int) env('LLM_HILOS') ?: null,
     ],
 
     // ClamAV (11): sin host no se analiza; con host, un archivo sin analizar no entra.

@@ -2,6 +2,16 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-13 — Prellenado de escaneos: OCR siempre y la IA local en marcha
+
+- **Un escaneo sin capa de texto iba sin OCR**: `pdftotext` devuelve solo saltos de página (`\f`) y `trim` no los quita, así que «había texto» y el formulario quedaba vacío. Ahora solo cuenta como texto lo que tiene letras o números; vale también para los adjuntos del correo.
+- **Asunto en varias líneas**: en mayúsculas sigue mientras las líneas sigan en mayúsculas (el OCR deja líneas en blanco en medio) y no empiece otra etiqueta («REFERENCIA:»); en minúsculas, solo si la frase continúa. El número pierde el punto final y el «N?» del OCR pasa a «N°».
+- **A la IA solo se le pide lo que las reglas no encontraron**: en CPU cada dato de más es espera. Si propone que emite una institución, no se sugiere otra institución aparte.
+- **La IA se pide en un segundo paso** (`POST /registro/prellenar/ia`, decisión del usuario): `prellenar` devuelve lo que leen las reglas y `ia: true` si falta algo; así la pantalla muestra `IaPensando` (el cerebro animado) solo mientras trabaja la IA y el spinner normal en el resto. El cerebro animado es exclusivo de la IA, también al sugerir respuesta; con «reducir movimiento» queda quieto.
+- **Mientras lee o trabaja la IA, un aviso cubre toda la pantalla** (`ocupado` en `Dialog`, decisión del usuario): no se cierra con X, Escape ni Cancelar, y cerrar la pestaña pide confirmación.
+- **Reglas más tolerantes al OCR** (un memorándum real): «Memorándum» es el Memorando del catálogo (sinónimos); el número se corta en el primer espacio que no une tramos (lo que sigue es el sello); la línea «A:» / «PARA:» y su cargo no cuentan para el emisor (es el destinatario); la fecha preferida es la que va tras el lugar o «FECHA:», no la que cita el asunto; un membrete que termina en «NACIONAL / REGIONAL / PROVINCIAL / DISTRITAL» sigue en la línea de abajo.
+- **Velocidad en CPU**: Tesseract con un hilo (`OMP_THREAD_LIMIT=1`): con 2 núcleos, una página baja de ~50 s a ~20 s. Ollama usa un hilo por núcleo físico y en WSL ve uno solo: `LLM_HILOS` fija cuántos usa (con 2, la lectura baja de 96 s a 55 s; en un i7 de 4 núcleos y 8 hilos, 4 rinde mejor que 6, que se estorban). `OLLAMA_KEEP_ALIVE=1h` deja el modelo en memoria entre registros. nginx espera hasta 300 s a PHP, porque el prellenado espera al OCR y a la IA.
+
 ## 2026-10-13 — Emisor e institución por separado (decisión del usuario)
 
 - Un emisor es una **persona** (el director del hospital, un docente, un estudiante) o una **institución** (la municipalidad que emite sin firma personal). Una persona puede tener una **institución habitual**.

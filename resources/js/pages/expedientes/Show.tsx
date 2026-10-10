@@ -14,7 +14,7 @@ import { Button, botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Spinner } from '@/components/ui/Spinner';
+import { IaPensando } from '@/components/ui/IaPensando';
 import { Textarea } from '@/components/ui/Textarea';
 import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
 import { formatearBytes } from '@/lib/formato';
@@ -77,20 +77,19 @@ function SugerenciaIa({ expedienteId }: { expedienteId: number }) {
                 titulo="Respuesta sugerida por la IA"
                 descripcion="Es un punto de partida: revísala, complétala donde dice [COMPLETAR] y pégala en tu Word. Nada se guarda ni se envía desde aquí."
                 tamano="lg"
+                ocupado={pedido.processing && <IaPensando>Redactando la respuesta con la IA local; puede tardar hasta un minuto</IaPensando>}
                 pie={
                     <>
-                        <Button onClick={() => setAbierto(false)}>Cerrar</Button>
+                        <Button onClick={() => setAbierto(false)} disabled={pedido.processing}>
+                            Cerrar
+                        </Button>
                         <Button variante="primario" icono={<IcoCopiar />} disabled={!texto} onClick={copiar}>
                             {copiado ? 'Copiado' : 'Copiar texto'}
                         </Button>
                     </>
                 }
             >
-                {pedido.processing ? (
-                    <p className="flex items-center gap-2 py-6 text-base text-fg-muted">
-                        <Spinner /> Redactando con el modelo local; puede tardar hasta un minuto…
-                    </p>
-                ) : error ? (
+                {error ? (
                     <p className="py-6 text-base text-danger">{error}</p>
                 ) : (
                     <Textarea aria-label="Texto sugerido" rows={16} value={texto} onChange={(e) => setTexto(e.target.value)} />

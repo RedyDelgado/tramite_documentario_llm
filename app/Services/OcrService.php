@@ -20,13 +20,13 @@ class OcrService
      * @throws ConnectionException si el servicio no responde (el job reintenta)
      * @throws RequestException si el archivo no se puede leer
      */
-    public function reconocer(string $rutaAbsoluta, string $mime): array
+    public function reconocer(string $rutaAbsoluta, string $mime, ?int $maxPaginas = null): array
     {
         return Http::baseUrl(config('tramite.ai.url'))
             ->withHeaders(['X-AI-Token' => (string) config('tramite.ai.token')])
             ->timeout(self::TIMEOUT)
             ->withBody(file_get_contents($rutaAbsoluta), $mime)
-            ->post('/ocr')
+            ->post('/ocr'.($maxPaginas ? "?max_paginas={$maxPaginas}" : ''))
             ->throw()
             ->json();
     }

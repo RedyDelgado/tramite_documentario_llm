@@ -10,6 +10,10 @@ type Props = {
     procesando: boolean;
     textoGuardar?: string;
     tamano?: 'md' | 'lg' | 'xl';
+    // Falso mientras falte algo obligatorio: el botón de guardar queda apagado.
+    listo?: boolean;
+    // Ver Dialog: aviso a pantalla completa que no deja cerrar.
+    ocupado?: ReactNode;
     children: ReactNode;
 };
 
@@ -17,7 +21,7 @@ type Props = {
  * Plantilla de todo alta o edición: un modal sobre la lista. Enter en un campo no guarda (evita envíos
  * accidentales); Ctrl/Cmd + Enter sí. La validación la hace Laravel y llega como `errors`.
  */
-export function FormDialog({ titulo, descripcion, onCerrar, onEnviar, procesando, textoGuardar = 'Guardar', tamano = 'lg', children }: Props) {
+export function FormDialog({ titulo, descripcion, onCerrar, onEnviar, procesando, textoGuardar = 'Guardar', tamano = 'lg', listo = true, ocupado, children }: Props) {
     const id = useId();
 
     const alTeclear = (e: KeyboardEvent<HTMLFormElement>) => {
@@ -37,11 +41,14 @@ export function FormDialog({ titulo, descripcion, onCerrar, onEnviar, procesando
             titulo={titulo}
             descripcion={descripcion}
             tamano={tamano}
+            ocupado={ocupado}
             pie={
                 <>
-                    <span className="mr-auto text-sm text-fg-muted">Ctrl + Enter para guardar</span>
-                    <Button onClick={onCerrar}>Cancelar</Button>
-                    <Button type="submit" form={id} variante="primario" cargando={procesando}>
+                    <span className="mr-auto text-sm text-fg-muted">{listo ? 'Ctrl + Enter para guardar' : 'Completa los campos marcados con *'}</span>
+                    <Button onClick={onCerrar} disabled={!!ocupado}>
+                        Cancelar
+                    </Button>
+                    <Button type="submit" form={id} variante="primario" cargando={procesando} disabled={!listo}>
                         {textoGuardar}
                     </Button>
                 </>
@@ -53,7 +60,8 @@ export function FormDialog({ titulo, descripcion, onCerrar, onEnviar, procesando
                 onKeyDown={alTeclear}
                 onSubmit={(e) => {
                     e.preventDefault();
-                    onEnviar();
+                    // Ctrl + Enter envía aunque el botón esté apagado.
+                    if (listo) onEnviar();
                 }}
                 className="flex flex-col gap-4"
             >

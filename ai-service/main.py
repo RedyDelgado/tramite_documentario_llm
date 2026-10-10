@@ -3,7 +3,7 @@ import secrets
 import subprocess
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
 import clasificador
@@ -60,15 +60,15 @@ class ResultadoOcr(BaseModel):
 
 
 @app.post("/ocr", dependencies=[Depends(verificar_token)])
-async def reconocer_texto(request: Request, content_type: str = Header(default="")) -> ResultadoOcr:
-    """OCR de un PDF escaneado o una imagen enviada como cuerpo crudo."""
+async def reconocer_texto(request: Request, content_type: str = Header(default=""), max_paginas: int | None = Query(default=None, ge=1)) -> ResultadoOcr:
+    """OCR de un PDF escaneado o una imagen enviada como cuerpo crudo; `max_paginas` lee solo las primeras."""
     contenido = await request.body()
     if not contenido:
         raise HTTPException(status_code=422, detail="Cuerpo vacío")
     if len(contenido) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="Archivo demasiado grande")
     try:
-        texto, paginas = ocr.reconocer(contenido, content_type.split(";")[0].strip().lower())
+        texto, paginas = ocr.reconocer(contenido, content_type.split(";")[0].strip().lower(), max_paginas)
     except ocr.TipoNoSoportado:
         raise HTTPException(status_code=415, detail="Tipo no soportado")
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):

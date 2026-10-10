@@ -22,6 +22,9 @@ class RegistroFisicoService
     // El escaneo subido espera su confirmación un día; después hay que volver a subirlo.
     private const ESPERA = 86_400;
 
+    // Páginas que se leen con OCR para prellenar el formulario.
+    private const PAGINAS_PRELLENADO = 1;
+
     public function __construct(
         private readonly TextoDocumentoService $texto,
         private readonly OcrService $ocr,
@@ -32,9 +35,10 @@ class RegistroFisicoService
     ) {}
 
     /**
-     * Guarda el escaneo y propone los campos. El OCR aquí es síncrono para prellenar; si el servicio de IA no responde, el formulario queda vacío y el OCR se encola al registrar.
+     * Guarda el escaneo y propone los campos que leen las reglas. El OCR aquí es síncrono para prellenar; si el servicio de IA no responde, el formulario queda vacío y el OCR se encola al registrar.
+     * `ia` avisa que falta algo que la IA puede proponer: la pantalla lo pide aparte (completarConIa) y así muestra cuándo trabaja la IA.
      *
-     * @return array{sha256: string, nombre: string, paginas: ?int, campos: array<string, mixed>, mismo_archivo: ?array{id: int, numero: ?string}}
+     * @return array{sha256: string, nombre: string, paginas: ?int, campos: array<string, mixed>, ia: bool, mismo_archivo: ?array{id: int, numero: ?string}}
      */
     public function prellenar(UploadedFile $archivo): array
     {
@@ -45,23 +49,28 @@ class RegistroFisicoService
         $texto = $this->texto->extraer($rutaAbsoluta, $mime);
         $paginas = $this->texto->paginas($rutaAbsoluta, $mime);
         $porOcr = false;
+        $completo = true;
         if ($texto === null && in_array($mime, OcrService::MIMES, true)) {
             try {
-                $resultado = $this->ocr->reconocer($rutaAbsoluta, $mime);
+                // El encabezado está en la primera página: leer solo esa toma segundos (todo un escaneo, minutos).
+                $resultado = $this->ocr->reconocer($rutaAbsoluta, $mime, self::PAGINAS_PRELLENADO);
                 $texto = trim($resultado['texto']) ?: null;
                 $paginas ??= $resultado['paginas'];
                 $porOcr = $texto !== null;
-            } catch (Throwable) {
+                $completo = $resultado['paginas'] <= self::PAGINAS_PRELLENADO;
+            } catch (Throwable $e) {
                 // Sin IA no hay prellenado, pero se puede registrar a mano (principio 2).
+                report($e);
             }
         }
 
+        // Un texto parcial no se guarda en el documento: al registrarlo, el OCR completo corre en segundo plano.
         Cache::put("registro-fisico:{$sha256}", [
             'ruta' => $ruta, 'mime' => $mime, 'nombre' => $archivo->getClientOriginalName(), 'paginas' => $paginas,
-            'texto' => $texto, 'por_ocr' => $porOcr,
+            'texto' => $completo ? $texto : null, 'por_ocr' => $porOcr && $completo, 'texto_prellenado' => $texto,
         ], self::ESPERA);
 
-        $campos = $texto ? $this->completarConIa($this->extraccion->extraer($texto), $texto) : [];
+        $campos = $texto ? $this->extraccion->extraer($texto) : [];
         $igual = Documento::where('sha256', $sha256)->with('expediente')->first()?->expediente;
 
         return [
@@ -69,6 +78,7 @@ class RegistroFisicoService
             'nombre' => $archivo->getClientOriginalName(),
             'paginas' => $paginas,
             'campos' => $campos + ['folios' => $paginas],
+            'ia' => BorradorIaService::activo() && $campos !== [] && $this->faltan($campos) !== [],
             'mismo_archivo' => $igual ? ['id' => $igual->id, 'numero' => $igual->numero_registro] : null,
         ];
     }
@@ -76,16 +86,25 @@ class RegistroFisicoService
     /**
      * Lo que las reglas no encontraron lo propone la IA local, si está activa (fase 6); la persona confirma igual.
      *
-     * @param  array<string, mixed>  $campos
      * @return array<string, mixed>
+     *
+     * @throws ValidationException si el escaneo ya no está en caché
      */
-    private function completarConIa(array $campos, string $texto): array
+    public function completarConIa(string $sha256): array
     {
-        $faltan = array_filter(['tipo_documento_id', 'numero_documento_original', 'fecha_documento', 'asunto'], fn ($c) => empty($campos[$c]));
-        if (! BorradorIaService::activo() || ($faltan === [] && ($campos['emisor_id'] || $campos['emisor_sugerido']))) {
+        $archivo = Cache::get("registro-fisico:{$sha256}");
+        if (! $archivo) {
+            throw ValidationException::withMessages(['archivo' => 'El escaneo ya no está disponible; vuelve a subirlo.']);
+        }
+        if (! $texto = $archivo['texto_prellenado'] ?? null) {
+            return [];
+        }
+        $campos = $this->extraccion->extraer($texto);
+        $faltan = $this->faltan($campos);
+        if (! BorradorIaService::activo() || $faltan === []) {
             return $campos;
         }
-        $ia = $this->ia->campos($texto);
+        $ia = $this->ia->campos($texto, $faltan);
         $fecha = isset($ia['fecha']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ia['fecha']) ? $ia['fecha'] : null;
 
         return [
@@ -96,7 +115,28 @@ class RegistroFisicoService
             'emisor_id' => $campos['emisor_id'] ?? (isset($ia['remitente']) ? $this->extraccion->emisor($ia['remitente']) : null),
             'emisor_sugerido' => $campos['emisor_sugerido'] ?? $ia['remitente'] ?? null,
             'institucion_id' => $campos['institucion_id'] ?? null,
+            // Si la IA propone que emite la institución (la del membrete), no pertenece a otra.
+            'institucion_sugerida' => isset($ia['remitente']) && Emisor::adivinarClase($ia['remitente']) === 'institucion' ? null : $campos['institucion_sugerida'] ?? null,
         ];
+    }
+
+    /**
+     * A la IA solo se le pide lo que falta: en CPU cada dato de más alarga la espera.
+     *
+     * @param  array<string, mixed>  $campos
+     * @return list<string>
+     */
+    private function faltan(array $campos): array
+    {
+        $faltan = array_values(array_keys(array_filter(
+            ['tipo' => 'tipo_documento_id', 'numero' => 'numero_documento_original', 'fecha' => 'fecha_documento', 'asunto' => 'asunto'],
+            fn ($campo) => empty($campos[$campo]),
+        )));
+        if (! $campos['emisor_id'] && ! $campos['emisor_sugerido']) {
+            $faltan[] = 'remitente';
+        }
+
+        return $faltan;
     }
 
     /**

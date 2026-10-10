@@ -12,12 +12,13 @@ En el detalle de un expediente, quien lo atiende ve **Sugerir respuesta**: un mo
    ```
    docker compose exec ollama ollama pull qwen2.5:3b
    ```
-3. En `.env`: `OLLAMA_URL=http://ollama:11434` (y `LLM_MODELO` si se usa otro modelo) → `docker compose exec app php artisan config:clear`.
+3. En `.env`: `OLLAMA_URL=http://ollama:11434` (y `LLM_MODELO` si se usa otro modelo), `LLM_HILOS` con los núcleos físicos que tenga Docker (no los lógicos), y `llm` en `COMPOSE_PROFILES` para que arranque con el resto → `docker compose exec app php artisan config:clear`.
 4. Abrir un expediente en atención como su responsable: aparece **Sugerir respuesta**.
 
 ## Recursos
 
 - En CPU, una respuesta tarda entre 30 y 90 s y usa ~3 GB de RAM mientras responde. Con el VPS de 12 GB alcanza; con 8 GB conviene dejarlo apagado.
+- Al registrar en papel, si las reglas no leen algún dato (p. ej. una firma que es solo un sello), el formulario espera a la IA: ~1 min con 2 CPU, menos con más hilos.
 - Cada sugerencia queda en la auditoría (`ia.borrador_sugerido`, con el modelo y la longitud; el texto no se guarda).
 
 ## Desactivar

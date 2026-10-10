@@ -20,6 +20,15 @@ class BorradorIaService
     // Lo que el modelo lee del expediente: suficiente para el contexto, sin pasar de su ventana.
     private const MAX_TEXTO = 6000;
 
+    // Datos que la IA puede leer al registrar en papel, con la pista que necesita para cada uno.
+    private const CAMPOS = [
+        'tipo' => 'tipo (oficio, informe, carta, memorando, solicitud…)',
+        'numero' => 'numero (tal como figura, con su tipo, p. ej. «INFORME N° 001-2026-UAC»)',
+        'fecha' => 'fecha (AAAA-MM-DD)',
+        'asunto' => 'asunto',
+        'remitente' => 'remitente (quien lo firma o envía, sin el cargo)',
+    ];
+
     public function __construct(private readonly AuditoriaService $auditoria) {}
 
     /** Sin URL de Ollama la función no existe en la interfaz (OLLAMA_URL en el .env). */
@@ -40,7 +49,7 @@ class BorradorIaService
                 'model' => config('tramite.llm.modelo'),
                 'prompt' => $this->indicacion($expediente),
                 'stream' => false,
-                'options' => ['temperature' => 0.3],
+                'options' => $this->opciones(['temperature' => 0.3]),
             ])->throw()->json();
         } catch (ConnectionException) {
             throw new ReglaDeNegocio('El modelo de IA no responde. Inténtalo en unos minutos o redacta sin sugerencia.');
@@ -59,27 +68,28 @@ class BorradorIaService
     }
 
     /**
-     * Lee el encabezado de un documento y devuelve sus datos (tipo, número, fecha, asunto, remitente) para completar lo
-     * que las reglas no encontraron al registrar en papel. Sin IA activa o si no responde, devuelve [] y se sigue a mano.
+     * Lee el encabezado de un documento y devuelve los datos pedidos en `$claves` para completar lo que las reglas no
+     * encontraron al registrar en papel. Sin IA activa o si no responde, devuelve [] y se sigue a mano.
      *
+     * @param  list<string>  $claves  de self::CAMPOS; en CPU cada dato de más alarga la espera
      * @return array{tipo?: ?string, numero?: ?string, fecha?: ?string, asunto?: ?string, remitente?: ?string}
      */
-    public function campos(string $texto): array
+    public function campos(string $texto, array $claves = ['tipo', 'numero', 'fecha', 'asunto', 'remitente']): array
     {
-        if (! self::activo()) {
+        $pedidos = array_intersect_key(self::CAMPOS, array_flip($claves));
+        if (! self::activo() || $pedidos === []) {
             return [];
         }
 
         try {
-            $respuesta = Http::timeout(120)->post(rtrim(config('tramite.llm.url'), '/').'/api/generate', [
+            $respuesta = Http::timeout(180)->post(rtrim(config('tramite.llm.url'), '/').'/api/generate', [
                 'model' => config('tramite.llm.modelo'),
                 'prompt' => 'Extrae los datos del encabezado de este documento universitario peruano. Responde solo JSON con las claves '
-                    .'tipo (oficio, informe, carta, memorando, solicitud…), numero (tal como figura, con su tipo, p. ej. «INFORME N° 001-2026-UAC»), '
-                    .'fecha (AAAA-MM-DD), asunto y remitente (quien lo firma o envía, sin el cargo). Usa null si un dato no figura; no inventes.'
+                    .implode(', ', $pedidos).'. Usa null si un dato no figura; no inventes.'
                     ."\n\nDocumento:\n".Str::limit($texto, 4000),
                 'stream' => false,
                 'format' => 'json',
-                'options' => ['temperature' => 0],
+                'options' => $this->opciones(['temperature' => 0]),
             ])->throw()->json('response');
         } catch (Throwable $e) {
             report($e);
@@ -89,7 +99,13 @@ class BorradorIaService
 
         $campos = json_decode((string) $respuesta, true);
 
-        return is_array($campos) ? array_map(fn ($v) => is_string($v) && trim($v) !== '' ? trim($v) : null, array_intersect_key($campos, array_flip(['tipo', 'numero', 'fecha', 'asunto', 'remitente']))) : [];
+        return is_array($campos) ? array_map(fn ($v) => is_string($v) && trim($v) !== '' ? trim($v) : null, array_intersect_key($campos, $pedidos)) : [];
+    }
+
+    /** Ollama usa un hilo por núcleo físico y en WSL o una VPS puede ver uno solo: LLM_HILOS fija cuántos usa. */
+    private function opciones(array $opciones): array
+    {
+        return $opciones + array_filter(['num_thread' => config('tramite.llm.hilos')]);
     }
 
     private function indicacion(Expediente $e): string

@@ -135,6 +135,9 @@ services:
   ollama:
     image: ollama/ollama:latest
     profiles: ["llm"]
+    environment:
+      # El modelo queda en memoria una hora sin uso (por defecto 5 min): cargarlo de nuevo suma segundos a cada registro.
+      OLLAMA_KEEP_ALIVE: 1h
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped

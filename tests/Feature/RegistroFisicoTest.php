@@ -89,6 +89,11 @@ class RegistroFisicoTest extends TestCase
         return $this->actingAs($this->administrativo)->postJson('/registro/prellenar', ['archivo' => $archivo]);
     }
 
+    private function completarConIa(string $sha256): TestResponse
+    {
+        return $this->actingAs($this->administrativo)->postJson('/registro/prellenar/ia', ['sha256' => $sha256]);
+    }
+
     private function registrar(string $sha256, array $extra = []): TestResponse
     {
         return $this->actingAs($this->administrativo)->post('/registro', $extra + [
@@ -108,6 +113,8 @@ class RegistroFisicoTest extends TestCase
             ->assertJsonPath('campos.asunto', 'Encuesta de sostenibilidad ambiental')
             ->assertJsonPath('campos.emisor_id', $this->emisor->id)
             ->assertJsonPath('campos.folios', 1)
+            // Sin IA activa no hay nada que pedirle.
+            ->assertJsonPath('ia', false)
             ->assertJsonPath('mismo_archivo', null);
     }
 
@@ -131,6 +138,73 @@ class RegistroFisicoTest extends TestCase
             ->assertJsonPath('campos.fecha_documento', '2026-10-02')
             // El N° del voucher no es el número del documento.
             ->assertJsonPath('campos.numero_documento_original', null);
+    }
+
+    public function test_un_escaneo_sin_capa_de_texto_se_lee_con_ocr_y_la_ia_solo_busca_lo_que_falta(): void
+    {
+        config(['tramite.llm.url' => 'http://ollama:11434']);
+        TipoDocumento::create(['nombre' => 'Carta']);
+        Http::fake([
+            'ai:8000/ocr*' => Http::response(['paginas' => 6, 'texto' => implode("\n", [
+                'UNIVERSIDAD NACIONAL INTERCULTURAL DE QUILLABAMBA',
+                'CARTA MULTIPLE N? 044-2026/UNIQ-CO-DGA.',
+                'Quillabamba, 25 de septiembre de 2026.',
+                'ASUNTO : EVALUACIÓN DE GESTION ADMINISTRATIVA Y', '',
+                'TECNICA DEL 15 DE AGOSTO AL 15 DE SEPTIEMBRE', 'DEL 2026.', '',
+                'REFERENCIA : Evaluación mensual de la Gestión - UNIQ.',
+            ])]),
+            // La firma es un sello ilegible: la IA propone que emite la universidad del membrete.
+            'ollama:11434/api/generate' => Http::response(['response' => json_encode(['remitente' => 'Universidad Nacional Intercultural de Quillabamba'])]),
+        ]);
+
+        // Un escaneo sin capa de texto: pdftotext solo devuelve el salto de página.
+        $sha = $this->prellenar(UploadedFile::fake()->createWithContent('carta.pdf', self::pdf([])))->assertOk()
+            ->assertJsonPath('campos.numero_documento_original', 'CARTA MULTIPLE N° 044-2026/UNIQ-CO-DGA')
+            ->assertJsonPath('campos.emisor_sugerido', null)
+            ->assertJsonPath('ia', true)
+            ->json('sha256');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/ocr?max_paginas=1'));
+        // La IA se pide aparte: así la pantalla sabe cuándo está trabajando.
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/api/generate'));
+
+        $this->completarConIa($sha)->assertOk()
+            ->assertJsonPath('campos.numero_documento_original', 'CARTA MULTIPLE N° 044-2026/UNIQ-CO-DGA')
+            ->assertJsonPath('campos.fecha_documento', '2026-09-25')
+            ->assertJsonPath('campos.asunto', 'EVALUACIÓN DE GESTION ADMINISTRATIVA Y TECNICA DEL 15 DE AGOSTO AL 15 DE SEPTIEMBRE DEL 2026')
+            ->assertJsonPath('campos.emisor_sugerido', 'Universidad Nacional Intercultural de Quillabamba')
+            ->assertJsonPath('campos.institucion_sugerida', null);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/api/generate') && str_contains($r['prompt'], 'remitente') && ! str_contains($r['prompt'], 'fecha (AAAA-MM-DD)'));
+    }
+
+    public function test_un_memorandum_escaneado_con_ruido_del_sello_se_lee_sin_confundir_al_destinatario(): void
+    {
+        $memorando = TipoDocumento::create(['nombre' => 'Memorando']);
+        // Está en el catálogo, pero es a quien va dirigido.
+        Emisor::create(['nombre' => 'Ing. Enrique Rosell Aedo', 'tipo' => 'interno', 'clase' => 'persona']);
+        Http::fake(['ai:8000/ocr*' => Http::response(['paginas' => 1, 'texto' => implode("\n", [
+            ', UNIVERSIDAD NACIONAL',
+            "UV _' INTERCULTURAL DE QUILLABAMBA",
+            '',
+            'VICEPRESIDENCIA ACADÉMICA',
+            'MEMORÁNDUM N? 279-2026-VPA-UNIQ ome 3 E <1B! DO...',
+            '',
+            'A : Ing. ENRIQUE ROSELL AEDO A Es A o!',
+            'Director (e) Servicios Académicos soma. LY a; >',
+            '',
+            'ASUNTO : Ampliación excepcional del plazo de matrícula para los días 22 y 23',
+            'de septiembre de 2026',
+            '',
+            'FECHA : Quillabamba, 22 de septiembre de 2026.',
+        ])])]);
+
+        $this->prellenar(UploadedFile::fake()->createWithContent('memo.pdf', self::pdf([])))->assertOk()
+            // «Memorándum» es el Memorando del catálogo; lo que sigue al número es el sello.
+            ->assertJsonPath('campos.tipo_documento_id', $memorando->id)
+            ->assertJsonPath('campos.numero_documento_original', 'MEMORÁNDUM N° 279-2026-VPA-UNIQ')
+            // La fecha del documento, no la que cita el asunto.
+            ->assertJsonPath('campos.fecha_documento', '2026-09-22')
+            ->assertJsonPath('campos.emisor_id', null)
+            ->assertJsonPath('campos.institucion_sugerida', 'Universidad Nacional Intercultural De Quillabamba');
     }
 
     public function test_un_informe_academico_se_reconoce_y_propone_crear_a_quien_lo_firma(): void
@@ -161,7 +235,9 @@ class RegistroFisicoTest extends TestCase
         ])])]);
         $escaneo = UploadedFile::fake()->createWithContent('carta.pdf', self::pdf(['Estimados señores, los invitamos a la feria agropecuaria.']));
 
-        $this->prellenar($escaneo)->assertOk()
+        $sha = $this->prellenar($escaneo)->assertOk()->assertJsonPath('ia', true)->json('sha256');
+
+        $this->completarConIa($sha)->assertOk()
             ->assertJsonPath('campos.tipo_documento_id', $carta->id)
             ->assertJsonPath('campos.numero_documento_original', 'CARTA 15-2026')
             ->assertJsonPath('campos.fecha_documento', '2026-09-30')
@@ -291,6 +367,7 @@ class RegistroFisicoTest extends TestCase
     {
         $this->actingAs(User::factory()->create()->assignRole('coordinador'))->get('/registro/nuevo')->assertForbidden();
         $this->actingAs(User::factory()->create()->assignRole('director'))->postJson('/registro/prellenar', ['archivo' => $this->oficio()])->assertForbidden();
+        $this->actingAs(User::factory()->create()->assignRole('director'))->postJson('/registro/prellenar/ia', ['sha256' => str_repeat('a', 64)])->assertForbidden();
     }
 
     public function test_normaliza_el_numero_de_documento(): void

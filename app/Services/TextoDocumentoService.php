@@ -26,7 +26,8 @@ class TextoDocumentoService
 
         $texto = trim(preg_replace('/[ \t]+/', ' ', mb_convert_encoding($texto, 'UTF-8', 'UTF-8, ISO-8859-1')));
 
-        return $texto === '' ? null : mb_substr($texto, 0, self::MAX_CARACTERES);
+        // Un escaneo sin capa de texto da solo saltos de página («\f», que trim no quita): eso no es texto, va al OCR.
+        return preg_match('/[\p{L}\p{N}]/u', $texto) ? mb_substr($texto, 0, self::MAX_CARACTERES) : null;
     }
 
     /** Páginas del archivo: folios por defecto del registro de papel (7.3.5, punto 1). */

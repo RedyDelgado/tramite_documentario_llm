@@ -5,6 +5,7 @@ import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
 import { FormDialog } from '@/components/layouts/FormDialog';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { IaPensando } from '@/components/ui/IaPensando';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
@@ -13,28 +14,35 @@ import type { Opcion, OpcionEmisor } from '@/types';
 
 type Props = { opcionesEmisor: OpcionEmisor[]; opcionesTipoDocumento: Opcion<number>[]; opcionesUbicacion: Opcion<number>[]; ultimoNumeroEnPapel: number };
 
-/** RegistroFisicoService::prellenar. */
+/** RegistroFisicoService::prellenar y completarConIa. */
+type Campos = Partial<{
+    tipo_documento_id: number | null;
+    numero_documento_original: string | null;
+    fecha_documento: string | null;
+    asunto: string | null;
+    emisor_id: number | null;
+    // Quien firma, si no está en el catálogo: se crea con un clic.
+    emisor_sugerido: string | null;
+    institucion_id: number | null;
+    institucion_sugerida: string | null;
+    folios: number | null;
+}>;
+
 type Prellenado = {
     sha256: string;
     nombre: string;
     paginas: number | null;
-    campos: Partial<{
-        tipo_documento_id: number | null;
-        numero_documento_original: string | null;
-        fecha_documento: string | null;
-        asunto: string | null;
-        emisor_id: number | null;
-        // Quien firma, si no está en el catálogo: se crea con un clic.
-        emisor_sugerido: string | null;
-        institucion_id: number | null;
-        folios: number | null;
-    }>;
+    campos: Campos;
+    // Falta algo que la IA puede proponer: se pide aparte para mostrar cuándo trabaja.
+    ia: boolean;
     mismo_archivo: { id: number; numero: string | null } | null;
 };
 
 export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, opcionesUbicacion, ultimoNumeroEnPapel, onCerrar }: Props & { onCerrar: () => void }) {
     const [escaneo, setEscaneo] = useState<Prellenado | null>(null);
     const subida = useHttp<{ archivo: File | null }, Prellenado>('post', '/registro/prellenar', { archivo: null });
+    const ia = useHttp<{ sha256: string }, { campos: Campos }>('post', '/registro/prellenar/ia', { sha256: '' });
+    const leyendo = subida.processing || ia.processing;
     const form = useForm({
         sha256: '',
         asunto: '',
@@ -56,6 +64,18 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
     // Errores que no son de un campo: duplicados (7.3.5) y escaneo vencido.
     const extra = errors as Record<string, string | undefined>;
 
+    // Lo que no se lee queda en blanco, nunca con datos de otro documento.
+    const aplicar = (c: Campos) =>
+        form.setData((d) => ({
+            ...d,
+            asunto: c.asunto ?? '',
+            emisor_id: c.emisor_id ?? null,
+            institucion_id: c.institucion_id ?? null,
+            tipo_documento_id: c.tipo_documento_id ? String(c.tipo_documento_id) : '',
+            numero_documento: c.numero_documento_original ?? '',
+            fecha_documento: c.fecha_documento ?? '',
+        }));
+
     const subir = (archivo: File | undefined) => {
         if (!archivo) return;
         subida.transform(() => ({ archivo }));
@@ -63,21 +83,17 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
             .post('/registro/prellenar', {
                 onSuccess: (r) => {
                     setEscaneo(r);
-                    const c = r.campos;
-                    // Un archivo nuevo reemplaza todo lo del anterior: lo que no se lee queda en blanco, nunca con datos de otro documento.
-                    form.setData((d) => ({
-                        ...d,
-                        sha256: r.sha256,
-                        asunto: c.asunto ?? '',
-                        emisor_id: c.emisor_id ?? null,
-                        institucion_id: c.institucion_id ?? null,
-                        tipo_documento_id: c.tipo_documento_id ? String(c.tipo_documento_id) : '',
-                        numero_documento: c.numero_documento_original ?? '',
-                        fecha_documento: c.fecha_documento ?? '',
-                        folios: c.folios ? String(c.folios) : '',
-                        motivo_folios: '',
-                        confirmar_duplicado: false,
-                    }));
+                    aplicar(r.campos);
+                    form.setData((d) => ({ ...d, sha256: r.sha256, folios: r.campos.folios ? String(r.campos.folios) : '', motivo_folios: '', confirmar_duplicado: false }));
+                    if (!r.ia) return;
+                    ia.transform(() => ({ sha256: r.sha256 }));
+                    // Si la IA no responde, quedan los datos de las reglas y se corrige a mano (principio 2).
+                    ia.post('/registro/prellenar/ia', {
+                        onSuccess: ({ campos }) => {
+                            aplicar(campos);
+                            setEscaneo((e) => e && { ...e, campos: { ...e.campos, ...campos } });
+                        },
+                    }).catch(() => undefined);
                 },
             })
             .catch(() => undefined);
@@ -97,63 +113,78 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
     };
 
     const foliosCambiados = escaneo?.paginas != null && data.folios !== '' && Number(data.folios) !== escaneo.paginas;
+    // Registrar se enciende solo con todo lo obligatorio; Laravel valida igual (fechas, duplicados).
+    const listo =
+        [data.sha256, data.emisor_id, data.tipo_documento_id, data.numero_documento.trim(), data.fecha_documento, data.folios, data.asunto.trim()].every(Boolean) &&
+        (!foliosCambiados || data.motivo_folios.trim() !== '') &&
+        (!data.en_curso || (data.numero_papel !== '' && data.fecha_ingreso !== ''));
 
     return (
         <FormDialog
             onCerrar={onCerrar}
             tamano="xl"
             titulo="Registrar documento en papel"
-            descripcion="Sube el escaneo: el sistema propone los datos y tú los confirmas. El escaneo es una copia digital; el original en papel se conserva siempre."
+            descripcion="Sube el escaneo: el sistema propone los datos y tú corriges solo lo que no coincida con el papel. El original en papel se conserva siempre."
             onEnviar={enviar}
-            procesando={form.processing || subida.processing}
+            procesando={form.processing || leyendo}
+            listo={listo}
             textoGuardar="Registrar"
+            ocupado={
+                subida.processing ? (
+                    <p role="status" className="flex items-center gap-2.5">
+                        <Spinner className="text-primary-600" /> Leyendo el documento; los datos se completan solos
+                    </p>
+                ) : ia.processing ? (
+                    <IaPensando>Completando con IA lo que no se leyó; puede tardar un par de minutos</IaPensando>
+                ) : undefined
+            }
         >
-            <FormSection titulo="Escaneo" descripcion="PDF o imagen. Si no tiene texto, se lee con OCR.">
-                <FormField etiqueta="Archivo" requerido error={subida.errors.archivo ?? extra.archivo ?? errors.sha256} className="md:col-span-2">
+            <FormSection columnas={4}>
+                <FormField
+                    etiqueta="Archivo"
+                    ayuda={
+                        escaneo
+                            ? `${escaneo.nombre} · ${escaneo.paginas ?? '?'} ${escaneo.paginas === 1 ? 'página' : 'páginas'}`
+                            : 'PDF o imagen. Si no tiene texto, se lee con OCR.'
+                    }
+                    requerido
+                    error={subida.errors.archivo ?? extra.archivo ?? errors.sha256}
+                    className="md:col-span-4"
+                >
                     {(c) => (
                         <Input
                             {...c}
                             type="file"
                             accept="application/pdf,image/png,image/jpeg,image/tiff,image/webp"
-                            disabled={subida.processing}
+                            disabled={leyendo}
                             className="py-0.5 pl-1"
                             onChange={(e) => subir(e.target.files?.[0])}
                         />
                     )}
                 </FormField>
-                {subida.processing && (
-                    <p role="status" className="flex items-center gap-2 rounded-card bg-primary-50 px-4 py-3 text-base text-fg md:col-span-2">
-                        <Spinner /> Leyendo el documento: espera, los datos se completan solos. Un escaneo puede tardar hasta un minuto.
+                {escaneo?.mismo_archivo && (
+                    <p className="text-base text-fg-muted md:col-span-4">
+                        Este mismo archivo ya está en{' '}
+                        <Link href={`/expedientes/${escaneo.mismo_archivo.id}`} className="text-primary-700 underline">
+                            {escaneo.mismo_archivo.numero ?? 'otro expediente'}
+                        </Link>
                     </p>
                 )}
-                {escaneo && (
-                    <p className="text-base text-fg-muted md:col-span-2">
-                        {escaneo.nombre} · {escaneo.paginas ?? '?'} {escaneo.paginas === 1 ? 'página' : 'páginas'}
-                        {escaneo.mismo_archivo && (
-                            <>
-                                {' '}· Este mismo archivo ya está en{' '}
-                                <Link href={`/expedientes/${escaneo.mismo_archivo.id}`} className="text-primary-700 underline">
-                                    {escaneo.mismo_archivo.numero ?? 'otro expediente'}
-                                </Link>
-                            </>
-                        )}
-                    </p>
-                )}
-            </FormSection>
-
-            <fieldset disabled={subida.processing} aria-busy={subida.processing} className="flex min-w-0 flex-col gap-4 transition-opacity disabled:opacity-50">
-                <FormSection titulo="Documento" descripcion="Revisa lo propuesto; corrige solo lo que no coincida con el papel.">
+                {/* contents: los campos siguen en la grilla y se bloquean juntos mientras se lee el escaneo o trabaja la IA. */}
+                <fieldset disabled={leyendo} aria-busy={leyendo} className="contents">
                     <RemitenteCampos
-                    opciones={opcionesEmisor}
-                    emisorId={data.emisor_id}
-                    institucionId={data.institucion_id}
-                    onEmisor={(v) => setData('emisor_id', v)}
-                    onInstitucion={(v) => setData('institucion_id', v)}
-                    errores={{ emisor: errors.emisor_id, institucion: errors.institucion_id }}
-                    sugerido={escaneo?.campos.emisor_sugerido ?? undefined}
-                    requerido
-                />
-                <FormField etiqueta="Tipo de documento" requerido error={errors.tipo_documento_id}>
+                        opciones={opcionesEmisor}
+                        emisorId={data.emisor_id}
+                        institucionId={data.institucion_id}
+                        onEmisor={(v) => setData('emisor_id', v)}
+                        onInstitucion={(v) => setData('institucion_id', v)}
+                        errores={{ emisor: errors.emisor_id, institucion: errors.institucion_id }}
+                        sugerido={escaneo?.campos.emisor_sugerido ?? undefined}
+                        institucionSugerida={escaneo?.campos.institucion_sugerida ?? undefined}
+                        requerido
+                        className="md:col-span-2"
+                    />
+                    <FormField etiqueta="Tipo de documento" requerido error={errors.tipo_documento_id}>
                         {(c) => (
                             <Select
                                 {...c}
@@ -164,66 +195,26 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
                             />
                         )}
                     </FormField>
-                    <FormField
-                        etiqueta="N° de documento"
-                        ayuda="Tal como figura; se normaliza al guardar."
-                        requerido
-                        error={errors.numero_documento}
-                        className="md:col-span-2"
-                    >
+                    <FormField etiqueta="N° de documento" ayuda="Tal como figura; se normaliza al guardar." requerido error={errors.numero_documento} className="md:col-span-2">
                         {(c) => <Input {...c} value={data.numero_documento} maxLength={150} onChange={(e) => setData('numero_documento', e.target.value)} />}
                     </FormField>
+                    <FormField etiqueta="Fecha del documento" requerido error={errors.fecha_documento}>
+                        {(c) => <Input {...c} type="date" value={data.fecha_documento} onChange={(e) => setData('fecha_documento', e.target.value)} />}
+                    </FormField>
                     {extra.duplicado_id && (
-                        <p className="text-base md:col-span-2">
+                        <p className="text-base md:col-span-4">
                             <Link href={`/expedientes/${extra.duplicado_id}`} className="text-primary-700 underline">
                                 Abrir el expediente ya registrado
                             </Link>
                         </p>
                     )}
-                    <FormField etiqueta="Fecha del documento" requerido error={errors.fecha_documento}>
-                        {(c) => <Input {...c} type="date" value={data.fecha_documento} onChange={(e) => setData('fecha_documento', e.target.value)} />}
+                    <FormField etiqueta="Asunto" requerido error={errors.asunto} className="md:col-span-4">
+                        {(c) => <Textarea {...c} rows={2} value={data.asunto} maxLength={500} onChange={(e) => setData('asunto', e.target.value)} />}
                     </FormField>
-                    <FormField etiqueta="Folios" ayuda="Las páginas del escaneo." requerido error={errors.folios}>
+                    <FormField etiqueta="Folios" requerido error={errors.folios}>
                         {(c) => <Input {...c} type="number" min={1} max={5000} value={data.folios} onChange={(e) => setData('folios', e.target.value)} />}
                     </FormField>
-                    {foliosCambiados && (
-                        <FormField etiqueta="Motivo del cambio de folios" requerido error={errors.motivo_folios} className="md:col-span-2">
-                            {(c) => <Input {...c} value={data.motivo_folios} maxLength={300} onChange={(e) => setData('motivo_folios', e.target.value)} />}
-                        </FormField>
-                    )}
-                    <FormField etiqueta="Asunto" requerido error={errors.asunto} className="md:col-span-2">
-                        {(c) => <Textarea {...c} value={data.asunto} maxLength={500} onChange={(e) => setData('asunto', e.target.value)} />}
-                    </FormField>
-                    <Checkbox
-                        etiqueta="Requiere respuesta"
-                        checked={data.requiere_respuesta}
-                        onChange={(e) => setData('requiere_respuesta', e.target.checked)}
-                    />
-                </FormSection>
-
-                {ultimoNumeroEnPapel > 0 && (
-                    <FormSection titulo="Trámite en curso" descripcion="Solo para lo que ya estaba en el registro en papel: conserva su número y su fecha de ingreso.">
-                        <Checkbox
-                            etiqueta="Ya estaba en el registro en papel"
-                            checked={data.en_curso}
-                            onChange={(e) => setData('en_curso', e.target.checked)}
-                            className="md:col-span-2"
-                        />
-                        {data.en_curso && (
-                            <>
-                                <FormField etiqueta="N° en el registro en papel" ayuda={`Del 1 al ${ultimoNumeroEnPapel}.`} requerido error={errors.numero_papel}>
-                                    {(c) => <Input {...c} type="number" min={1} max={ultimoNumeroEnPapel} value={data.numero_papel} onChange={(e) => setData('numero_papel', e.target.value)} />}
-                                </FormField>
-                                <FormField etiqueta="Fecha de ingreso" ayuda="La del registro en papel: de ella salen el plazo y el semáforo." requerido error={errors.fecha_ingreso}>
-                                    {(c) => <Input {...c} type="date" value={data.fecha_ingreso} onChange={(e) => setData('fecha_ingreso', e.target.value)} />}
-                                </FormField>
-                            </>
-                        )}
-                    </FormSection>
-                )}
-
-                <FormSection titulo="Original en papel" descripcion="Se conserva siempre; tú quedas como su custodio al registrarlo.">
-                    <FormField etiqueta="Ubicación" ayuda="Archivador, caja o estante." error={errors.ubicacion_fisica_id}>
+                    <FormField etiqueta="Ubicación del original" error={errors.ubicacion_fisica_id}>
                         {(c) => (
                             <Select
                                 {...c}
@@ -234,19 +225,49 @@ export default function RegistroNuevo({ opcionesEmisor, opcionesTipoDocumento, o
                             />
                         )}
                     </FormField>
-                </FormSection>
-
-                {extra.duplicado && (
-                    <FormSection titulo="Posible duplicado">
-                        <p className="text-base text-danger md:col-span-2">{extra.duplicado}</p>
+                    {/* Alineadas con los campos de la fila, bajo la altura de su etiqueta. */}
+                    <Checkbox
+                        etiqueta="Requiere respuesta"
+                        checked={data.requiere_respuesta}
+                        onChange={(e) => setData('requiere_respuesta', e.target.checked)}
+                        className="md:mt-9 md:self-start"
+                    />
+                    {ultimoNumeroEnPapel > 0 && (
                         <Checkbox
-                            etiqueta="Es otro documento: registrarlo de todos modos"
-                            checked={data.confirmar_duplicado}
-                            onChange={(e) => setData('confirmar_duplicado', e.target.checked)}
+                            etiqueta="Ya estaba en el registro en papel"
+                            checked={data.en_curso}
+                            onChange={(e) => setData('en_curso', e.target.checked)}
+                            className="md:mt-9 md:self-start"
                         />
-                    </FormSection>
-                )}
-            </fieldset>
+                    )}
+                    {foliosCambiados && (
+                        <FormField etiqueta="Motivo del cambio de folios" requerido error={errors.motivo_folios} className="md:col-span-2">
+                            {(c) => <Input {...c} value={data.motivo_folios} maxLength={300} onChange={(e) => setData('motivo_folios', e.target.value)} />}
+                        </FormField>
+                    )}
+                    {data.en_curso && (
+                        <>
+                            <FormField etiqueta="N° en el registro en papel" ayuda={`Del 1 al ${ultimoNumeroEnPapel}.`} requerido error={errors.numero_papel}>
+                                {(c) => <Input {...c} type="number" min={1} max={ultimoNumeroEnPapel} value={data.numero_papel} onChange={(e) => setData('numero_papel', e.target.value)} />}
+                            </FormField>
+                            <FormField etiqueta="Fecha de ingreso" ayuda="La del registro en papel: de ella salen el plazo y el semáforo." requerido error={errors.fecha_ingreso}>
+                                {(c) => <Input {...c} type="date" value={data.fecha_ingreso} onChange={(e) => setData('fecha_ingreso', e.target.value)} />}
+                            </FormField>
+                        </>
+                    )}
+                </fieldset>
+            </FormSection>
+
+            {extra.duplicado && (
+                <FormSection titulo="Posible duplicado">
+                    <p className="text-base text-danger md:col-span-2">{extra.duplicado}</p>
+                    <Checkbox
+                        etiqueta="Es otro documento: registrarlo de todos modos"
+                        checked={data.confirmar_duplicado}
+                        onChange={(e) => setData('confirmar_duplicado', e.target.checked)}
+                    />
+                </FormSection>
+            )}
         </FormDialog>
     );
 }

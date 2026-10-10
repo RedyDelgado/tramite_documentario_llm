@@ -124,3 +124,63 @@
         transform: scale(0.97);
     }
 }
+
+/* IaPensando: los circuitos del cerebro se encienden en orden, cada uno con su nodo, y un halo late detrás. */
+@media (prefers-reduced-motion: no-preference) {
+    .ia-circuito > :nth-child(n + 6) {
+        animation: chispa 1.8s ease-in-out infinite;
+    }
+
+    /* Trazo y nodo de una misma rama comparten retraso: el impulso va del cerebro a la punta. */
+    .ia-circuito > :nth-child(9),
+    .ia-circuito > :nth-child(11) {
+        animation-delay: 0.3s;
+    }
+
+    .ia-circuito > :nth-child(6),
+    .ia-circuito > :nth-child(10) {
+        animation-delay: 0.6s;
+    }
+
+    .ia-circuito > :nth-child(7),
+    .ia-circuito > :nth-child(12) {
+        animation-delay: 0.9s;
+    }
+
+    .ia-halo {
+        animation: halo 1.8s ease-out infinite;
+    }
+
+    .ia-puntos > span {
+        animation: chispa 1.4s ease-in-out infinite;
+    }
+
+    .ia-puntos > span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .ia-puntos > span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+}
+
+@keyframes chispa {
+    0%,
+    100% {
+        opacity: 0.2;
+    }
+    40% {
+        opacity: 1;
+    }
+}
+
+@keyframes halo {
+    from {
+        opacity: 0.9;
+        transform: scale(0.7);
+    }
+    to {
+        opacity: 0;
+        transform: scale(1.25);
+    }
+}

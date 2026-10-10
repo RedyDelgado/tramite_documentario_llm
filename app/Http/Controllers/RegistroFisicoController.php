@@ -49,6 +49,14 @@ class RegistroFisicoController extends Controller
         return response()->json($this->registro->prellenar($archivo));
     }
 
+    public function completarConIa(Request $request): JsonResponse
+    {
+        Gate::authorize('create', Expediente::class);
+        $sha256 = $request->validate(['sha256' => ['required', 'string', 'size:64']])['sha256'];
+
+        return response()->json(['campos' => $this->registro->completarConIa($sha256)]);
+    }
+
     public function store(RegistroFisicoRequest $request): RedirectResponse
     {
         $expediente = $this->registro->registrar($request->validated());

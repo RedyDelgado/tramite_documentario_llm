@@ -12,14 +12,18 @@ type Props = {
     errores: { emisor?: string; institucion?: string };
     // Quien firma según el documento, si aún no está en el catálogo.
     sugerido?: string;
+    // Institución del membrete, si aún no está en el catálogo.
+    institucionSugerida?: string;
     requerido?: boolean;
+    // Ancho de cada campo en la grilla del formulario (p. ej. md:col-span-2).
+    className?: string;
 };
 
 /**
  * Quién emite (una persona o una institución) y a qué institución pertenece: el director del hospital es del Hospital
  * de Quillabamba; la municipalidad emite como institución; un ciudadano no pertenece a ninguna.
  */
-export function RemitenteCampos({ opciones: iniciales, emisorId, institucionId, onEmisor, onInstitucion, errores, sugerido, requerido }: Props) {
+export function RemitenteCampos({ opciones: iniciales, emisorId, institucionId, onEmisor, onInstitucion, errores, sugerido, institucionSugerida, requerido, className }: Props) {
     const [opciones, setOpciones] = useState(iniciales);
     const [errorEmisor, setErrorEmisor] = useState<string>();
     const [errorInstitucion, setErrorInstitucion] = useState<string>();
@@ -42,6 +46,7 @@ export function RemitenteCampos({ opciones: iniciales, emisorId, institucionId, 
                 ayuda="Quien firma: una persona o, si no hay firma personal, la institución."
                 requerido={requerido}
                 error={errorEmisor ?? errores.emisor}
+                className={className}
             >
                 {(c) => (
                     <EmisorCombobox
@@ -59,6 +64,7 @@ export function RemitenteCampos({ opciones: iniciales, emisorId, institucionId, 
                 etiqueta="Institución"
                 ayuda={esInstitucion ? 'El emisor ya es una institución.' : 'A la que pertenece; vacía si es una persona sin institución.'}
                 error={errorInstitucion ?? errores.institucion}
+                className={className}
             >
                 {(c) => (
                     <EmisorCombobox
@@ -68,6 +74,7 @@ export function RemitenteCampos({ opciones: iniciales, emisorId, institucionId, 
                         opciones={opciones.filter((o) => o.clase === 'institucion')}
                         value={esInstitucion ? null : institucionId}
                         clase="institucion"
+                        sugerido={esInstitucion ? undefined : institucionSugerida}
                         disabled={esInstitucion}
                         placeholder={esInstitucion ? '—' : 'Escribe para buscar o crear'}
                         onCreado={agregar}

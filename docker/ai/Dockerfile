@@ -19,5 +19,8 @@ COPY . .
 # Modelos entrenados (models/vAAAAMMDDHHMM/); el volumen los conserva entre despliegues.
 RUN mkdir -p /srv/models && chown nobody /srv/models
 
+# Con pocos núcleos los hilos de OpenMP de Tesseract se estorban: con uno solo, una página tarda la mitad.
+ENV OMP_THREAD_LIMIT=1
+
 USER nobody
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

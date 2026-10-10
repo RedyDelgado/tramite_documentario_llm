@@ -20,6 +20,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { DetalleDialog } from '@/components/ui/DetalleDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconButton } from '@/components/ui/IconButton';
+import { IaPensando } from '@/components/ui/IaPensando';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -279,6 +280,9 @@ export default function Catalogo() {
                             <Skeleton />
                             <Skeleton className="w-2/3" />
                         </div>
+                    </Fila>
+                    <Fila etiqueta="IA trabajando">
+                        <IaPensando>Completando con IA lo que no se leyó</IaPensando>
                     </Fila>
                     <EmptyState
                         icono={<IcoBuscar />}
