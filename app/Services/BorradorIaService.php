@@ -90,6 +90,37 @@ class BorradorIaService
         return Str::limit($texto, 2000, '');
     }
 
+    /**
+     * ¿El correo que llegó responde a lo que pidió la derivación? Solo propone: quien atiende lo confirma. Sin IA activa
+     * devuelve null; si el modelo no responde, la excepción deja que el job reintente.
+     *
+     * @return array{responde: bool, motivo: string}|null
+     */
+    public function evaluarRespuesta(string $pedido, string $respuesta): ?array
+    {
+        if (! self::activo()) {
+            return null;
+        }
+
+        $resultado = json_decode((string) Http::timeout(180)->post(rtrim(config('tramite.llm.url'), '/').'/api/generate', [
+            'model' => config('tramite.llm.modelo'),
+            'prompt' => implode("\n", [
+                'Eres asistente de la Filial Quillabamba de la Universidad Andina del Cusco. Un área recibió un trámite con un pedido y contestó por correo.',
+                'Lo pedido: '.Str::limit($pedido, 1500),
+                'Lo que contestó: '.Str::limit($respuesta, 2500),
+                '',
+                'Responde solo JSON: {"responde": true o false, "motivo": "una oración en español"}. responde es true si la contestación atiende lo pedido (aunque sea en parte o adjunte lo solicitado) y false si trata de otra cosa o solo acusa recibo.',
+            ]),
+            'stream' => false,
+            'format' => 'json',
+            'options' => $this->opciones(['temperature' => 0]),
+        ])->throw()->json('response'), true);
+
+        return is_array($resultado) && is_bool($resultado['responde'] ?? null)
+            ? ['responde' => $resultado['responde'], 'motivo' => Str::limit(trim((string) ($resultado['motivo'] ?? '')), 300, '')]
+            : null;
+    }
+
     private function generar(string $prompt): string
     {
         if (! self::activo()) {

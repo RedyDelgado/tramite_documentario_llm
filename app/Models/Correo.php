@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'expediente_id', 'message_id', 'en_respuesta_a', 'uid_externo', 'de_email', 'de_nombre', 'para', 'cc',
-    'asunto', 'fecha', 'cuerpo_texto', 'es_reenvio', 'ruta_eml', 'sha256',
+    'asunto', 'fecha', 'cuerpo_texto', 'es_reenvio', 'ruta_eml', 'sha256', 'respuesta_area', 'ia_respuesta', 'ia_motivo',
 ])]
 // Con desfase: la fecha de un correo llega en la zona del remitente y debe guardarse como instante exacto.
 #[DateFormat('Y-m-d H:i:sP')]
@@ -24,6 +24,7 @@ class Correo extends Model
             'cc' => 'array',
             'fecha' => 'datetime',
             'es_reenvio' => 'boolean',
+            'respuesta_area' => 'boolean',
         ];
     }
 

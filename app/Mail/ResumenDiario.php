@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\Expediente;
 use App\Models\NotificacionEnviada;
 use App\Models\User;
+use App\Services\BuzonService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -40,7 +41,7 @@ class ResumenDiario extends Mailable implements ShouldQueue
     {
         $rojos = $this->expedientes->where('semaforo.value', 'rojo')->count();
 
-        return new Envelope(subject: "Trámites pendientes: {$this->expedientes->count()}".($rojos ? " ({$rojos} en rojo)" : ''));
+        return new Envelope(from: app(BuzonService::class)->remitente(), subject: "Trámites pendientes: {$this->expedientes->count()}".($rojos ? " ({$rojos} en rojo)" : ''));
     }
 
     public function content(): Content

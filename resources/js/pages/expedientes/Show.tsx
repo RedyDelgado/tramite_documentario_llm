@@ -5,6 +5,7 @@ import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
 import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
 import { AreasAtencion } from '@/components/domain/AreasAtencion';
+import { RespuestaCorreo } from '@/components/domain/RespuestaCorreo';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { LineaTiempo } from '@/components/domain/LineaTiempo';
 import { OriginalPapel } from '@/components/domain/OriginalPapel';
@@ -136,7 +137,7 @@ function CorreoOriginal({ c }: { c: CorreoDetalle }) {
     );
 }
 
-function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDetalle[] }) {
+function Correo({ c, documentos, puedeAtender }: { c: CorreoDetalle; documentos: DocumentoDetalle[]; puedeAtender: boolean }) {
     const adjuntos = documentos.filter((d) => c.documentos.includes(d.id));
 
     return (
@@ -158,6 +159,7 @@ function Correo({ c, documentos }: { c: CorreoDetalle; documentos: DocumentoDeta
             </header>
             <p className="mt-2 text-base font-semibold text-fg">{c.asunto}</p>
             {c.cuerpo && <div className="mt-2 rounded-card bg-surface-subtle px-4 py-3 text-base whitespace-pre-wrap text-fg">{c.cuerpo}</div>}
+            {c.respuesta && <RespuestaCorreo correoId={c.id} respuesta={c.respuesta} puedeAtender={puedeAtender} />}
             <footer className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                 {adjuntos.map((d) => (
                     <EnlaceDocumento key={d.id} d={d} />
@@ -229,7 +231,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         {e.correos.length === 0 ? (
                             <EmptyState icono={<IcoCorreo />} titulo="Sin correos" />
                         ) : (
-                            e.correos.map((c) => <Correo key={c.id} c={c} documentos={e.documentos} />)
+                            e.correos.map((c) => <Correo key={c.id} c={c} documentos={e.documentos} puedeAtender={e.permisos.atender} />)
                         )}
                     </Card>
                 )}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DerivarRequest;
+use App\Models\Correo;
 use App\Models\Expediente;
 use App\Services\AtencionService;
 use App\Services\SerieService;
@@ -45,6 +46,17 @@ class AtencionController extends Controller
         $expediente = $this->atencion->atender($expediente, $nota);
 
         return $this->listo($expediente->atendido_at ? 'Atendido: ya lo atendieron todas las áreas.' : 'Atendido por tu área; faltan otras áreas.');
+    }
+
+    /** Una persona del área confirma que el correo que llegó responde a lo pedido; la IA solo lo propuso. */
+    public function atenderConCorreo(Correo $correo): RedirectResponse
+    {
+        abort_unless($correo->respuesta_area, 404);
+        Gate::authorize('atender', $correo->expediente);
+        $de = $correo->de_nombre ?? $correo->de_email;
+        $expediente = $this->atencion->atender($correo->expediente, "Respondió por correo {$de} el {$correo->fecha->timezone('America/Lima')->format('d/m/Y H:i')}: «{$correo->asunto}»");
+
+        return $this->listo($expediente->atendido_at ? 'Atendido con la respuesta por correo: ya lo atendieron todas las áreas.' : 'Atendido por tu área con la respuesta por correo; faltan otras áreas.');
     }
 
     public function comentar(Request $request, Expediente $expediente): RedirectResponse

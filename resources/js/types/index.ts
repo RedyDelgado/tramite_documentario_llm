@@ -73,6 +73,8 @@ export type CorreoDetalle = {
     cuerpo: string | null;
     es_reenvio: boolean;
     documentos: number[];
+    // Llegó con áreas pendientes: posible respuesta; la IA propone si responde y una persona lo confirma.
+    respuesta: { area: string | null; ia: 'responde' | 'no_relacionado' | null; motivo: string | null } | null;
 };
 
 export type DocumentoDetalle = { id: number; nombre: string; mime: string; tamano: number; sha256: string; con_texto: boolean; amenaza: string | null };

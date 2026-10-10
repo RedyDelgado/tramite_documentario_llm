@@ -8,6 +8,7 @@ use App\Correo\MailboxDriver;
 use App\Correo\MensajeLeido;
 use App\Enums\EstadoExpediente;
 use App\Enums\OrigenExpediente;
+use App\Jobs\EvaluarRespuesta;
 use App\Models\Buzon;
 use App\Models\Correo;
 use App\Models\CorreoLeido;
@@ -177,6 +178,11 @@ class IngestaCorreoService
             $this->entregas->registrarRebote($mensaje, $correo);
         } elseif (! $nuevo) {
             $this->entregas->registrarRespuesta($mensaje, $expediente);
+            // Con áreas aún pendientes, es una posible respuesta: la IA propone si atiende lo pedido y una persona confirma.
+            if ($expediente->atenciones()->where('estado', '!=', 'atendido')->exists()) {
+                $correo->forceFill(['respuesta_area' => true])->save();
+                EvaluarRespuesta::dispatch($correo->id)->afterCommit();
+            }
         }
         $this->auditoria->registrar('correo.ingresado', $correo, despues: [
             'expediente_id' => $expediente->id,

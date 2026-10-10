@@ -7,6 +7,7 @@ use App\Models\ExpedienteArea;
 use App\Models\Movimiento;
 use App\Models\NotificacionEnviada;
 use App\Models\User;
+use App\Services\BuzonService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -37,7 +38,11 @@ class AvisoDerivacion extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: ($this->atencion ? 'Nuevo trámite para atender: ' : 'En copia, para conocimiento: ').($this->expediente->numero_registro ?? 'sin número').' · '.Str::limit($this->expediente->asunto, 80));
+        // El código en el asunto enlaza la respuesta del área con su expediente al volver al buzón (7.1).
+        return new Envelope(
+            from: app(BuzonService::class)->remitente(),
+            subject: '['.($this->expediente->codigo ?? 'sin código').'] '.($this->atencion ? 'Para atender: ' : 'En copia, para conocimiento: ').Str::limit($this->expediente->asunto, 80),
+        );
     }
 
     public function content(): Content

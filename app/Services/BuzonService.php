@@ -9,6 +9,7 @@ use App\Models\Buzon;
 use App\Models\Configuracion;
 use App\Models\CorreoLeido;
 use Carbon\CarbonImmutable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -45,6 +46,12 @@ class BuzonService
     public function principal(): ?Buzon
     {
         return Buzon::orderByDesc('principal')->orderBy('id')->first();
+    }
+
+    /** Todo correo del sistema sale de la cuenta principal (decisión del usuario): así las respuestas vuelven al buzón. */
+    public function remitente(): Address
+    {
+        return new Address($this->principal()?->cuenta ?? config('mail.from.address'), config('app.name'));
     }
 
     /**

@@ -167,13 +167,19 @@ class ExpedienteController extends Controller
         $auditoria->registrar('expediente.consultado', $expediente);
         $user = $request->user();
         $registrable = $expediente->estado->puedeConfirmarse() && $user->can('registrar', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'institucion:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo', 'areasCopia:id,nombre', 'atenciones.area:id,nombre', 'atenciones.responsable:id,name', 'atenciones.atendidoPor:id,name']);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'institucion:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo', 'areasCopia:id,nombre', 'atenciones.area:id,nombre', 'atenciones.responsable:id,name,email', 'atenciones.atendidoPor:id,name']);
         $abierto = in_array($expediente->estado, [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion], true);
         $derivable = ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('derivar', $expediente);
         $custodia = $expediente->codigo !== null && $user->can('custodiar', $expediente);
         $agrupable = $user->can('agrupar', $expediente);
         // Lo que este usuario atiende: decide si ve «Tomar» y «Marcar atendido».
         $mias = $abierto ? Gate::getPolicyFor($expediente)->areasQueAtiende($user, $expediente) : collect();
+        // De qué área viene cada correo: su remitente es el responsable o quien coordina un área que lo atiende.
+        $nombres = $expediente->atenciones->pluck('area.nombre', 'area_id');
+        $areaDe = AreaResponsable::vigentes()->whereIn('area_id', $nombres->keys())->with('user:id,email')->get()->toBase()
+            ->map(fn (AreaResponsable $r) => [mb_strtolower($r->user->email), $r->area_id])
+            ->merge($expediente->atenciones->filter(fn (ExpedienteArea $a) => $a->responsable)->map(fn (ExpedienteArea $a) => [mb_strtolower($a->responsable->email), $a->area_id]))
+            ->groupBy(0)->map(fn ($filas) => $filas->map(fn ($f) => $nombres[$f[1]])->unique()->implode(', '));
 
         // El detalle se abre en modal sobre la bandeja (CLAUDE.md: ver va en un modal).
         $bandeja = $this->index($request);
@@ -257,6 +263,7 @@ class ExpedienteController extends Controller
                     'fecha' => $c->fecha->toIso8601String(),
                     'cuerpo' => $c->cuerpo_texto,
                     'es_reenvio' => $c->es_reenvio,
+                    'respuesta' => $c->respuesta_area ? ['area' => $areaDe[mb_strtolower($c->de_email)] ?? null, 'ia' => $c->ia_respuesta, 'motivo' => $c->ia_motivo] : null,
                     'documentos' => $c->documentos->pluck('id'),
                 ]),
                 'documentos' => $expediente->documentos->map(fn (Documento $d) => [

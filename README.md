@@ -116,7 +116,7 @@ Toda la configuración está en `.env`. [.env.example](.env.example) es la plant
 | `SALIENTES_DRIVER` | `gmail` envía desde el buzón central; `mailer` usa `MAIL_MAILER` |
 | `SALIENTES_POR_MINUTO` | Límite de envíos por minuto |
 | `SALIENTES_BUZON_CENTRAL` | Dirección del buzón central, que va en copia oculta de cada envío |
-| `MAIL_MAILER`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Correo del sistema (avisos y resúmenes). `log` en desarrollo solo lo escribe en el log |
+| `MAIL_MAILER`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Correo del sistema (avisos y resúmenes). En producción, `gmail`: sale de la cuenta principal del buzón y las respuestas de las áreas vuelven a él y se anexan al trámite por su código. `log` en desarrollo solo lo escribe en el log; `MAIL_FROM_ADDRESS` se usa solo si no hay cuenta conectada |
 
 ### Registro, seguridad y respaldos
 

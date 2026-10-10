@@ -2,6 +2,21 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-10 — Marco con paneles flotantes e inicio con cifras grandes (decisión del usuario)
+
+- Inspiración enviada por el usuario (un panel de proyectos verde); se toma la forma y se mantiene el azul de marca.
+- **Barra lateral y barra superior como paneles blancos flotantes** sobre el fondo gris, con esquinas de 24 px. La barra lateral deja el degradado: la selección se marca con negrita, fondo `primary-50` y una barra de marca en el borde.
+- El degradado pasa a ser `--degradado-marca` y se usa en la primera cifra del inicio y en el icono del sistema; salen los tokens `--barra-*`.
+- **Botones en cápsula** (36 px), tarjetas y hojas con esquinas de 20 px, cifras del inicio en 40 px (`text-cifra`) y barras de los gráficos en cápsula.
+
+## 2026-10-15 — Respuestas de las áreas por correo (decisión del usuario)
+
+- **Todo sale y llega por la cuenta principal del buzón**: el aviso de derivación y el resumen diario llevan como remitente esa cuenta (`BuzonService::remitente`); con `MAIL_MAILER=gmail` se envían por ella. El aviso lleva `[REG-AAAA-NNNNN]` en el asunto.
+- El área responde al aviso; la respuesta llega al buzón y la ingesta la anexa al expediente por el código (ya existía). Si el expediente tiene áreas pendientes, el correo queda como **posible respuesta** (`correos.respuesta_area`).
+- **La IA solo propone** (job `EvaluarRespuesta`, fuera de la ingesta): compara lo pedido (asunto, instrucción e indicaciones de la última derivación) con lo que llegó (cuerpo y texto de los adjuntos) y guarda «responde» o «no parece responder» con un motivo. Si la IA está caída, se reintenta.
+- **Una persona confirma**: en el correo, «Dar por atendido con esta respuesta» (con confirmación) marca atendidas las áreas de quien pulsa, con la respuesta como nota. Se ve de qué área vino si el remitente es su responsable o quien la coordina.
+- Si el área escribe un correo nuevo sin el código, entra como un ingreso aparte por revisar.
+
 ## 2026-10-14 — Derivar a varias áreas (decisión del usuario)
 
 - Un expediente se deriva a **una o varias áreas que lo atienden** (`expediente_areas`), cada una con su responsable opcional, su plazo (del tipo y del área, o la fecha que fije el documento) y su estado: por tomar → en atención → atendido. La primera es la principal.
