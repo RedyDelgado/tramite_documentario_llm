@@ -24,8 +24,9 @@ class AtencionController extends Controller
             return $this->listo("Serie derivada: {$total} expedientes.");
         }
         $expediente = $this->atencion->derivar($expediente, $request->validated());
+        $mas = count($request->validated('areas')) - 1;
 
-        return $this->listo("Derivado a {$expediente->area->nombre}.");
+        return $this->listo("Derivado a {$expediente->area->nombre}".($mas ? " y {$mas} ".($mas === 1 ? 'área más' : 'áreas más') : '').'.');
     }
 
     public function tomar(Expediente $expediente): RedirectResponse
@@ -34,6 +35,16 @@ class AtencionController extends Controller
         $expediente = $this->atencion->tomar($expediente);
 
         return $this->listo($expediente->atendido_at ? 'Toma de conocimiento registrada: queda atendido.' : 'Tomado en atención.');
+    }
+
+    /** Lo que el área hizo queda como nota: con eso el expediente se da por atendido cuando lo atendieron todas. */
+    public function atender(Request $request, Expediente $expediente): RedirectResponse
+    {
+        Gate::authorize('atender', $expediente);
+        $nota = $request->validate(['nota' => ['required', 'string', 'max:2000']], attributes: ['nota' => 'cómo se atendió'])['nota'];
+        $expediente = $this->atencion->atender($expediente, $nota);
+
+        return $this->listo($expediente->atendido_at ? 'Atendido: ya lo atendieron todas las áreas.' : 'Atendido por tu área; faltan otras áreas.');
     }
 
     public function comentar(Request $request, Expediente $expediente): RedirectResponse

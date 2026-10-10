@@ -20,6 +20,8 @@ final class AccionesAuditoria
         'expediente.cierre_rechazado' => 'Rechazó el cierre',
         'expediente.cerrado' => 'Cerró el expediente',
         'expediente.respondido' => 'Quedó atendido al enviarse la respuesta',
+        'expediente.area_atendida' => 'Marcó atendido lo de su área',
+        'expediente.atendido' => 'Marcó atendido; ya lo atendieron todas las áreas',
         'original.movido' => 'Movió el original en papel',
         'constancia.impresa' => 'Imprimió la constancia de recepción',
         'etiqueta.impresa' => 'Imprimió la etiqueta QR',

@@ -57,11 +57,13 @@ class SemaforoService
         return CarbonImmutable::instance($instante)->setTimezone(config('app.timezone'))->startOfDay();
     }
 
-    /** Responsable directo, o un titular o suplente vigente en el área. */
+    /** Cada área pendiente tiene responsable directo, o un titular o suplente vigente: basta una sin nadie para el rojo. */
     private function tieneResponsable(Expediente $e): bool
     {
-        return $e->responsable_id !== null
-            || ($e->area_principal_id !== null && AreaResponsable::where('area_id', $e->area_principal_id)->vigentes()->exists());
+        $pendientes = $e->atenciones()->where('estado', '!=', 'atendido')->get(['area_id', 'responsable_id']);
+
+        return $pendientes->isNotEmpty() && $pendientes->every(fn ($a) => $a->responsable_id !== null
+            || AreaResponsable::where('area_id', $a->area_id)->vigentes()->exists());
     }
 
     /** Recalcula lo abierto, que cambia de color con el paso del tiempo; devuelve cuántos cambiaron. */

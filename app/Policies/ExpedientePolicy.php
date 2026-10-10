@@ -4,8 +4,10 @@ namespace App\Policies;
 
 use App\Models\AreaResponsable;
 use App\Models\Expediente;
+use App\Models\ExpedienteArea;
 use App\Models\Movimiento;
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 /** El superadmin no tiene estos permisos: administra, pero no ve el contenido de los trámites (5). */
 class ExpedientePolicy
@@ -51,10 +53,22 @@ class ExpedientePolicy
         return $user->can('expedientes.derivar') && $this->view($user, $expediente);
     }
 
-    /** Atender (tomar, solicitar el cierre): el responsable asignado o quien coordina el área. */
+    /** Atender (tomar, marcar atendido, solicitar el cierre): quien es responsable de alguna de sus áreas pendientes o la coordina. */
     public function atender(User $user, Expediente $expediente): bool
     {
-        return $expediente->responsable_id === $user->id || $this->coordinaElArea($user, $expediente);
+        return $this->areasQueAtiende($user, $expediente)->isNotEmpty();
+    }
+
+    /**
+     * Las áreas aún pendientes del expediente que este usuario atiende; AtencionService actúa solo sobre ellas.
+     *
+     * @return Collection<int, ExpedienteArea>
+     */
+    public function areasQueAtiende(User $user, Expediente $expediente): Collection
+    {
+        return $expediente->atenciones()->where('estado', '!=', 'atendido')->get()
+            ->filter(fn (ExpedienteArea $a) => $a->responsable_id === $user->id || $this->coordina($user, $expediente, $a->area_id))
+            ->values();
     }
 
     /** Responder (lo que deja el trámite atendido): quien lo atiende, deriva o registra; un área en copia no. */
@@ -85,7 +99,7 @@ class ExpedientePolicy
         return $user->id !== $expediente->registrado_por
             && match ($expediente->tipoTramite?->aprueba_cierre) {
                 'director' => $user->hasRole('director'),
-                'coordinador' => $this->coordinaElArea($user, $expediente),
+                'coordinador' => $expediente->atenciones()->pluck('area_id')->contains(fn (int $area) => $this->coordina($user, $expediente, $area)),
                 default => false,
             };
     }
@@ -94,16 +108,13 @@ class ExpedientePolicy
      * Titular o suplente vigente del área misma, sea cual sea su rol (el director en Dirección); quien coordina,
      * además, las áreas que dependen de las suyas.
      */
-    private function coordinaElArea(User $user, Expediente $expediente): bool
+    private function coordina(User $user, Expediente $expediente, int $area): bool
     {
-        if ($expediente->area_principal_id === null) {
-            return false;
-        }
         // Y que pueda ver trámites: el superadmin puede figurar como titular, pero no accede a su contenido (5).
-        if (AreaResponsable::where('area_id', $expediente->area_principal_id)->where('user_id', $user->id)->vigentes()->exists()) {
+        if (AreaResponsable::where('area_id', $area)->where('user_id', $user->id)->vigentes()->exists()) {
             return $this->view($user, $expediente);
         }
 
-        return $user->can('expedientes.ver_areas') && in_array($expediente->area_principal_id, $user->areasVigentes(), true);
+        return $user->can('expedientes.ver_areas') && in_array($area, $user->areasVigentes(), true);
     }
 }

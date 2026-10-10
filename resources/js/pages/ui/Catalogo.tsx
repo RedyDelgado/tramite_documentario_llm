@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Combobox } from '@/components/ui/Combobox';
+import { ComboboxMultiple } from '@/components/ui/ComboboxMultiple';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
 import { DetalleDialog } from '@/components/ui/DetalleDialog';
@@ -91,6 +92,7 @@ export default function Catalogo() {
         { value: 3, label: 'Municipalidad Provincial' },
     ]);
     const [emisor, setEmisor] = useState<number | null>(null);
+    const [copias, setCopias] = useState<number[]>([]);
     const [confirmar, setConfirmar] = useState(false);
     const [drawer, setDrawer] = useState(false);
     const [orden, setOrden] = useState<Orden>({ clave: 'id', dir: 'asc' });
@@ -202,6 +204,9 @@ export default function Catalogo() {
                                 }}
                             />
                         )}
+                    </FormField>
+                    <FormField etiqueta="En copia (ComboboxMultiple)" ayuda="Varias de una lista larga: se buscan y quedan como fichas.">
+                        {(c) => <ComboboxMultiple {...c} opciones={emisores} valor={copias} onCambiar={setCopias} />}
                     </FormField>
                     <FormField etiqueta="Palabras clave" ayuda="Enter o coma para agregar.">
                         {(c) => <TagsInput {...c} valor={etiquetas} onCambiar={setEtiquetas} placeholder="Agregar…" />}

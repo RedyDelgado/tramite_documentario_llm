@@ -63,7 +63,7 @@ class SerieTest extends TestCase
 
         $this->actingAs($this->administrativo)->post("/expedientes/{$a->id}/derivar", [
             'tipo_tramite_id' => TipoTramite::create(['nombre' => 'Requerimiento', 'plazo_dias' => 5])->id,
-            'area_id' => $area->id, 'requiere_respuesta' => true, 'instruccion' => 'Presentar información', 'toda_la_serie' => true,
+            'areas' => [['area_id' => $area->id]], 'requiere_respuesta' => true, 'instruccion' => 'Presentar información', 'toda_la_serie' => true,
         ])->assertInertiaFlash('toast.mensaje', 'Serie derivada: 3 expedientes.');
 
         foreach ([$a, $b, $c] as $e) {

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** Paso de la atención de un expediente; solo se inserta, nunca se edita (lo escribe AtencionService). */
-#[Fillable(['expediente_id', 'tipo', 'user_id', 'de_area_id', 'a_area_id', 'a_user_id', 'instruccion', 'nota', 'fecha_limite', 'areas_copia'])]
+#[Fillable(['expediente_id', 'tipo', 'user_id', 'de_area_id', 'a_area_id', 'a_user_id', 'instruccion', 'nota', 'fecha_limite', 'areas', 'areas_copia'])]
 class Movimiento extends Model
 {
     public const UPDATED_AT = null;
@@ -16,6 +16,7 @@ class Movimiento extends Model
         'derivacion' => 'Derivó',
         'en_atencion' => 'Tomó en atención',
         'toma_conocimiento' => 'Tomó conocimiento',
+        'atendido' => 'Marcó atendido',
         'comentario' => 'Comentó',
         'cierre_solicitado' => 'Solicitó el cierre',
         'cierre_rechazado' => 'Rechazó el cierre',
@@ -26,7 +27,7 @@ class Movimiento extends Model
 
     protected function casts(): array
     {
-        return ['fecha_limite' => 'date:Y-m-d', 'created_at' => 'datetime', 'areas_copia' => 'array'];
+        return ['fecha_limite' => 'date:Y-m-d', 'created_at' => 'datetime', 'areas' => 'array', 'areas_copia' => 'array'];
     }
 
     /** @return BelongsTo<Expediente, $this> */

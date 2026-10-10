@@ -13,6 +13,7 @@ use App\Models\Documento;
 use App\Models\DocumentoSaliente;
 use App\Models\Emisor;
 use App\Models\Expediente;
+use App\Models\ExpedienteArea;
 use App\Models\Grupo;
 use App\Models\InstruccionFrecuente;
 use App\Models\Movimiento;
@@ -86,7 +87,7 @@ class ExpedienteController extends Controller
         if ($texto) {
             // Meilisearch filtra por permisos (visible_para); el scope en la base es la segunda barrera.
             $busqueda = Expediente::search($texto)
-                ->query(fn ($q) => $q->visiblesPara($user)->with(['area:id,nombre', 'institucion:id,nombre'])->withCount('documentos'));
+                ->query(fn ($q) => $q->visiblesPara($user)->with(['area:id,nombre', 'institucion:id,nombre'])->withCount(['documentos', 'atenciones']));
             if (($tokens = Expediente::tokensVisiblesPara($user)) !== null) {
                 $busqueda->whereIn('visible_para', $tokens);
             }
@@ -103,7 +104,7 @@ class ExpedienteController extends Controller
         } else {
             $pagina = Expediente::visiblesPara($user)
                 ->with(['area:id,nombre', 'institucion:id,nombre'])
-                ->withCount('documentos')
+                ->withCount(['documentos', 'atenciones'])
                 ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
                 ->when($estadosVista, fn ($q, $estados) => $q->whereIn('estado', $estados))
                 ->when($filtros['semaforo'] ?? null, fn ($q, $semaforo) => $q->where('semaforo', $semaforo))
@@ -150,11 +151,13 @@ class ExpedienteController extends Controller
         $auditoria->registrar('expediente.consultado', $expediente);
         $user = $request->user();
         $registrable = $expediente->estado->puedeConfirmarse() && $user->can('registrar', $expediente);
-        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'institucion:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo', 'areasCopia:id,nombre']);
+        $expediente->load(['correos.documentos', 'documentos', 'area:id,nombre', 'responsable:id,name', 'emisor:id,nombre', 'institucion:id,nombre', 'tipoDocumento:id,nombre', 'tipoTramite', 'ubicacionFisica:id,nombre', 'custodio:id,name', 'movimientos.aArea:id,nombre', 'grupo', 'areasCopia:id,nombre', 'atenciones.area:id,nombre', 'atenciones.responsable:id,name', 'atenciones.atendidoPor:id,name']);
         $abierto = in_array($expediente->estado, [EstadoExpediente::Derivado, EstadoExpediente::EnAtencion], true);
         $derivable = ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('derivar', $expediente);
         $custodia = $expediente->codigo !== null && $user->can('custodiar', $expediente);
         $agrupable = $user->can('agrupar', $expediente);
+        // Lo que este usuario atiende: decide si ve «Tomar» y «Marcar atendido».
+        $mias = $abierto ? Gate::getPolicyFor($expediente)->areasQueAtiende($user, $expediente) : collect();
 
         // El detalle se abre en modal sobre la bandeja (CLAUDE.md: ver va en un modal).
         $bandeja = $this->index($request);
@@ -168,7 +171,6 @@ class ExpedienteController extends Controller
                 'origen' => $expediente->origen->value,
                 'registrado_at' => $expediente->registrado_at?->toIso8601String(),
                 'motivo_anulacion' => $expediente->motivo_anulacion,
-                'responsable' => $expediente->responsable?->name,
                 'emisor' => $expediente->emisor?->nombre,
                 'institucion' => $expediente->institucion?->nombre,
                 'tipo_documento' => $expediente->tipoDocumento?->nombre,
@@ -178,9 +180,19 @@ class ExpedienteController extends Controller
                 'motivo_folios' => $expediente->motivo_folios,
                 'tipo_tramite_id' => $expediente->tipo_tramite_id,
                 'tipo_tramite' => $expediente->tipoTramite?->nombre,
-                'area_principal_id' => $expediente->area_principal_id,
+                'atenciones' => $expediente->atenciones->map(fn (ExpedienteArea $a) => [
+                    'area_id' => $a->area_id,
+                    'area' => $a->area->nombre,
+                    'responsable_id' => $a->responsable_id,
+                    'responsable' => $a->responsable?->name,
+                    'plazo_dias' => $a->plazo_dias_aplicado,
+                    'fecha_limite' => $a->fecha_limite?->toDateString(),
+                    'estado' => ['valor' => $a->estado, 'etiqueta' => ExpedienteArea::ESTADOS[$a->estado]],
+                    'atendido_at' => $a->atendido_at?->toIso8601String(),
+                    'atendido_por' => $a->atendidoPor?->name,
+                    'nota' => $a->nota_atencion,
+                ])->values(),
                 'areas_copia' => $expediente->areasCopia->map(fn (Area $a) => ['id' => $a->id, 'nombre' => $a->nombre])->values(),
-                'responsable_id' => $expediente->responsable_id,
                 'plazo_dias_aplicado' => $expediente->plazo_dias_aplicado,
                 'fecha_limite' => $expediente->fecha_limite?->toDateString(),
                 'requiere_respuesta' => $expediente->requiere_respuesta,
@@ -188,7 +200,8 @@ class ExpedienteController extends Controller
                 'atendido_at' => $expediente->atendido_at?->toIso8601String(),
                 'permisos' => [
                     'derivar' => $derivable,
-                    'tomar' => $expediente->estado === EstadoExpediente::Derivado && $user->can('atender', $expediente),
+                    'tomar' => $mias->contains('estado', 'derivado'),
+                    'atender' => $mias->isNotEmpty(),
                     'comentar' => ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('comentar', $expediente),
                     'solicitar_cierre' => $abierto && ! $expediente->cierre_solicitado_at && $user->can('atender', $expediente),
                     'resolver_cierre' => $abierto && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),
@@ -216,7 +229,7 @@ class ExpedienteController extends Controller
                 'cargos' => $expediente->movimientos->where('tipo', 'derivacion')->map(fn (Movimiento $m) => [
                     'id' => $m->id,
                     'fecha' => $m->created_at->toIso8601String(),
-                    'area' => $m->aArea?->nombre,
+                    'area' => $m->areas ? implode(', ', $m->areas) : $m->aArea?->nombre,
                     'firmado' => $expediente->documentos->firstWhere('movimiento_id', $m->id)?->id,
                 ])->values(),
                 'correos' => $expediente->correos->map(fn (Correo $c) => [
@@ -355,7 +368,11 @@ class ExpedienteController extends Controller
     private function detalle(Movimiento $m): ?string
     {
         $partes = array_filter([
-            $m->aArea ? 'A '.$m->aArea->nombre.($m->aUser ? " ({$m->aUser->name})" : '') : null,
+            match (true) {
+                (bool) $m->areas => 'A '.implode(', ', $m->areas),
+                (bool) $m->aArea => 'A '.$m->aArea->nombre.($m->aUser ? " ({$m->aUser->name})" : ''),
+                default => null,
+            },
             $m->areas_copia ? 'Copia a '.implode(', ', $m->areas_copia) : null,
             $m->instruccion,
             $m->fecha_limite ? 'hasta el '.$m->fecha_limite->format('d/m/Y') : null,

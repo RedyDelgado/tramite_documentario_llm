@@ -8,6 +8,7 @@ use App\Models\AreaResponsable;
 use App\Models\DocumentoSaliente;
 use App\Models\Emisor;
 use App\Models\Expediente;
+use App\Models\ExpedienteArea;
 use App\Models\TipoDocumento;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
@@ -160,6 +161,7 @@ class SalientesTest extends TestCase
 
         $this->redactar(['area_id' => Area::factory()->create()->id], $coordinador)->assertSessionHasErrors('area_id');
         $this->redactar([], $coordinador)->assertSessionHasErrors('expediente_id');
+        ExpedienteArea::create(['expediente_id' => $this->expediente->id, 'area_id' => $this->area->id]);
         $this->expediente->update(['area_principal_id' => $this->area->id]);
         $this->redactar([], $coordinador)->assertSessionHasNoErrors();
     }

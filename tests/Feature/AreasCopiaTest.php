@@ -49,7 +49,7 @@ class AreasCopiaTest extends TestCase
     private function derivar(Expediente $expediente, array $copias, ?Area $area = null): TestResponse
     {
         return $this->actingAs($this->administrativo)->post("/expedientes/{$expediente->id}/derivar", [
-            'tipo_tramite_id' => $this->tipo->id, 'area_id' => ($area ?? $this->responsable)->id, 'requiere_respuesta' => true,
+            'tipo_tramite_id' => $this->tipo->id, 'areas' => [['area_id' => ($area ?? $this->responsable)->id]], 'requiere_respuesta' => true,
             'areas_copia' => array_map(fn (Area $a) => $a->id, $copias),
         ]);
     }

@@ -13,6 +13,20 @@ type Props = {
     'aria-describedby'?: string;
 };
 
+/** Un elemento elegido, con su botón para quitarlo; también la usa ComboboxMultiple. */
+export function Ficha({ texto, onQuitar }: { texto: string; onQuitar?: () => void }) {
+    return (
+        <span className="inline-flex h-6 items-center gap-1 rounded-full bg-primary-100 pr-1 pl-2.5 text-sm font-medium text-primary-800">
+            {texto}
+            {onQuitar && (
+                <button type="button" aria-label={`Quitar ${texto}`} onClick={onQuitar} className="cursor-pointer rounded-full p-0.5 hover:bg-primary-200">
+                    <IcoCerrar12 />
+                </button>
+            )}
+        </span>
+    );
+}
+
 /** Lista de términos (palabras clave, dominios): Enter o coma agrega, Retroceso en vacío quita el último. */
 export function TagsInput({ valor, onCambiar, id, placeholder, disabled, ...aria }: Props) {
     const [texto, setTexto] = useState('');
@@ -53,19 +67,7 @@ export function TagsInput({ valor, onCambiar, id, placeholder, disabled, ...aria
             )}
         >
             {valor.map((v) => (
-                <span key={v} className="inline-flex h-6 items-center gap-1 rounded-full bg-primary-100 pr-1 pl-2.5 text-sm font-medium text-primary-800">
-                    {v}
-                    {!disabled && (
-                        <button
-                            type="button"
-                            aria-label={`Quitar ${v}`}
-                            onClick={() => onCambiar(valor.filter((x) => x !== v))}
-                            className="cursor-pointer rounded-full p-0.5 hover:bg-primary-200"
-                        >
-                            <IcoCerrar12 />
-                        </button>
-                    )}
-                </span>
+                <Ficha key={v} texto={v} onQuitar={disabled ? undefined : () => onCambiar(valor.filter((x) => x !== v))} />
             ))}
             <input
                 id={id}

@@ -142,6 +142,7 @@ Route::middleware('auth')->group(function () {
     Route::post('expedientes/{expediente}/anular', [ExpedienteController::class, 'anular'])->name('expedientes.anular');
     Route::post('expedientes/{expediente}/derivar', [AtencionController::class, 'derivar'])->name('expedientes.derivar');
     Route::post('expedientes/{expediente}/tomar', [AtencionController::class, 'tomar'])->name('expedientes.tomar');
+    Route::post('expedientes/{expediente}/atender', [AtencionController::class, 'atender'])->name('expedientes.atender');
     Route::post('expedientes/{expediente}/comentar', [AtencionController::class, 'comentar'])->name('expedientes.comentar');
     Route::post('expedientes/{expediente}/solicitar-cierre', [AtencionController::class, 'solicitarCierre'])->name('expedientes.solicitar-cierre');
     Route::post('expedientes/{expediente}/resolver-cierre', [AtencionController::class, 'resolverCierre'])->name('expedientes.resolver-cierre');

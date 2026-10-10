@@ -52,7 +52,7 @@ class PanelIaTest extends TestCase
             'confianza_tipo' => 0.8, 'modo' => 'sombra', 'created_at' => now(),
         ]);
         $this->actingAs($this->administrativo)->post("/expedientes/{$expediente->id}/derivar", [
-            'tipo_tramite_id' => $this->tipo->id, 'area_id' => $area->id, 'requiere_respuesta' => true,
+            'tipo_tramite_id' => $this->tipo->id, 'areas' => [['area_id' => $area->id]], 'requiere_respuesta' => true,
         ])->assertSessionHasNoErrors();
 
         return ClasificacionIa::where('expediente_id', $expediente->id)->sole();

@@ -1,7 +1,11 @@
 <x-mail::message>
 # Hola, {{ $destinatario->name }}
 
-Se te derivó un trámite para atender.
+@if ($atencion)
+Se derivó un trámite a **{{ $atencion->area->nombre }}** para atender.
+@else
+Te llega en copia, **para conocimiento**: no tienes que atenderlo.
+@endif
 
 <x-mail::table>
 | | |
@@ -9,8 +13,10 @@ Se te derivó un trámite para atender.
 | Expediente | {{ $expediente->numero_registro ?? 'Sin número' }} |
 | Asunto | {{ str_replace('|', '/', \Illuminate\Support\Str::limit($expediente->asunto, 120)) }} |
 | Remitente | {{ str_replace('|', '/', $expediente->remitente_nombre ?? $expediente->remitente_email ?? '—') }} |
-| Área | {{ $movimiento->aArea?->nombre ?? '—' }} |
-| Fecha límite | {{ $expediente->fecha_limite?->format('d/m/Y') ?? 'Sin plazo' }} |
+| Áreas que lo atienden | {{ str_replace('|', '/', implode(', ', $movimiento->areas ?? [$movimiento->aArea?->nombre ?? '—'])) }} |
+@if ($atencion)
+| Fecha límite | {{ $atencion->fecha_limite?->format('d/m/Y') ?? 'Sin plazo' }} |
+@endif
 </x-mail::table>
 
 @if ($movimiento->instruccion)
@@ -25,5 +31,7 @@ Se te derivó un trámite para atender.
 Abrir el expediente
 </x-mail::button>
 
-Atiéndelo desde el sistema: ahí están los documentos, el historial y la respuesta.
+@if ($atencion)
+Atiéndelo desde el sistema: ahí están los documentos y el historial; al terminar, márcalo como atendido.
+@endif
 </x-mail::message>

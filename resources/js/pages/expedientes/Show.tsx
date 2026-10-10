@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { DetalleLista } from '@/components/data/DetalleLista';
 import { AccionesAtencion } from '@/components/domain/AccionesAtencion';
 import { AccionesRegistro } from '@/components/domain/AccionesRegistro';
+import { AreasAtencion } from '@/components/domain/AreasAtencion';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { LineaTiempo } from '@/components/domain/LineaTiempo';
 import { OriginalPapel } from '@/components/domain/OriginalPapel';
@@ -246,16 +247,9 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                                 { etiqueta: 'Ingreso', valor: formatearFechaHora(e.fecha_ingreso) },
                                 ...(e.registrado_at ? [{ etiqueta: 'Registrado', valor: formatearFechaHora(e.registrado_at) }] : []),
                                 { etiqueta: 'Origen', valor: ORIGEN[e.origen] },
-                                { etiqueta: 'Área', valor: e.area ?? 'Sin asignar' },
-                                { etiqueta: 'Responsable', valor: e.responsable ?? (e.area ? 'Quien coordina el área' : 'Sin asignar') },
+                                { etiqueta: e.atenciones.length > 1 ? 'Áreas que lo atienden' : 'Área', valor: <AreasAtencion atenciones={e.atenciones} /> },
                                 ...(e.areas_copia.length ? [{ etiqueta: 'En copia', valor: e.areas_copia.map((a) => a.nombre).join(', ') }] : []),
                                 { etiqueta: 'Tipo de trámite', valor: e.tipo_tramite ?? 'Sin clasificar' },
-                                {
-                                    etiqueta: 'Fecha límite',
-                                    valor: e.fecha_limite
-                                        ? `${formatearFecha(e.fecha_limite)}${e.plazo_dias_aplicado ? ` (plazo de ${e.plazo_dias_aplicado} días)` : ''}`
-                                        : 'Sin plazo',
-                                },
                                 { etiqueta: 'Requiere respuesta', valor: e.requiere_respuesta ? 'Sí' : 'No, para conocimiento' },
                                 ...(e.atendido_at ? [{ etiqueta: 'Atendido', valor: formatearFechaHora(e.atendido_at) }] : []),
                                 { etiqueta: 'Emisor', valor: e.emisor ?? '—' },

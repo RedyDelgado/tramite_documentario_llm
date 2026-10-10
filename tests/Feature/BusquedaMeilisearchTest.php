@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\AreaResponsable;
 use App\Models\Expediente;
+use App\Models\ExpedienteArea;
 use App\Models\User;
 use App\Services\IngestaCorreoService;
 use Database\Seeders\ReglasNoTramiteSeeder;
@@ -92,6 +93,7 @@ class BusquedaMeilisearchTest extends TestCase
         AreaResponsable::create(['area_id' => $escuela->id, 'user_id' => $coordinador->id, 'tipo' => 'titular', 'vigente_desde' => today()]);
 
         $oficio = Expediente::where('asunto', 'like', 'OFICIO%')->sole();
+        ExpedienteArea::create(['expediente_id' => $oficio->id, 'area_id' => $escuela->id]);
         $oficio->update(['area_principal_id' => $escuela->id]);
         $this->esperarIndice();
 

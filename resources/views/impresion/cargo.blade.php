@@ -20,7 +20,7 @@
         <dt class="text-fg-muted">Documento</dt>
         <dd>{{ $e->numero_documento_original ?? $e->numero_documento ?? '—' }}{{ $e->folios ? " · {$e->folios} folios" : '' }}</dd>
         <dt class="text-fg-muted">Derivado a</dt>
-        <dd>{{ $movimiento->aArea?->nombre }}{{ $movimiento->aUser ? " ({$movimiento->aUser->name})" : '' }}</dd>
+        <dd>{{ $movimiento->areas ? implode(', ', $movimiento->areas) : $movimiento->aArea?->nombre.($movimiento->aUser ? " ({$movimiento->aUser->name})" : '') }}</dd>
         <dt class="text-fg-muted">Instrucción</dt>
         <dd>{{ $movimiento->instruccion ?? '—' }}</dd>
         <dt class="text-fg-muted">Fecha límite</dt>

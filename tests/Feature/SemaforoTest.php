@@ -39,7 +39,7 @@ class SemaforoTest extends TestCase
         $tipo = TipoTramite::create(['nombre' => 'Tipo '.uniqid(), 'plazo_dias' => $plazo, 'tipo_dias' => 'calendario']);
 
         return app(AtencionService::class)->derivar($expediente, [
-            'tipo_tramite_id' => $tipo->id, 'area_id' => ($area ?? $this->area)->id, 'requiere_respuesta' => $requiereRespuesta,
+            'tipo_tramite_id' => $tipo->id, 'areas' => [['area_id' => ($area ?? $this->area)->id]], 'requiere_respuesta' => $requiereRespuesta,
         ]);
     }
 

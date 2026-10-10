@@ -105,7 +105,7 @@ class OriginalFisicoTest extends TestCase
         $area = Area::factory()->create(['nombre' => 'Escuela de Educación']);
         $this->actingAs($this->administrativo)->post("/expedientes/{$this->expediente->id}/derivar", [
             'tipo_tramite_id' => TipoTramite::create(['nombre' => 'Invitación', 'plazo_dias' => 3])->id,
-            'area_id' => $area->id, 'requiere_respuesta' => false, 'instruccion' => 'Para conocimiento',
+            'areas' => [['area_id' => $area->id]], 'requiere_respuesta' => false, 'instruccion' => 'Para conocimiento',
         ])->assertSessionHasNoErrors();
         $derivacion = Movimiento::where('tipo', 'derivacion')->sole();
 

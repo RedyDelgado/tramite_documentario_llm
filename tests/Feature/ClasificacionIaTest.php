@@ -90,7 +90,7 @@ class ClasificacionIaTest extends TestCase
 
         $otra = Area::factory()->create();
         $this->actingAs($this->administrativo)->post("/expedientes/{$expediente->id}/derivar", [
-            'tipo_tramite_id' => $this->convenio->id, 'area_id' => $otra->id, 'requiere_respuesta' => true,
+            'tipo_tramite_id' => $this->convenio->id, 'areas' => [['area_id' => $otra->id]], 'requiere_respuesta' => true,
         ])->assertSessionHasNoErrors();
 
         $clasificacion = ClasificacionIa::sole();

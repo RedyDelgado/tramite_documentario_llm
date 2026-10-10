@@ -49,9 +49,13 @@ class AtencionTest extends TestCase
 
     private function derivar(Expediente $expediente, TipoTramite $tipo, array $extra = [], ?User $quien = null): TestResponse
     {
-        return $this->actingAs($quien ?? $this->administrativo)->post("/expedientes/{$expediente->id}/derivar", $extra + [
-            'tipo_tramite_id' => $tipo->id, 'area_id' => $this->area->id, 'responsable_id' => null,
-            'requiere_respuesta' => true, 'instruccion' => 'Atender', 'nota' => null, 'fecha_limite' => null,
+        // Responsable y fecha van con el área; lo demás, con la derivación.
+        $area = ['area_id' => $this->area->id, 'responsable_id' => null, 'fecha_limite' => null];
+        $deArea = array_intersect_key($extra, $area);
+
+        return $this->actingAs($quien ?? $this->administrativo)->post("/expedientes/{$expediente->id}/derivar", array_diff_key($extra, $area) + [
+            'tipo_tramite_id' => $tipo->id, 'areas' => [$deArea + $area],
+            'requiere_respuesta' => true, 'instruccion' => 'Atender', 'nota' => null,
         ]);
     }
 
@@ -73,7 +77,7 @@ class AtencionTest extends TestCase
         // Reasignar con una fecha fijada por el documento (reunión del 20).
         $this->derivar($expediente, $tipo, ['fecha_limite' => '2026-10-20'], $this->director)->assertSessionHasNoErrors();
         $this->assertSame('2026-10-20', $expediente->fresh()->fecha_limite->toDateString());
-        $this->derivar($expediente, $tipo, ['fecha_limite' => '2026-10-01'])->assertSessionHasErrors('fecha_limite');
+        $this->derivar($expediente, $tipo, ['fecha_limite' => '2026-10-01'])->assertSessionHasErrors('areas.0.fecha_limite');
     }
 
     public function test_derivar_avisa_por_correo_a_quien_debe_atender(): void

@@ -75,7 +75,8 @@ class VisibilidadExpedientesTest extends TestCase
     public function test_otros_solo_ven_lo_asignado_por_expediente(): void
     {
         $otro = $this->usuario('otros');
-        $asignado = Expediente::factory()->create(['responsable_id' => $otro->id]);
+        // Responsable de un área que no coordina: lo ve por estar asignado.
+        $asignado = Expediente::factory()->create(['responsable_id' => $otro->id, 'area_principal_id' => $this->laboratorio->id]);
         Expediente::factory()->create();
 
         $this->assertSame([$asignado->id], $this->visibles($otro));

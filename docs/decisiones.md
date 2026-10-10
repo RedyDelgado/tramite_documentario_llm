@@ -2,6 +2,16 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-14 — Derivar a varias áreas (decisión del usuario)
+
+- Un expediente se deriva a **una o varias áreas que lo atienden** (`expediente_areas`), cada una con su responsable opcional, su plazo (del tipo y del área, o la fecha que fije el documento) y su estado: por tomar → en atención → atendido. La primera es la principal.
+- **Atendido cuando lo atienden todas**: cada área lo toma y lo marca atendido con una nota de cómo lo hizo («Marcar atendido»). Sin documentos emitidos, es la forma de dejarlo atendido.
+- Las columnas `area_principal_id`, `responsable_id`, `fecha_limite` y `plazo_dias_aplicado` del expediente quedan como **resumen** que mantiene `AtencionService`: la principal, la fecha más próxima de lo pendiente (ya atendido, la más lejana) y el plazo de la principal. Así el panel, el resumen diario, las reglas y la medición de la IA siguen sin cambios; el panel mide «en plazo» el expediente entero.
+- Permisos, bandejas y búsqueda miran todas las áreas: cada una ve el expediente y atiende solo lo suyo. El semáforo es rojo si alguna área pendiente no tiene quién la atienda o si vence la fecha más próxima.
+- Reasignar puede agregar o quitar áreas; una que ya lo atendió no se quita ni cambia.
+- **Correo al derivar**: a cada área nueva (su responsable o quienes la coordinan) y, para conocimiento, a cada área nueva en copia. Reasignar a los mismos destinos no vuelve a avisar. Cada correo queda en `notificaciones_enviadas` y en la auditoría.
+- El modal de derivar va ancho y en dos columnas: datos del trámite a la izquierda; áreas en filas y «En copia» con buscador (`ComboboxMultiple`) a la derecha, sin desplazarse.
+
 ## 2026-10-13 — Documentos emitidos, apagados (decisión del usuario)
 
 - El módulo (7.3.4) confundía en esta etapa: queda en el código, pero apagado con `SALIENTES_ACTIVO=false`. La Policy niega todo (también al superadmin), el menú y «Responder con documento» no aparecen y Numeración solo muestra el registro. «Sugerir respuesta» con IA sigue: su texto se pega en el Word.

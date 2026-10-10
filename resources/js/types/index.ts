@@ -82,7 +82,6 @@ export type ExpedienteDetalle = ExpedienteFila & {
     origen: 'correo' | 'fisico' | 'pdf';
     registrado_at: string | null;
     motivo_anulacion: string | null;
-    responsable: string | null;
     emisor: string | null;
     tipo_documento: string | null;
     numero_documento: string | null;
@@ -91,19 +90,32 @@ export type ExpedienteDetalle = ExpedienteFila & {
     motivo_folios: string | null;
     tipo_tramite_id: number | null;
     tipo_tramite: string | null;
-    area_principal_id: number | null;
+    // Áreas que lo atienden, la principal primero (ExpedienteController@show).
+    atenciones: AtencionArea[];
     areas_copia: { id: number; nombre: string }[];
-    responsable_id: number | null;
     plazo_dias_aplicado: number | null;
     requiere_respuesta: boolean;
     cierre_solicitado_at: string | null;
     atendido_at: string | null;
-    permisos: { derivar: boolean; tomar: boolean; comentar: boolean; solicitar_cierre: boolean; resolver_cierre: boolean; custodiar: boolean; agrupar: boolean; redactar: boolean; sugerir: boolean };
+    permisos: { derivar: boolean; tomar: boolean; atender: boolean; comentar: boolean; solicitar_cierre: boolean; resolver_cierre: boolean; custodiar: boolean; agrupar: boolean; redactar: boolean; sugerir: boolean };
     serie: { id: number; nombre: string; expedientes: ResumenExpediente[] } | null;
     original: { ubicacion_fisica_id: number | null; ubicacion: string | null; custodio_id: number | null; custodio: string | null } | null;
     cargos: { id: number; fecha: string; area: string | null; firmado: number | null }[];
     correos: CorreoDetalle[];
     documentos: DocumentoDetalle[];
+};
+
+export type AtencionArea = {
+    area_id: number;
+    area: string;
+    responsable_id: number | null;
+    responsable: string | null;
+    plazo_dias: number | null;
+    fecha_limite: string | null;
+    estado: { valor: 'derivado' | 'en_atencion' | 'atendido'; etiqueta: string };
+    atendido_at: string | null;
+    atendido_por: string | null;
+    nota: string | null;
 };
 
 export type EventoHistorial = { id: number; fecha: string; accion: string; usuario: string; detalle?: string | null };

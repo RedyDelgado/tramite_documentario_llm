@@ -31,7 +31,13 @@ class PermisosAtencionTest extends TestCase
         $this->escuela = Area::factory()->create();
         $this->laboratorio = Area::factory()->create(['parent_id' => $this->escuela->id]);
         $this->otraArea = Area::factory()->create();
-        $this->expediente = Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'area_principal_id' => $this->laboratorio->id]);
+        $this->expediente = $this->derivadoA($this->laboratorio);
+    }
+
+    /** Derivado a un área: la factory la deja como el área que lo atiende. */
+    private function derivadoA(Area $area): Expediente
+    {
+        return Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'area_principal_id' => $area->id]);
     }
 
     private function coordinadorDe(Area $area): User
@@ -72,7 +78,7 @@ class PermisosAtencionTest extends TestCase
     {
         $asignado = $this->rol('otros');
         $ajeno = $this->rol('otros');
-        $this->expediente->update(['responsable_id' => $asignado->id]);
+        $this->expediente->atenciones()->update(['responsable_id' => $asignado->id]);
 
         $this->assertTrue($asignado->can('view', $this->expediente));
         $this->assertTrue($asignado->can('atender', $this->expediente));
@@ -81,7 +87,7 @@ class PermisosAtencionTest extends TestCase
         $this->assertSame(EstadoExpediente::EnAtencion, $this->expediente->fresh()->estado);
 
         // Por la interfaz: su bandeja muestra solo lo suyo y abre el expediente (el detalle se dibuja sobre la bandeja).
-        Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'area_principal_id' => $this->otraArea->id]);
+        $this->derivadoA($this->otraArea);
         $this->actingAs($asignado)->get('/expedientes')->assertOk()
             ->assertInertia(fn ($page) => $page->where('expedientes.meta.total', 1)->where('expedientes.data.0.id', $this->expediente->id));
         $this->actingAs($asignado)->get("/expedientes/{$this->expediente->id}")->assertOk()
@@ -105,7 +111,7 @@ class PermisosAtencionTest extends TestCase
         $this->escuela->update(['parent_id' => $direccion->id]);
         $director = $this->rol('director');
         AreaResponsable::create(['area_id' => $direccion->id, 'user_id' => $director->id, 'tipo' => 'titular', 'vigente_desde' => '2026-01-01']);
-        $deDireccion = Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'area_principal_id' => $direccion->id]);
+        $deDireccion = $this->derivadoA($direccion);
 
         $this->assertTrue($director->can('atender', $deDireccion));
         $this->assertFalse($director->can('atender', $this->expediente));

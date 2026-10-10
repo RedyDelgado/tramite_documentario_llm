@@ -45,7 +45,7 @@ class Expediente extends Model
     /** @return array<string, mixed> */
     public function toSearchableArray(): array
     {
-        $this->loadMissing(['correos', 'documentos', 'areasCopia', 'institucion']);
+        $this->loadMissing(['correos', 'documentos', 'areasCopia', 'atenciones', 'institucion']);
 
         return [
             'id' => $this->id,
@@ -79,17 +79,16 @@ class Expediente extends Model
     /** @param Collection<int, Expediente> $modelos */
     public function makeSearchableUsing(Collection $modelos): Collection
     {
-        return $modelos->load(['correos', 'documentos', 'areasCopia']);
+        return $modelos->load(['correos', 'documentos', 'areasCopia', 'atenciones']);
     }
 
     /** @return list<string> */
     private function tokensVisibilidad(): array
     {
-        return array_values(array_filter([
-            $this->area_principal_id ? "area:{$this->area_principal_id}" : null,
-            $this->responsable_id ? "usuario:{$this->responsable_id}" : null,
+        return array_values(array_unique(array_filter([
+            ...$this->atenciones->flatMap(fn (ExpedienteArea $a) => ["area:{$a->area_id}", $a->responsable_id ? "usuario:{$a->responsable_id}" : null]),
             ...$this->areasCopia->map(fn (Area $a) => "area:{$a->id}"),
-        ]));
+        ])));
     }
 
     /**
@@ -167,10 +166,16 @@ class Expediente extends Model
         $areas = $user->can('expedientes.ver_areas') ? $user->areasVigentes() : [];
 
         $query->where(fn (Builder $q) => $q
-            ->where('responsable_id', $user->id)
-            ->when($areas !== [], fn (Builder $q) => $q->orWhereIn('area_principal_id', $areas))
+            ->whereIn('expedientes.id', DB::table('expediente_areas')->select('expediente_id')
+                ->where(fn ($a) => $a->where('responsable_id', $user->id)->when($areas !== [], fn ($a) => $a->orWhereIn('area_id', $areas))))
             ->when($areas !== [] && $copias, fn (Builder $q) => $q->orWhereIn('expedientes.id',
                 DB::table('expediente_areas_copia')->whereIn('area_id', $areas)->select('expediente_id'))));
+    }
+
+    /** Áreas que lo atienden, la principal primero. @return HasMany<ExpedienteArea, $this> */
+    public function atenciones(): HasMany
+    {
+        return $this->hasMany(ExpedienteArea::class)->orderBy('id');
     }
 
     /** @return BelongsToMany<Area, $this> */

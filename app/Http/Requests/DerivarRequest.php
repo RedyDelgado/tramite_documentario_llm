@@ -16,13 +16,15 @@ class DerivarRequest extends FormRequest
     {
         return [
             'tipo_tramite_id' => ['required', 'integer', Rule::exists('tipos_tramite', 'id')->where('activo', true)],
-            'area_id' => ['required', 'integer', Rule::exists('areas', 'id')->where('activa', true)->whereNull('deleted_at')],
-            'responsable_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('activo', true)],
+            // Una o varias áreas que lo atienden; la primera es la principal.
+            'areas' => ['required', 'array', 'min:1', 'max:10'],
+            'areas.*.area_id' => ['required', 'integer', 'distinct', Rule::exists('areas', 'id')->where('activa', true)->whereNull('deleted_at')],
+            'areas.*.responsable_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('activo', true)],
+            // Fecha que fija el documento (reunión, entrega); vacía, rige el plazo del tipo y del área (8).
+            'areas.*.fecha_limite' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:today'],
             'requiere_respuesta' => ['required', 'boolean'],
             'instruccion' => ['nullable', 'string', 'max:200'],
             'nota' => ['nullable', 'string', 'max:2000'],
-            // Fecha que fija el documento (reunión, entrega); vacía, rige el plazo del tipo (8).
-            'fecha_limite' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:today'],
             'areas_copia' => ['sometimes', 'array', 'max:20'],
             'areas_copia.*' => ['integer', 'distinct', Rule::exists('areas', 'id')->where('activa', true)->whereNull('deleted_at')],
             // Una serie se deriva una sola vez para todo el lote (7.3.5, punto 6).
@@ -34,11 +36,12 @@ class DerivarRequest extends FormRequest
     {
         return [
             'tipo_tramite_id' => 'tipo de trámite',
-            'area_id' => 'área',
-            'responsable_id' => 'responsable',
+            'areas' => 'áreas que lo atienden',
+            'areas.*.area_id' => 'área',
+            'areas.*.responsable_id' => 'responsable',
+            'areas.*.fecha_limite' => 'fecha límite',
             'requiere_respuesta' => 'requiere respuesta',
             'instruccion' => 'instrucción',
-            'fecha_limite' => 'fecha límite',
             'areas_copia' => 'áreas en copia',
             'areas_copia.*' => 'área en copia',
         ];

@@ -8,6 +8,7 @@ use App\Mail\AvisoDerivacion;
 use App\Models\AreaResponsable;
 use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
+use App\Models\ExpedienteArea;
 use App\Models\Movimiento;
 use App\Models\NotificacionEnviada;
 use App\Models\TipoTramite;
@@ -16,6 +17,7 @@ use BackedEnum;
 use Carbon\CarbonImmutable;
 use Closure;
 use DateTimeInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -39,54 +41,83 @@ class AtencionService
     ) {}
 
     /**
-     * Deriva o reasigna. El plazo se copia del tipo al asignarlo (5.1); una fecha explícita del documento manda (8).
-     *
+     * Deriva o reasigna a una o varias áreas que lo atienden, cada una con su responsable y su plazo (decisión del usuario).
+     * El plazo sale del tipo y del área (5.1); una fecha explícita del documento manda (8). La primera área es la principal.
      * Las áreas en copia lo ven sin atenderlo; si vienen, reemplazan a las anteriores.
      *
-     * @param  array{tipo_tramite_id: int, area_id: int, responsable_id?: ?int, requiere_respuesta: bool, instruccion?: ?string, nota?: ?string, fecha_limite?: ?string, areas_copia?: list<int>}  $datos
+     * @param  array{tipo_tramite_id: int, areas: list<array{area_id: int, responsable_id?: ?int, fecha_limite?: ?string}>, requiere_respuesta: bool, instruccion?: ?string, nota?: ?string, areas_copia?: list<int>}  $datos
      */
     public function derivar(Expediente $expediente, array $datos): Expediente
     {
-        $destinoAnterior = [$expediente->area_principal_id, $expediente->responsable_id];
-        $expediente = $this->paso($expediente, [EstadoExpediente::Registrado, ...self::ABIERTOS], 'derivar', function (Expediente $e) use ($datos) {
+        $avisar = [];
+        $copiasNuevas = [];
+        $expediente = $this->paso($expediente, [EstadoExpediente::Registrado, ...self::ABIERTOS], 'derivar', function (Expediente $e) use ($datos, &$avisar, &$copiasNuevas) {
             $tipo = TipoTramite::findOrFail($datos['tipo_tramite_id']);
-            $areaId = (int) $datos['area_id'];
-            $cambios = [
-                'tipo_tramite_id' => $tipo->id,
-                'area_principal_id' => $areaId,
-                'responsable_id' => $datos['responsable_id'] ?? null,
-                'requiere_respuesta' => $datos['requiere_respuesta'],
-                'estado' => EstadoExpediente::Derivado,
-                'cierre_solicitado_at' => null,
-            ];
+            $pedidas = collect($datos['areas'])->keyBy(fn (array $a) => (int) $a['area_id']);
+            $actuales = $e->atenciones()->with('area:id,nombre')->get()->keyBy('area_id');
 
-            if ($datos['fecha_limite'] ?? null) {
-                $cambios['fecha_limite'] = $datos['fecha_limite'];
-            } elseif ($e->tipo_tramite_id !== $tipo->id || $e->area_principal_id !== $areaId || $e->plazo_dias_aplicado === null) {
-                // Tipo o área nuevos: rige su plazo vigente; reasignar sin cambios conserva la fecha ya fijada.
-                $plazo = $this->plazos->calcular($tipo, $areaId, $e->fecha_ingreso);
-                $cambios += ['plazo_dias_aplicado' => $plazo['plazo_dias'], 'fecha_limite' => $plazo['fecha_limite']?->toDateString()];
+            foreach ($actuales->diffKeys($pedidas) as $quitada) {
+                if (! $quitada->pendiente()) {
+                    throw new ReglaDeNegocio("«{$quitada->area->nombre}» ya lo atendió: no se puede quitar.");
+                }
+                $quitada->delete();
+            }
+            foreach ($pedidas as $areaId => $pedida) {
+                $fila = $actuales->get($areaId) ?? new ExpedienteArea(['expediente_id' => $e->id, 'area_id' => $areaId, 'estado' => 'derivado']);
+                // Lo que un área ya atendió no cambia al reasignar las demás.
+                if (! $fila->pendiente()) {
+                    continue;
+                }
+                $responsable = isset($pedida['responsable_id']) ? (int) $pedida['responsable_id'] : null;
+                if (! $fila->exists || $fila->responsable_id !== $responsable) {
+                    // Destino nuevo: empieza por tomarlo y recibe su aviso.
+                    $fila->estado = 'derivado';
+                    $avisar[] = $areaId;
+                }
+                $fila->responsable_id = $responsable;
+                if ($pedida['fecha_limite'] ?? null) {
+                    $fila->fecha_limite = $pedida['fecha_limite'];
+                } elseif (! $fila->exists || $e->tipo_tramite_id !== $tipo->id || $fila->plazo_dias_aplicado === null) {
+                    // Tipo o área nuevos: rige su plazo vigente; reasignar sin cambios conserva la fecha ya fijada.
+                    $plazo = $this->plazos->calcular($tipo, $areaId, $e->fecha_ingreso);
+                    $fila->forceFill(['plazo_dias_aplicado' => $plazo['plazo_dias'], 'fecha_limite' => $plazo['fecha_limite']?->toDateString()]);
+                }
+                $fila->save();
             }
 
+            $principal = $pedidas->first();
             $deArea = $e->area_principal_id;
-            $e->forceFill($cambios);
+            $e->forceFill([
+                'tipo_tramite_id' => $tipo->id,
+                'area_principal_id' => (int) $principal['area_id'],
+                'responsable_id' => $principal['responsable_id'] ?? null,
+                'requiere_respuesta' => $datos['requiere_respuesta'],
+                'cierre_solicitado_at' => null,
+            ]);
+            $this->resumir($e);
+
             if (array_key_exists('areas_copia', $datos)) {
-                // El área responsable no va además en copia.
-                $e->areasCopia()->sync(array_values(array_diff(array_map('intval', $datos['areas_copia']), [$areaId])));
+                $antes = $e->areasCopia()->pluck('areas.id')->all();
+                // Un área que lo atiende no va además en copia.
+                $e->areasCopia()->sync(array_values(array_diff(array_map('intval', $datos['areas_copia']), $pedidas->keys()->all())));
                 $e->unsetRelation('areasCopia');
+                $copiasNuevas = array_values(array_diff($e->areasCopia()->pluck('areas.id')->all(), $antes));
             }
             $copias = $e->areasCopia()->orderBy('nombre')->pluck('nombre')->all();
+            $filas = $e->atenciones()->with(['area:id,nombre', 'responsable:id,name'])->get();
 
             return [
                 'accion' => 'expediente.derivado',
                 'movimiento' => [
                     'tipo' => 'derivacion',
                     'de_area_id' => $deArea,
-                    'a_area_id' => $areaId,
-                    'a_user_id' => $datos['responsable_id'] ?? null,
+                    'a_area_id' => $e->area_principal_id,
+                    'a_user_id' => $e->responsable_id,
                     'instruccion' => $datos['instruccion'] ?? null,
                     'nota' => $datos['nota'] ?? null,
                     'fecha_limite' => $e->fecha_limite?->toDateString(),
+                    // Nombres tal como estaban al derivar: el historial no cambia si luego se renombra el área.
+                    'areas' => $filas->map(fn (ExpedienteArea $a) => $a->area->nombre.($a->responsable ? " ({$a->responsable->name})" : ''))->all(),
                     'areas_copia' => $copias ?: null,
                 ],
             ];
@@ -94,49 +125,95 @@ class AtencionService
         // La derivación es la decisión humana con la que se mide la IA (10).
         $this->clasificacion->registrarDecision($expediente, Auth::user());
         // Reasignar al mismo destino (p. ej. solo cambiar el plazo) no vuelve a avisar.
-        if ($destinoAnterior !== [$expediente->area_principal_id, $expediente->responsable_id]) {
-            $this->avisarDerivacion($expediente);
-        }
+        $this->avisarDerivacion($expediente, $avisar, $copiasNuevas);
 
         return $expediente;
     }
 
-    /** Aviso por correo a quien debe atender: la persona asignada o, si no hay, quienes coordinan el área hoy. */
-    private function avisarDerivacion(Expediente $expediente): void
+    /**
+     * Aviso por correo al derivar (8): a cada área nueva, su responsable o quienes la coordinan hoy; a cada área nueva
+     * en copia, quienes la coordinan, para conocimiento. Queda constancia de cada correo (NotificacionEnviada y auditoría).
+     *
+     * @param  list<int>  $areas
+     * @param  list<int>  $copias
+     */
+    private function avisarDerivacion(Expediente $expediente, array $areas, array $copias): void
     {
+        if ($areas === [] && $copias === []) {
+            return;
+        }
         $movimiento = Movimiento::where('expediente_id', $expediente->id)->where('tipo', 'derivacion')->latest('id')->firstOrFail();
-        $ids = $expediente->responsable_id
-            ? [$expediente->responsable_id]
-            : AreaResponsable::where('area_id', $expediente->area_principal_id)->vigentes()->pluck('user_id')->all();
+        $coordinan = fn (int $area) => AreaResponsable::where('area_id', $area)->vigentes()->pluck('user_id')->all();
 
-        // Quien deriva a sí mismo no necesita aviso.
-        User::whereIn('id', $ids)->whereKeyNot(Auth::id())->where('activo', true)->each(function (User $destinatario) use ($expediente, $movimiento) {
-            $notificacion = NotificacionEnviada::create([
-                'user_id' => $destinatario->id,
-                'email' => $destinatario->email,
-                'tipo' => 'derivacion',
-                'expedientes' => [$expediente->id],
-                'message_id' => NotificacionEnviada::nuevoMessageId('derivacion'),
-            ]);
-            Mail::to($destinatario)->queue(new AvisoDerivacion($destinatario, $expediente, $movimiento, $notificacion));
-            $this->auditoria->registrar('notificacion.derivacion', $destinatario, despues: [
-                'destinatario' => $destinatario->email,
-                'expediente_id' => $expediente->id,
-                'notificacion_id' => $notificacion->id,
-            ]);
+        $avisos = [];
+        foreach ($expediente->atenciones()->whereIn('area_id', $areas)->with('area:id,nombre')->get() as $atencion) {
+            foreach ($atencion->responsable_id ? [$atencion->responsable_id] : $coordinan($atencion->area_id) as $id) {
+                $avisos[$id] ??= $atencion;
+            }
+        }
+        $enCopia = [];
+        foreach ($copias as $area) {
+            foreach ($coordinan($area) as $id) {
+                $enCopia[$id] = true;
+            }
+        }
+
+        // Quien deriva a sí mismo no necesita aviso; quien atiende no recibe además el de copia.
+        User::whereIn('id', [...array_keys($avisos), ...array_keys($enCopia)])->whereKeyNot(Auth::id())->where('activo', true)
+            ->each(function (User $destinatario) use ($expediente, $movimiento, $avisos) {
+                $atencion = $avisos[$destinatario->id] ?? null;
+                $tipo = $atencion ? 'derivacion' : 'copia';
+                $notificacion = NotificacionEnviada::create([
+                    'user_id' => $destinatario->id,
+                    'email' => $destinatario->email,
+                    'tipo' => $tipo,
+                    'expedientes' => [$expediente->id],
+                    'message_id' => NotificacionEnviada::nuevoMessageId($tipo),
+                ]);
+                Mail::to($destinatario)->queue(new AvisoDerivacion($destinatario, $expediente, $movimiento, $notificacion, $atencion));
+                $this->auditoria->registrar("notificacion.{$tipo}", $destinatario, despues: [
+                    'destinatario' => $destinatario->email,
+                    'expediente_id' => $expediente->id,
+                    'area_id' => $atencion?->area_id,
+                    'notificacion_id' => $notificacion->id,
+                ]);
+            });
+    }
+
+    /** Quien atiende toma lo de su área; si es solo para conocimiento y sin plazo, tomarlo ya lo deja atendido (8). */
+    public function tomar(Expediente $expediente): Expediente
+    {
+        return $this->paso($expediente, self::ABIERTOS, 'tomar', function (Expediente $e) {
+            $filas = Gate::getPolicyFor($e)->areasQueAtiende(Auth::user(), $e)->where('estado', 'derivado')->values();
+            if ($filas->isEmpty()) {
+                throw new ReglaDeNegocio('No tienes nada por tomar en este expediente.');
+            }
+            $soloConocimiento = ! $e->requiere_respuesta && $filas->every(fn (ExpedienteArea $a) => $a->fecha_limite === null);
+            $filas->each(fn (ExpedienteArea $a) => $a->forceFill($soloConocimiento
+                ? ['estado' => 'atendido', 'atendido_at' => now(), 'atendido_por' => Auth::id()]
+                : ['estado' => 'en_atencion'])->save());
+            $this->resumir($e);
+
+            return ['accion' => 'expediente.'.($soloConocimiento ? 'conocimiento_tomado' : 'en_atencion'), 'movimiento' => [
+                'tipo' => $soloConocimiento ? 'toma_conocimiento' : 'en_atencion', ...$this->destino($filas),
+            ]];
         });
     }
 
-    /** Quien atiende lo toma; si es solo para conocimiento y sin plazo, tomarlo ya lo deja atendido (8). */
-    public function tomar(Expediente $expediente): Expediente
+    /** El área deja constancia de cómo lo atendió; el expediente queda atendido cuando lo atendieron todas. */
+    public function atender(Expediente $expediente, string $nota): Expediente
     {
-        return $this->paso($expediente, [EstadoExpediente::Derivado], 'tomar', function (Expediente $e) {
-            $soloConocimiento = ! $e->requiere_respuesta && $e->fecha_limite === null;
-            $e->forceFill($soloConocimiento
-                ? ['estado' => EstadoExpediente::Atendido, 'atendido_at' => now()]
-                : ['estado' => EstadoExpediente::EnAtencion]);
+        return $this->paso($expediente, self::ABIERTOS, 'marcar como atendido', function (Expediente $e) use ($nota) {
+            $filas = Gate::getPolicyFor($e)->areasQueAtiende(Auth::user(), $e);
+            if ($filas->isEmpty()) {
+                throw new ReglaDeNegocio('No tienes nada pendiente en este expediente.');
+            }
+            $filas->each(fn (ExpedienteArea $a) => $a->forceFill(['estado' => 'atendido', 'atendido_at' => now(), 'atendido_por' => Auth::id(), 'nota_atencion' => $nota])->save());
+            $this->resumir($e);
 
-            return ['accion' => 'expediente.'.($soloConocimiento ? 'conocimiento_tomado' : 'en_atencion'), 'movimiento' => ['tipo' => $soloConocimiento ? 'toma_conocimiento' : 'en_atencion']];
+            return ['accion' => $e->estado === EstadoExpediente::Atendido ? 'expediente.atendido' : 'expediente.area_atendida', 'movimiento' => [
+                'tipo' => 'atendido', 'nota' => $nota, ...$this->destino($filas),
+            ]];
         });
     }
 
@@ -144,10 +221,48 @@ class AtencionService
     public function atenderConRespuesta(Expediente $expediente, DocumentoSaliente $respuesta): Expediente
     {
         return $this->paso($expediente, [EstadoExpediente::Registrado, ...self::ABIERTOS], 'atender', function (Expediente $e) use ($respuesta) {
+            $e->atenciones()->where('estado', '!=', 'atendido')
+                ->update(['estado' => 'atendido', 'atendido_at' => now(), 'atendido_por' => Auth::id(), 'nota_atencion' => "Respuesta enviada: {$respuesta->numero}"]);
             $e->forceFill(['estado' => EstadoExpediente::Atendido, 'atendido_at' => now(), 'cierre_solicitado_at' => null]);
 
             return ['accion' => 'expediente.respondido', 'movimiento' => ['tipo' => 'respuesta', 'nota' => "Respuesta enviada: {$respuesta->numero}"]];
         });
+    }
+
+    /**
+     * Resume en el expediente lo de sus áreas: atendido cuando lo atendieron todas, en atención si alguna lo tomó.
+     * ponytail: la fecha límite del expediente es la más próxima de lo pendiente y, ya atendido, la más lejana; el panel
+     * mide «en plazo» el expediente entero, no cada área.
+     */
+    private function resumir(Expediente $e): void
+    {
+        $filas = $e->atenciones()->get();
+        $pendientes = $filas->filter(fn (ExpedienteArea $a) => $a->pendiente());
+        $estado = match (true) {
+            $filas->isNotEmpty() && $pendientes->isEmpty() => EstadoExpediente::Atendido,
+            $filas->contains(fn (ExpedienteArea $a) => $a->estado !== 'derivado') => EstadoExpediente::EnAtencion,
+            default => EstadoExpediente::Derivado,
+        };
+        $e->forceFill([
+            'estado' => $estado,
+            'plazo_dias_aplicado' => $filas->firstWhere('area_id', $e->area_principal_id)?->plazo_dias_aplicado,
+            'fecha_limite' => ($pendientes->isNotEmpty() ? $pendientes->min('fecha_limite') : $filas->max('fecha_limite'))?->toDateString(),
+            'atendido_at' => $estado === EstadoExpediente::Atendido ? ($e->atendido_at ?? now()) : null,
+        ]);
+        $e->unsetRelation('atenciones');
+    }
+
+    /**
+     * El área del movimiento y, si quien actúa atiende varias, todas.
+     *
+     * @param  Collection<int, ExpedienteArea>  $filas
+     * @return array{a_area_id: int, areas: ?list<string>}
+     */
+    private function destino(Collection $filas): array
+    {
+        $filas->load('area:id,nombre');
+
+        return ['a_area_id' => $filas->first()->area_id, 'areas' => $filas->count() > 1 ? $filas->map(fn (ExpedienteArea $a) => $a->area->nombre)->all() : null];
     }
 
     public function comentar(Expediente $expediente, string $nota): Expediente

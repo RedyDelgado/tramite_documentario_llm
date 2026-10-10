@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Expediente;
+use App\Models\ExpedienteArea;
 use App\Models\Movimiento;
 use App\Models\NotificacionEnviada;
 use App\Models\User;
@@ -16,12 +17,12 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Str;
 use Throwable;
 
-/** Aviso al momento de derivar (8): a quien debe atender le llega el enlace directo, sin esperar al resumen diario. */
+/** Aviso al momento de derivar (8): a quien debe atender le llega el enlace directo, sin esperar al resumen diario; sin área que atienda, es una copia para conocimiento. */
 class AvisoDerivacion extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public User $destinatario, public Expediente $expediente, public Movimiento $movimiento, public NotificacionEnviada $notificacion) {}
+    public function __construct(public User $destinatario, public Expediente $expediente, public Movimiento $movimiento, public NotificacionEnviada $notificacion, public ?ExpedienteArea $atencion = null) {}
 
     /** El Message-ID propio enlaza el rebote con su notificación (EntregaService). */
     public function headers(): Headers
@@ -36,7 +37,7 @@ class AvisoDerivacion extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Nuevo trámite para atender: '.($this->expediente->numero_registro ?? 'sin número').' · '.Str::limit($this->expediente->asunto, 80));
+        return new Envelope(subject: ($this->atencion ? 'Nuevo trámite para atender: ' : 'En copia, para conocimiento: ').($this->expediente->numero_registro ?? 'sin número').' · '.Str::limit($this->expediente->asunto, 80));
     }
 
     public function content(): Content

@@ -25,7 +25,8 @@ class ExpedienteResource extends JsonResource
             'semaforo' => $this->semaforo?->value,
             'fecha_limite' => $this->fecha_limite?->toDateString(),
             'fecha_ingreso' => $this->fecha_ingreso->toIso8601String(),
-            'area' => $this->whenLoaded('area', fn () => $this->area?->nombre),
+            // La principal y cuántas más lo atienden: «Dirección +2».
+            'area' => $this->whenLoaded('area', fn () => $this->area?->nombre.(($this->atenciones_count ?? 1) > 1 ? ' +'.($this->atenciones_count - 1) : '')),
             'documentos_count' => $this->whenCounted('documentos'),
             // La fila ya pasó por visiblesPara; basta el permiso (evita una consulta por fila).
             'puede_registrar' => $request->user()->can('expedientes.registrar'),

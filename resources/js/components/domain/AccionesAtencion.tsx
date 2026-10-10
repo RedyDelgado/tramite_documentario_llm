@@ -1,10 +1,13 @@
-import { IcoCandado, IcoComentario, IcoCorrecto, IcoDerivar, IcoTomar } from '@/components/ui/iconos';
+import { IcoAgregar16, IcoCandado, IcoCerrar16, IcoComentario, IcoCorrecto, IcoDerivar, IcoTomar } from '@/components/ui/iconos';
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { FormField } from '@/components/forms/FormField';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { ComboboxMultiple } from '@/components/ui/ComboboxMultiple';
 import { Dialog } from '@/components/ui/Dialog';
+import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
@@ -13,7 +16,12 @@ import type { ExpedienteDetalle, OpcionesDerivacion } from '@/types';
 
 type Props = { expediente: ExpedienteDetalle; derivacion?: OpcionesDerivacion };
 
-type Abierto = 'derivar' | 'comentar' | 'cierre' | 'resolver' | null;
+type Abierto = 'derivar' | 'atender' | 'comentar' | 'cierre' | 'resolver' | null;
+
+type FilaArea = { area_id: string; responsable_id: string; fecha_limite: string };
+
+// Área, responsable, fecha y quitar en una fila: varias áreas caben sin desplazarse.
+const FILA = 'grid items-center gap-2 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_9.5rem_2rem]';
 
 /** Acciones de atención (7, 8) según los permisos que calcula ExpedientePolicy; la regla final la aplica AtencionService. */
 export function AccionesAtencion({ expediente: e, derivacion }: Props) {
@@ -24,18 +32,28 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
 
     const sugerencia = derivacion?.sugerencia;
     const ia = derivacion?.ia;
+    // Lo atendido por un área ya no se cambia ni se quita al reasignar.
+    const atendidas = new Set(e.atenciones.filter((a) => a.estado.valor === 'atendido').map((a) => String(a.area_id)));
     // Primero lo ya decidido, luego la regla (determinista) y al final la IA (10: la IA propone, las reglas deciden).
     const derivar = useForm({
         tipo_tramite_id: String(e.tipo_tramite_id ?? sugerencia?.tipo_tramite_id ?? ia?.tipo_tramite_id ?? ''),
-        area_id: String(e.area_principal_id ?? sugerencia?.area_id ?? ia?.area_id ?? ''),
-        responsable_id: String(e.responsable_id ?? (e.area_principal_id ? '' : (sugerencia?.responsable_id ?? ''))),
+        areas: (e.atenciones.length
+            ? e.atenciones.map((a) => ({ area_id: String(a.area_id), responsable_id: String(a.responsable_id ?? ''), fecha_limite: '' }))
+            : [{ area_id: String(sugerencia?.area_id ?? ia?.area_id ?? ''), responsable_id: String(sugerencia?.responsable_id ?? ''), fecha_limite: '' }]) as FilaArea[],
         requiere_respuesta: e.requiere_respuesta,
         instruccion: '',
-        fecha_limite: '',
         nota: '',
         areas_copia: e.areas_copia.map((a) => a.id),
         toda_la_serie: false,
     });
+    const errores = derivar.errors as Record<string, string | undefined>;
+    const elegidas = derivar.data.areas.map((a) => a.area_id);
+    const cambiarFila = (i: number, cambio: Partial<FilaArea>) =>
+        derivar.setData(
+            'areas',
+            derivar.data.areas.map((a, j) => (j === i ? { ...a, ...cambio } : a)),
+        );
+
     const nota = useForm({ nota: '', aprobar: true });
     const soloConocimiento = !e.requiere_respuesta && !e.fecha_limite;
 
@@ -59,8 +77,8 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
         </>
     );
 
-    const campoNota = (etiqueta: string, requerido = false) => (
-        <FormField etiqueta={etiqueta} requerido={requerido} error={nota.errors.nota}>
+    const campoNota = (etiqueta: string, requerido = false, ayuda?: string) => (
+        <FormField etiqueta={etiqueta} requerido={requerido} ayuda={ayuda} error={nota.errors.nota}>
             {(c) => <Textarea {...c} value={nota.data.nota} maxLength={2000} onChange={(ev) => nota.setData('nota', ev.target.value)} />}
         </FormField>
     );
@@ -79,8 +97,8 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                     titulo={soloConocimiento ? '¿Tomar conocimiento?' : '¿Tomar en atención?'}
                     descripcion={
                         soloConocimiento
-                            ? 'Queda registrado que lo leíste y el expediente pasa a atendido.'
-                            : 'Pasas a atenderlo; queda en el historial y corre el seguimiento.'
+                            ? 'Queda registrado que tu área lo leyó y queda atendido por ella.'
+                            : 'Tu área pasa a atenderlo; queda en el historial y corre el seguimiento.'
                     }
                     confirmar={soloConocimiento ? 'Tomar conocimiento' : 'Tomar en atención'}
                     cargando={tomando}
@@ -90,6 +108,11 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                 >
                     {soloConocimiento ? 'Tomar conocimiento' : 'Tomar en atención'}
                 </BotonConfirmado>
+            )}
+            {e.permisos.atender && !e.permisos.tomar && (
+                <Button variante="primario" icono={<IcoCorrecto />} onClick={() => setAbierto('atender')}>
+                    Marcar atendido
+                </Button>
             )}
             {e.permisos.solicitar_cierre && (
                 <Button icono={<IcoCandado />} onClick={() => setAbierto('cierre')}>
@@ -111,12 +134,13 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                 <Dialog
                     abierto={abierto === 'derivar'}
                     onCambiar={(v) => !v && cerrar()}
+                    tamano="xl"
                     titulo={e.estado.valor === 'registrado' ? 'Derivar' : 'Reasignar'}
                     descripcion={
                         [
                             sugerencia && `Sugerencia de la regla «${sugerencia.regla}».`,
                             ia && `Propuesta de la IA${ia.alta ? ' (alta confianza)' : ''}: ${[ia.confianza_area && `área ${Math.round(ia.confianza_area * 100)} %`, ia.confianza_tipo && `tipo ${Math.round(ia.confianza_tipo * 100)} %`].filter(Boolean).join(', ')}.`,
-                            'Revisa antes de derivar: el plazo sale del tipo y del área, salvo que el documento fije una fecha.',
+                            'Cada área lo atiende con su plazo, que sale del tipo y del área salvo que el documento fije una fecha; queda atendido cuando lo atiendan todas.',
                         ]
                             .filter(Boolean)
                             .join(' ')
@@ -131,13 +155,15 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                                     derivar.transform((d) => ({
                                         ...d,
                                         tipo_tramite_id: Number(d.tipo_tramite_id) || null,
-                                        area_id: Number(d.area_id) || null,
-                                        responsable_id: d.responsable_id ? Number(d.responsable_id) : null,
+                                        areas: d.areas.map((a) => ({
+                                            area_id: Number(a.area_id) || null,
+                                            responsable_id: a.responsable_id ? Number(a.responsable_id) : null,
+                                            fecha_limite: a.fecha_limite || null,
+                                        })),
                                         instruccion: d.instruccion || null,
-                                        fecha_limite: d.fecha_limite || null,
                                         nota: d.nota || null,
-                                        // Si el área elegida estaba en copia, deja de estarlo: ya es la responsable.
-                                        areas_copia: d.areas_copia.filter((id) => id !== Number(d.area_id)),
+                                        // Un área que lo atiende no va además en copia.
+                                        areas_copia: d.areas_copia.filter((id) => !d.areas.some((a) => Number(a.area_id) === id)),
                                     }));
                                     derivar.post(url('derivar'), { preserveScroll: true, onSuccess: () => cerrar() });
                                 }}
@@ -147,98 +173,152 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                         </>
                     }
                 >
-                    <div className="flex flex-col gap-4">
-                        <FormField etiqueta="Tipo de trámite" requerido error={derivar.errors.tipo_tramite_id}>
-                            {(c) => (
-                                <Select
-                                    {...c}
-                                    vacia="Elige el tipo"
-                                    opciones={derivacion.tipos}
-                                    value={derivar.data.tipo_tramite_id}
-                                    onChange={(ev) => derivar.setData('tipo_tramite_id', ev.target.value)}
-                                />
-                            )}
-                        </FormField>
-                        <FormField etiqueta="Área" requerido error={derivar.errors.area_id}>
-                            {(c) => (
-                                <Select
-                                    {...c}
-                                    vacia="Elige el área"
-                                    opciones={derivacion.areas}
-                                    value={derivar.data.area_id}
-                                    onChange={(ev) => derivar.setData('area_id', ev.target.value)}
-                                />
-                            )}
-                        </FormField>
-                        <FormField etiqueta="Responsable" ayuda="Opcional: sin él, lo atienden el titular y los suplentes del área." error={derivar.errors.responsable_id}>
-                            {(c) => (
-                                <Select
-                                    {...c}
-                                    vacia="Quien coordina el área"
-                                    opciones={derivacion.usuarios}
-                                    value={derivar.data.responsable_id}
-                                    onChange={(ev) => derivar.setData('responsable_id', ev.target.value)}
-                                />
-                            )}
-                        </FormField>
-                        <fieldset className="flex flex-col gap-1">
-                            <legend className="mb-1 text-base font-semibold text-fg">En copia</legend>
-                            <p className="mb-1 text-sm text-fg-muted">Opcional: estas áreas lo ven para conocimiento, sin atenderlo.</p>
-                            <div className="grid max-h-36 gap-1 overflow-y-auto sm:grid-cols-2">
-                                {derivacion.areas
-                                    .filter((a) => String(a.value) !== derivar.data.area_id)
-                                    .map((a) => (
-                                        <Checkbox
-                                            key={a.value}
-                                            etiqueta={a.label}
-                                            checked={derivar.data.areas_copia.includes(a.value)}
-                                            onChange={(ev) =>
-                                                derivar.setData(
-                                                    'areas_copia',
-                                                    ev.target.checked ? [...derivar.data.areas_copia, a.value] : derivar.data.areas_copia.filter((id) => id !== a.value),
-                                                )
-                                            }
-                                        />
-                                    ))}
-                            </div>
-                            {derivar.errors.areas_copia && <p className="text-sm text-danger">{derivar.errors.areas_copia}</p>}
-                        </fieldset>
-                        <FormField etiqueta="Instrucción" error={derivar.errors.instruccion}>
-                            {(c) => (
-                                <Select
-                                    {...c}
-                                    vacia="Sin instrucción"
-                                    opciones={derivacion.instrucciones.map((i) => ({ value: i.label, label: i.label }))}
-                                    value={derivar.data.instruccion}
-                                    onChange={(ev) => derivar.setData('instruccion', ev.target.value)}
-                                />
-                            )}
-                        </FormField>
-                        <FormField
-                            etiqueta="Fecha límite"
-                            ayuda="Solo si el documento fija una fecha (reunión, entrega). Vacía: según el plazo del tipo."
-                            error={derivar.errors.fecha_limite}
-                        >
-                            {(c) => <Input {...c} type="date" value={derivar.data.fecha_limite} onChange={(ev) => derivar.setData('fecha_limite', ev.target.value)} />}
-                        </FormField>
-                        {e.serie && e.serie.expedientes.length > 1 && (
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                        <div className="flex flex-col gap-4">
+                            <FormField etiqueta="Tipo de trámite" requerido error={derivar.errors.tipo_tramite_id}>
+                                {(c) => (
+                                    <Select
+                                        {...c}
+                                        vacia="Elige el tipo"
+                                        opciones={derivacion.tipos}
+                                        value={derivar.data.tipo_tramite_id}
+                                        onChange={(ev) => derivar.setData('tipo_tramite_id', ev.target.value)}
+                                    />
+                                )}
+                            </FormField>
+                            <FormField etiqueta="Instrucción" error={derivar.errors.instruccion}>
+                                {(c) => (
+                                    <Select
+                                        {...c}
+                                        vacia="Sin instrucción"
+                                        opciones={derivacion.instrucciones.map((i) => ({ value: i.label, label: i.label }))}
+                                        value={derivar.data.instruccion}
+                                        onChange={(ev) => derivar.setData('instruccion', ev.target.value)}
+                                    />
+                                )}
+                            </FormField>
+                            <FormField etiqueta="Nota" error={derivar.errors.nota}>
+                                {(c) => <Textarea {...c} rows={3} value={derivar.data.nota} maxLength={2000} onChange={(ev) => derivar.setData('nota', ev.target.value)} />}
+                            </FormField>
                             <Checkbox
-                                etiqueta={`Derivar toda la serie «${e.serie.nombre}» (${e.serie.expedientes.length} documentos)`}
-                                checked={derivar.data.toda_la_serie}
-                                onChange={(ev) => derivar.setData('toda_la_serie', ev.target.checked)}
+                                etiqueta="Requiere respuesta"
+                                checked={derivar.data.requiere_respuesta}
+                                onChange={(ev) => derivar.setData('requiere_respuesta', ev.target.checked)}
                             />
-                        )}
-                        <Checkbox
-                            etiqueta="Requiere respuesta"
-                            checked={derivar.data.requiere_respuesta}
-                            onChange={(ev) => derivar.setData('requiere_respuesta', ev.target.checked)}
-                        />
-                        <FormField etiqueta="Nota" error={derivar.errors.nota}>
-                            {(c) => <Textarea {...c} value={derivar.data.nota} maxLength={2000} onChange={(ev) => derivar.setData('nota', ev.target.value)} />}
-                        </FormField>
+                            {e.serie && e.serie.expedientes.length > 1 && (
+                                <Checkbox
+                                    etiqueta={`Derivar toda la serie «${e.serie.nombre}» (${e.serie.expedientes.length} documentos)`}
+                                    checked={derivar.data.toda_la_serie}
+                                    onChange={(ev) => derivar.setData('toda_la_serie', ev.target.checked)}
+                                />
+                            )}
+                        </div>
+
+                        <div className="flex flex-col gap-5">
+                            <fieldset className="flex flex-col gap-2">
+                                <legend className="text-base font-medium text-fg">
+                                    Áreas que lo atienden<span className="text-danger" aria-hidden> *</span>
+                                </legend>
+                                <p className="text-sm text-fg-muted">La primera es la principal. Sin responsable, lo atienden el titular y los suplentes del área. Fecha solo si el documento la fija.</p>
+                                <div className={`${FILA} max-sm:hidden text-sm text-fg-muted`} aria-hidden>
+                                    <span>Área</span>
+                                    <span>Responsable</span>
+                                    <span>Fecha límite</span>
+                                </div>
+                                {derivar.data.areas.map((fila, i) =>
+                                    atendidas.has(fila.area_id) ? (
+                                        <div key={fila.area_id} className={FILA}>
+                                            <span className="truncate text-base text-fg">{derivacion.areas.find((a) => String(a.value) === fila.area_id)?.label}</span>
+                                            <Badge tono="ok">Ya lo atendió</Badge>
+                                        </div>
+                                    ) : (
+                                        <div key={i} className="flex flex-col gap-1">
+                                            <div className={FILA}>
+                                                <Select
+                                                    aria-label={`Área ${i + 1}`}
+                                                    aria-invalid={errores[`areas.${i}.area_id`] ? true : undefined}
+                                                    vacia="Elige el área"
+                                                    opciones={derivacion.areas.filter((a) => String(a.value) === fila.area_id || !elegidas.includes(String(a.value)))}
+                                                    value={fila.area_id}
+                                                    onChange={(ev) => cambiarFila(i, { area_id: ev.target.value })}
+                                                />
+                                                <Select
+                                                    aria-label={`Responsable del área ${i + 1}`}
+                                                    vacia="Quien coordina"
+                                                    opciones={derivacion.usuarios}
+                                                    value={fila.responsable_id}
+                                                    onChange={(ev) => cambiarFila(i, { responsable_id: ev.target.value })}
+                                                />
+                                                <Input
+                                                    aria-label={`Fecha límite del área ${i + 1}`}
+                                                    aria-invalid={errores[`areas.${i}.fecha_limite`] ? true : undefined}
+                                                    type="date"
+                                                    value={fila.fecha_limite}
+                                                    onChange={(ev) => cambiarFila(i, { fecha_limite: ev.target.value })}
+                                                />
+                                                {derivar.data.areas.length > 1 && (
+                                                    <IconButton
+                                                        icono={<IcoCerrar16 />}
+                                                        etiqueta="Quitar esta área"
+                                                        tamano="sm"
+                                                        onClick={() =>
+                                                            derivar.setData(
+                                                                'areas',
+                                                                derivar.data.areas.filter((_, j) => j !== i),
+                                                            )
+                                                        }
+                                                    />
+                                                )}
+                                            </div>
+                                            {[errores[`areas.${i}.area_id`], errores[`areas.${i}.responsable_id`], errores[`areas.${i}.fecha_limite`]]
+                                                .filter(Boolean)
+                                                .map((m) => (
+                                                    <p key={m} className="text-sm text-danger">
+                                                        {m}
+                                                    </p>
+                                                ))}
+                                        </div>
+                                    ),
+                                )}
+                                {errores.areas && <p className="text-sm text-danger">{errores.areas}</p>}
+                                {derivar.data.areas.length < 10 && (
+                                    <div>
+                                        <Button
+                                            tamano="sm"
+                                            icono={<IcoAgregar16 />}
+                                            onClick={() => derivar.setData('areas', [...derivar.data.areas, { area_id: '', responsable_id: '', fecha_limite: '' }])}
+                                        >
+                                            Agregar área
+                                        </Button>
+                                    </div>
+                                )}
+                            </fieldset>
+
+                            <FormField etiqueta="En copia" ayuda="Opcional: estas áreas lo ven para conocimiento, sin atenderlo; también reciben el correo." error={errores.areas_copia}>
+                                {(c) => (
+                                    <ComboboxMultiple
+                                        {...c}
+                                        placeholder="Escribe para buscar un área"
+                                        opciones={derivacion.areas.filter((a) => !elegidas.includes(String(a.value)))}
+                                        valor={derivar.data.areas_copia}
+                                        onCambiar={(v) => derivar.setData('areas_copia', v)}
+                                    />
+                                )}
+                            </FormField>
+                        </div>
                     </div>
                 </Dialog>
             )}
+
+            <Dialog
+                abierto={abierto === 'atender'}
+                onCambiar={(v) => !v && cerrar()}
+                titulo="Marcar atendido"
+                descripcion="Deja constancia de cómo lo atendió tu área. El expediente queda atendido cuando lo atiendan todas sus áreas."
+                pie={pieNota('atender', 'Marcar atendido')}
+            >
+                {campoNota('Cómo se atendió', true, 'Por ejemplo: «Se respondió con el Oficio N° 045-2026, entregado en mesa de partes».')}
+            </Dialog>
 
             <Dialog abierto={abierto === 'comentar'} onCambiar={(v) => !v && cerrar()} titulo="Comentar" descripcion="Queda en el historial y cuenta como movimiento." pie={pieNota('comentar', 'Comentar')}>
                 {campoNota('Comentario', true)}

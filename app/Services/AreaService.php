@@ -57,12 +57,17 @@ class AreaService
         [$ids, $copias] = DB::transaction(function () use ($origen, $destino) {
             $ids = Expediente::where('area_principal_id', $origen->id)->lockForUpdate()->pluck('id')->all();
             Expediente::whereKey($ids)->update(['area_principal_id' => $destino->id]);
-            // Las copias del origen pasan al destino, salvo donde el destino ya es el responsable.
+            // Lo que atendía el origen pasa al destino; si el destino ya lo atendía, queda solo su fila.
+            $ids = array_values(array_unique([...$ids, ...DB::table('expediente_areas')->where('area_id', $origen->id)->pluck('expediente_id')->all()]));
+            $atiende = DB::table('expediente_areas')->where('area_id', $destino->id)->select('expediente_id');
+            DB::table('expediente_areas')->where('area_id', $origen->id)->whereIn('expediente_id', $atiende)->delete();
+            DB::table('expediente_areas')->where('area_id', $origen->id)->update(['area_id' => $destino->id]);
+            // Las copias del origen pasan al destino, salvo donde el destino ya lo atiende.
             $copias = DB::table('expediente_areas_copia')->where('area_id', $origen->id)->pluck('expediente_id')->all();
             DB::table('expediente_areas_copia')->where('area_id', $origen->id)->delete();
             DB::table('expediente_areas_copia')->insertOrIgnore(array_map(fn ($id) => ['expediente_id' => $id, 'area_id' => $destino->id], $copias));
             DB::table('expediente_areas_copia')->where('area_id', $destino->id)
-                ->whereIn('expediente_id', Expediente::where('area_principal_id', $destino->id)->select('id'))->delete();
+                ->whereIn('expediente_id', DB::table('expediente_areas')->where('area_id', $destino->id)->select('expediente_id'))->delete();
             $hijas = $origen->hijas()->pluck('id')->all();
             Area::whereKey($hijas)->update(['parent_id' => $destino->id]);
             $origen->update(['activa' => false]);
