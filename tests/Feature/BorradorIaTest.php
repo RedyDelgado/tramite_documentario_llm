@@ -79,7 +79,7 @@ class BorradorIaTest extends TestCase
     {
         config(['tramite.llm.url' => 'http://ollama:11434']);
         // Un modelo pequeño a veces repite el encabezado de la respuesta: se descarta.
-        Http::fake(['ollama:11434/api/generate' => Http::response(['response' => "Indicaciones mejoradas: «Remitir la lista de matriculados del semestre 2026-II.»"])]);
+        Http::fake(['ollama:11434/api/generate' => Http::response(['response' => 'Indicaciones mejoradas: «Remitir la lista de matriculados del semestre 2026-II.»'])]);
         $destino = Area::factory()->create(['nombre' => 'Servicios Académicos']);
         $administrativo = User::factory()->create()->assignRole('administrativo');
 
