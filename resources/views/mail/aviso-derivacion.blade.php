@@ -24,7 +24,7 @@ Te llega en copia, **para conocimiento**: no tienes que atenderlo.
 @endif
 
 @if ($movimiento->nota)
-**Nota:** {{ $movimiento->nota }}
+**Indicaciones:** {{ $movimiento->nota }}
 @endif
 
 <x-mail::button :url="route('expedientes.show', $expediente)">

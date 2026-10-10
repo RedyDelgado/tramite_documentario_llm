@@ -39,30 +39,78 @@ class BorradorIaService
 
     public function sugerir(Expediente $expediente, User $usuario): string
     {
+        $texto = $this->generar($this->indicacion($expediente));
+
+        // Se audita que se pidió y con qué modelo; el texto no, porque no es un documento del sistema.
+        $this->auditoria->registrar('ia.borrador_sugerido', $expediente, despues: [
+            'modelo' => config('tramite.llm.modelo'), 'caracteres' => mb_strlen($texto), 'usuario' => $usuario->id,
+        ]);
+
+        return $texto;
+    }
+
+    /**
+     * Indicaciones para las áreas a las que se deriva: con borrador, lo hace más claro sin cambiar lo pedido; sin él,
+     * las propone desde el documento. Quien deriva las revisa antes de enviar.
+     *
+     * @param  list<string>  $areas  nombres de las áreas que lo atenderán
+     */
+    public function indicaciones(Expediente $expediente, ?string $borrador, ?string $instruccion, array $areas, User $usuario): string
+    {
+        $expediente->loadMissing(['documentos', 'correos']);
+        $documento = $expediente->documentos->pluck('texto_extraido')->filter()->implode("\n\n") ?: $expediente->correos->pluck('cuerpo_texto')->filter()->implode("\n\n");
+
+        $destino = $areas !== [] ? implode(', ', $areas) : 'el área que corresponda';
+        // Un modelo pequeño copia lo que tiene delante: para mejorar un borrador no se le da el documento, solo el asunto.
+        $prompt = $borrador
+            ? implode("\n", array_filter([
+                'Mejora la redacción de estas indicaciones que escribió quien deriva un documento en la Filial Quillabamba de la Universidad Andina del Cusco.',
+                'Hazlas claras, formales y directas, en 2 a 5 oraciones, sin saludo ni firma. No agregues tareas, plazos ni datos nuevos.',
+                "Documento derivado: «{$expediente->asunto}». Se deriva a: {$destino}.",
+                $instruccion ? "Instrucción elegida: {$instruccion}." : null,
+                "Indicaciones a mejorar: «{$borrador}»",
+                'Indicaciones mejoradas:',
+            ]))
+            : implode("\n", array_filter([
+                'Eres asistente de la Filial Quillabamba de la Universidad Andina del Cusco.',
+                // Menos texto que la respuesta sugerida: en CPU cada carácter alarga la espera.
+                'Documento: '.Str::limit($documento ?: $expediente->asunto, 2000),
+                '',
+                "En 2 a 4 oraciones formales, sin saludo ni firma, escribe qué debe hacer {$destino} con este documento. No copies el documento ni inventes plazos o datos.",
+                $instruccion ? "Instrucción elegida: {$instruccion}." : null,
+                'Indicaciones:',
+            ]));
+        // Por si igual repite el encabezado de la respuesta o las comillas.
+        $texto = trim(preg_replace('/^\s*Indicaciones( mejoradas)?\s*:\s*/u', '', $this->generar($prompt)), " \n«»\"");
+
+        $this->auditoria->registrar('ia.indicaciones_sugeridas', $expediente, despues: [
+            'modelo' => config('tramite.llm.modelo'), 'caracteres' => mb_strlen($texto), 'mejora' => $borrador !== null, 'usuario' => $usuario->id,
+        ]);
+
+        return Str::limit($texto, 2000, '');
+    }
+
+    private function generar(string $prompt): string
+    {
         if (! self::activo()) {
-            throw new ReglaDeNegocio('La sugerencia con IA no está activada en este servidor.');
+            throw new ReglaDeNegocio('La IA no está activada en este servidor.');
         }
 
         try {
             // ponytail: espera síncrona (30-90 s en CPU); pasar a la cola si varios la piden a la vez.
             $respuesta = Http::timeout(180)->post(rtrim(config('tramite.llm.url'), '/').'/api/generate', [
                 'model' => config('tramite.llm.modelo'),
-                'prompt' => $this->indicacion($expediente),
+                'prompt' => $prompt,
                 'stream' => false,
                 'options' => $this->opciones(['temperature' => 0.3]),
             ])->throw()->json();
         } catch (ConnectionException) {
-            throw new ReglaDeNegocio('El modelo de IA no responde. Inténtalo en unos minutos o redacta sin sugerencia.');
+            throw new ReglaDeNegocio('El modelo de IA no responde. Inténtalo en unos minutos o escríbelo sin ayuda.');
         }
         $texto = trim((string) ($respuesta['response'] ?? ''));
         if ($texto === '') {
             throw new ReglaDeNegocio('El modelo de IA no devolvió texto. Inténtalo de nuevo.');
         }
-
-        // Se audita que se pidió y con qué modelo; el texto no, porque no es un documento del sistema.
-        $this->auditoria->registrar('ia.borrador_sugerido', $expediente, despues: [
-            'modelo' => config('tramite.llm.modelo'), 'caracteres' => mb_strlen($texto), 'usuario' => $usuario->id,
-        ]);
 
         return $texto;
     }

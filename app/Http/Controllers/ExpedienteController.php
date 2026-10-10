@@ -7,6 +7,7 @@ use App\Enums\OrigenExpediente;
 use App\Enums\Semaforo;
 use App\Http\Resources\ExpedienteResource;
 use App\Models\Area;
+use App\Models\AreaResponsable;
 use App\Models\Auditoria;
 use App\Models\Correo;
 use App\Models\Documento;
@@ -141,6 +142,21 @@ class ExpedienteController extends Controller
         Gate::authorize('responder', $expediente);
 
         return response()->json(['texto' => $borradores->sugerir($expediente, $request->user())]);
+    }
+
+    /** Indicaciones de la derivación con la IA local: las redacta desde el documento o mejora las que escribió quien deriva. */
+    public function indicacionesIa(Request $request, Expediente $expediente, BorradorIaService $ia): JsonResponse
+    {
+        Gate::authorize('derivar', $expediente);
+        $datos = $request->validate([
+            'texto' => ['nullable', 'string', 'max:2000'],
+            'instruccion' => ['nullable', 'string', 'max:200'],
+            'areas' => ['array', 'max:10'],
+            'areas.*' => ['integer'],
+        ]);
+        $areas = Area::whereKey($datos['areas'] ?? [])->pluck('nombre')->all();
+
+        return response()->json(['texto' => $ia->indicaciones($expediente, $datos['texto'] ?? null, $datos['instruccion'] ?? null, $areas, $request->user())]);
     }
 
     public function show(Request $request, Expediente $expediente, AuditoriaService $auditoria, SerieService $series): Response|RedirectResponse
@@ -330,6 +346,10 @@ class ExpedienteController extends Controller
             'areas' => Area::opciones(),
             'usuarios' => User::opciones(),
             'instrucciones' => InstruccionFrecuente::opciones(),
+            // Quien recibe el aviso si no se elige responsable: el titular del área (y sus suplentes).
+            'titulares' => AreaResponsable::vigentes()->where('tipo', 'titular')->with('user:id,name')->get()
+                ->mapWithKeys(fn (AreaResponsable $r) => [$r->area_id => $r->user->name]),
+            'redactar_con_ia' => BorradorIaService::activo(),
             'sugerencia' => $regla ? ['regla' => $regla->nombre, 'tipo_tramite_id' => $regla->tipo_tramite_id, 'area_id' => $regla->area_destino_id, 'responsable_id' => $regla->responsable_id] : null,
             'ia' => app(ClasificacionService::class)->sugerencia($expediente),
         ];

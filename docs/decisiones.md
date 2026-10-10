@@ -10,6 +10,9 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 - Permisos, bandejas y búsqueda miran todas las áreas: cada una ve el expediente y atiende solo lo suyo. El semáforo es rojo si alguna área pendiente no tiene quién la atienda o si vence la fecha más próxima.
 - Reasignar puede agregar o quitar áreas; una que ya lo atendió no se quita ni cambia.
 - **Correo al derivar**: a cada área nueva (su responsable o quienes la coordinan) y, para conocimiento, a cada área nueva en copia. Reasignar a los mismos destinos no vuelve a avisar. Cada correo queda en `notificaciones_enviadas` y en la auditoría.
+- Al elegir un área, el responsable vuelve a «quien la coordina» y muestra el nombre de su titular; el aviso le llega al titular y a sus suplentes.
+- **Indicaciones con IA**: la nota de la derivación pasa a ser «Indicaciones para quien lo atiende» y va en el correo. «Redactar con IA» las propone desde el documento; «Mejorar con IA» aclara lo escrito sin agregar tareas. Al modelo pequeño (qwen2.5 3B) se le da poco texto: para mejorar, solo el asunto y el borrador (si ve el documento, lo copia). En CPU tarda ~12 s mejorar y ~35 s redactar; mientras, el aviso de IA cubre la pantalla.
+- Un papel sin correos no muestra la tarjeta «Correos (0)»: su lugar lo toma el historial.
 - El modal de derivar va ancho y en dos columnas: datos del trámite a la izquierda; áreas en filas y «En copia» con buscador (`ComboboxMultiple`) a la derecha, sin desplazarse.
 
 ## 2026-10-13 — Documentos emitidos, apagados (decisión del usuario)

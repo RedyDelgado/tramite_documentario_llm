@@ -135,6 +135,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');
     Route::get('expedientes/{expediente}', [ExpedienteController::class, 'show'])->name('expedientes.show');
+    Route::post('expedientes/{expediente}/indicaciones-ia', [ExpedienteController::class, 'indicacionesIa'])->middleware('throttle:10,1')->name('expedientes.indicaciones-ia');
     Route::post('expedientes/{expediente}/borrador-ia', [ExpedienteController::class, 'borradorIa'])->middleware('throttle:10,1')->name('expedientes.borrador-ia');
     Route::post('expedientes/{expediente}/confirmar', [ExpedienteController::class, 'confirmar'])->name('expedientes.confirmar');
     Route::post('expedientes/{expediente}/no-tramite', [ExpedienteController::class, 'noTramite'])->name('expedientes.no-tramite');

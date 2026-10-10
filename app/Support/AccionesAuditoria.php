@@ -30,6 +30,7 @@ final class AccionesAuditoria
         'documento.ocr' => 'Leyó el escaneo con OCR',
         'expediente.agrupado' => 'Agrupó en una serie',
         'ia.clasificado' => 'La IA propuso área y tipo',
+        'ia.indicaciones_sugeridas' => 'Pidió a la IA las indicaciones de la derivación',
         'saliente.creado' => 'Redactó un documento',
         'saliente.en_revision' => 'Envió el documento a revisión',
         'saliente.devuelto' => 'Devolvió el documento con observaciones',

@@ -1,5 +1,5 @@
-import { IcoAgregar16, IcoCandado, IcoCerrar16, IcoComentario, IcoCorrecto, IcoDerivar, IcoTomar } from '@/components/ui/iconos';
-import { router, useForm } from '@inertiajs/react';
+import { IcoAgregar16, IcoCandado, IcoCerrar16, IcoComentario, IcoCorrecto, IcoDerivar, IcoIa, IcoTomar } from '@/components/ui/iconos';
+import { router, useForm, useHttp } from '@inertiajs/react';
 import { useState } from 'react';
 import { FormField } from '@/components/forms/FormField';
 import { Badge } from '@/components/ui/Badge';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ComboboxMultiple } from '@/components/ui/ComboboxMultiple';
 import { Dialog } from '@/components/ui/Dialog';
+import { IaPensando } from '@/components/ui/IaPensando';
 import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -53,6 +54,26 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
             'areas',
             derivar.data.areas.map((a, j) => (j === i ? { ...a, ...cambio } : a)),
         );
+
+    // Las indicaciones con la IA local: sin texto las propone desde el documento; con texto, las aclara.
+    const [errorIa, setErrorIa] = useState<string | null>(null);
+    const redaccion = useHttp<{ texto: string | null; instruccion: string | null; areas: number[] }, { texto: string }>('post', url('indicaciones-ia'), {
+        texto: null,
+        instruccion: null,
+        areas: [],
+    });
+    const pedirIndicaciones = () => {
+        setErrorIa(null);
+        redaccion.transform(() => ({
+            texto: derivar.data.nota.trim() || null,
+            instruccion: derivar.data.instruccion || null,
+            areas: derivar.data.areas.map((a) => Number(a.area_id)).filter(Boolean),
+        }));
+        redaccion.post(url('indicaciones-ia'), {
+            onSuccess: (r) => derivar.setData('nota', r.texto),
+            onError: (err) => setErrorIa(Object.values(err)[0] ?? 'No se pudo obtener el texto.'),
+        }).catch(() => setErrorIa((actual) => actual ?? 'El modelo de IA no responde. Inténtalo en unos minutos.'));
+    };
 
     const nota = useForm({ nota: '', aprobar: true });
     const soloConocimiento = !e.requiere_respuesta && !e.fecha_limite;
@@ -135,6 +156,7 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                     abierto={abierto === 'derivar'}
                     onCambiar={(v) => !v && cerrar()}
                     tamano="xl"
+                    ocupado={redaccion.processing && <IaPensando>{derivar.data.nota.trim() ? 'Aclarando las indicaciones' : 'Redactando las indicaciones'}</IaPensando>}
                     titulo={e.estado.valor === 'registrado' ? 'Derivar' : 'Reasignar'}
                     descripcion={
                         [
@@ -197,9 +219,20 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                                     />
                                 )}
                             </FormField>
-                            <FormField etiqueta="Nota" error={derivar.errors.nota}>
-                                {(c) => <Textarea {...c} rows={3} value={derivar.data.nota} maxLength={2000} onChange={(ev) => derivar.setData('nota', ev.target.value)} />}
+                            <FormField
+                                etiqueta="Indicaciones para quien lo atiende"
+                                ayuda="Qué debe hacer, con detalle. Van en el correo que reciben las áreas."
+                                error={derivar.errors.nota ?? errorIa ?? undefined}
+                            >
+                                {(c) => <Textarea {...c} rows={5} value={derivar.data.nota} maxLength={2000} onChange={(ev) => derivar.setData('nota', ev.target.value)} />}
                             </FormField>
+                            {derivacion.redactar_con_ia && (
+                                <div>
+                                    <Button tamano="sm" icono={<IcoIa />} onClick={pedirIndicaciones}>
+                                        {derivar.data.nota.trim() ? 'Mejorar con IA' : 'Redactar con IA'}
+                                    </Button>
+                                </div>
+                            )}
                             <Checkbox
                                 etiqueta="Requiere respuesta"
                                 checked={derivar.data.requiere_respuesta}
@@ -240,11 +273,12 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                                                     vacia="Elige el área"
                                                     opciones={derivacion.areas.filter((a) => String(a.value) === fila.area_id || !elegidas.includes(String(a.value)))}
                                                     value={fila.area_id}
-                                                    onChange={(ev) => cambiarFila(i, { area_id: ev.target.value })}
+                                                    // Otra área, otro responsable: vuelve a quien la coordina.
+                                                    onChange={(ev) => cambiarFila(i, { area_id: ev.target.value, responsable_id: '' })}
                                                 />
                                                 <Select
                                                     aria-label={`Responsable del área ${i + 1}`}
-                                                    vacia="Quien coordina"
+                                                    vacia={derivacion.titulares[Number(fila.area_id)] ? `${derivacion.titulares[Number(fila.area_id)]} (titular)` : 'Quien coordina'}
                                                     opciones={derivacion.usuarios}
                                                     value={fila.responsable_id}
                                                     onChange={(ev) => cambiarFila(i, { responsable_id: ev.target.value })}

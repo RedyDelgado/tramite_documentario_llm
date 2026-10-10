@@ -193,6 +193,7 @@ export type DetalleExpedienteProps = {
 };
 
 export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion, custodia, agrupacion, onCerrar }: DetalleExpedienteProps & { onCerrar: () => void }) {
+    const sinCorreos = e.origen === 'fisico' && e.correos.length === 0;
     return (
         <Dialog
             abierto
@@ -218,13 +219,20 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                 }
         >
             <div className="grid items-start gap-4 lg:grid-cols-3">
-                <Card titulo={`Correos (${e.correos.length})`} sinRelleno className="lg:col-span-2">
-                    {e.correos.length === 0 ? (
-                        <EmptyState icono={<IcoCorreo />} titulo="Sin correos" />
-                    ) : (
-                        e.correos.map((c) => <Correo key={c.id} c={c} documentos={e.documentos} />)
-                    )}
-                </Card>
+                {/* Un papel sin correos no muestra la tarjeta vacía: su lugar lo toma el historial. Si le llega una respuesta con su código, aparece. */}
+                {sinCorreos ? (
+                    <Card titulo="Historial" className="lg:col-span-2">
+                        <LineaTiempo eventos={historial} />
+                    </Card>
+                ) : (
+                    <Card titulo={`Correos (${e.correos.length})`} sinRelleno className="lg:col-span-2">
+                        {e.correos.length === 0 ? (
+                            <EmptyState icono={<IcoCorreo />} titulo="Sin correos" />
+                        ) : (
+                            e.correos.map((c) => <Correo key={c.id} c={c} documentos={e.documentos} />)
+                        )}
+                    </Card>
+                )}
 
                 <div className="flex flex-col gap-4">
                     <Card titulo="Datos">
@@ -284,9 +292,11 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         )}
                     </Card>
 
-                    <Card titulo="Historial">
-                        <LineaTiempo eventos={historial} />
-                    </Card>
+                    {!sinCorreos && (
+                        <Card titulo="Historial">
+                            <LineaTiempo eventos={historial} />
+                        </Card>
+                    )}
                 </div>
             </div>
         </Dialog>

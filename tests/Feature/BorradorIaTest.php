@@ -72,6 +72,23 @@ class BorradorIaTest extends TestCase
         Http::fake(['ollama:11434/*' => fn () => throw new ConnectionException('caído')]);
 
         $this->actingAs($this->coordinador)->postJson("/expedientes/{$this->expediente->id}/borrador-ia")
-            ->assertStatus(422)->assertJsonPath('message', 'El modelo de IA no responde. Inténtalo en unos minutos o redacta sin sugerencia.');
+            ->assertStatus(422)->assertJsonPath('message', 'El modelo de IA no responde. Inténtalo en unos minutos o escríbelo sin ayuda.');
+    }
+
+    public function test_mejora_las_indicaciones_de_la_derivacion_y_solo_para_quien_deriva(): void
+    {
+        config(['tramite.llm.url' => 'http://ollama:11434']);
+        // Un modelo pequeño a veces repite el encabezado de la respuesta: se descarta.
+        Http::fake(['ollama:11434/api/generate' => Http::response(['response' => "Indicaciones mejoradas: «Remitir la lista de matriculados del semestre 2026-II.»"])]);
+        $destino = Area::factory()->create(['nombre' => 'Servicios Académicos']);
+        $administrativo = User::factory()->create()->assignRole('administrativo');
+
+        $this->actingAs($administrativo)->postJson("/expedientes/{$this->expediente->id}/indicaciones-ia", ['texto' => 'mandar lista', 'areas' => [$destino->id]])
+            ->assertOk()->assertJsonPath('texto', 'Remitir la lista de matriculados del semestre 2026-II.');
+        // Mejora lo que escribió quien deriva, sabiendo a quién va.
+        Http::assertSent(fn (Request $r) => str_contains($r['prompt'], '«mandar lista»') && str_contains($r['prompt'], 'Servicios Académicos'));
+        $this->assertSame(1, DB::table('auditoria')->where('accion', 'ia.indicaciones_sugeridas')->count());
+
+        $this->actingAs($this->coordinador)->postJson("/expedientes/{$this->expediente->id}/indicaciones-ia", ['texto' => 'x'])->assertForbidden();
     }
 }
