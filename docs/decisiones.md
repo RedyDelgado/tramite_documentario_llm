@@ -2,6 +2,11 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-13 — Documentos emitidos, apagados (decisión del usuario)
+
+- El módulo (7.3.4) confundía en esta etapa: queda en el código, pero apagado con `SALIENTES_ACTIVO=false`. La Policy niega todo (también al superadmin), el menú y «Responder con documento» no aparecen y Numeración solo muestra el registro. «Sugerir respuesta» con IA sigue: su texto se pega en el Word.
+- Los tests lo prueban encendido (`phpunit.xml`) y uno lo prueba apagado.
+
 ## 2026-10-13 — Prellenado de escaneos: OCR siempre y la IA local en marcha
 
 - **Un escaneo sin capa de texto iba sin OCR**: `pdftotext` devuelve solo saltos de página (`\f`) y `trim` no los quita, así que «había texto» y el formulario quedaba vacío. Ahora solo cuenta como texto lo que tiene letras o números; vale también para los adjuntos del correo.

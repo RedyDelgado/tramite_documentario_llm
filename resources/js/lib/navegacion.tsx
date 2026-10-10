@@ -11,6 +11,8 @@ export type ItemNav = {
     permisos?: string[];
     rol?: string;
     soloLocal?: boolean;
+    // Documentos emitidos: apagado hasta una etapa futura (config tramite.salientes.activo).
+    soloSalientes?: boolean;
     // Fuera de Inertia (p. ej. Horizon): navegación con recarga completa.
     externo?: boolean;
     // Otras rutas que viven dentro de esta sección (p. ej. registrar en papel, dentro de Expedientes).
@@ -26,7 +28,7 @@ const NAVEGACION: GrupoNav[] = [
         items: [
             { etiqueta: 'Inicio', href: '/', icono: <IcoInicio /> },
             { etiqueta: 'Expedientes', href: '/expedientes', icono: <IcoExpedientes />, permisos: PERMISOS_EXPEDIENTES, tambien: ['/registro'] },
-            { etiqueta: 'Documentos emitidos', href: '/salientes', icono: <IcoEnviar />, permisos: [...PERMISOS_EXPEDIENTES, 'expedientes.registrar'] },
+            { etiqueta: 'Documentos emitidos', href: '/salientes', icono: <IcoEnviar />, permisos: [...PERMISOS_EXPEDIENTES, 'expedientes.registrar'], soloSalientes: true },
         ],
     },
     {
@@ -78,7 +80,8 @@ export function navegacionVisible({ auth, app }: SharedProps): GrupoNav[] {
             (i) =>
                 (!i.permisos || tieneAlguno(auth.can, i.permisos)) &&
                 (!i.rol || auth.roles.includes(i.rol)) &&
-                (!i.soloLocal || app.local),
+                (!i.soloLocal || app.local) &&
+                (!i.soloSalientes || app.salientes),
         ),
     })).filter((grupo) => grupo.items.length > 0);
 }

@@ -16,7 +16,7 @@ export type UsuarioFila = Usuario & {
 export type Toast ={ tipo: 'ok' | 'error' | 'info'; mensaje: string };
 
 export type SharedProps = {
-    app: { nombre: string; local: boolean };
+    app: { nombre: string; local: boolean; salientes: boolean };
     auth: { user: Usuario | null; roles: string[]; can: string[] };
 };
 

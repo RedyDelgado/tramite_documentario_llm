@@ -195,9 +195,10 @@ class ExpedienteController extends Controller
                     'custodiar' => $custodia,
                     'agrupar' => $agrupable,
                     // Responder desde el sistema (7.2): solo lo registrado y aún sin cerrar.
-                    'redactar' => $redactar = $expediente->codigo !== null && ! in_array($expediente->estado, [EstadoExpediente::Anulado, EstadoExpediente::Cerrado], true)
-                        && $user->can('create', DocumentoSaliente::class) && $user->can('responder', $expediente),
-                    'sugerir' => $redactar && BorradorIaService::activo(),
+                    'redactar' => ($responde = $expediente->codigo !== null && ! in_array($expediente->estado, [EstadoExpediente::Anulado, EstadoExpediente::Cerrado], true)
+                        && $user->can('responder', $expediente)) && $user->can('create', DocumentoSaliente::class),
+                    // El texto sugerido se pega en el Word: no depende de que los documentos emitidos estén activos.
+                    'sugerir' => $responde && BorradorIaService::activo(),
                 ],
                 'serie' => $expediente->grupo ? [
                     'id' => $expediente->grupo->id,

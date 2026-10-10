@@ -11,7 +11,7 @@ Para eso:
 3. Clasifica los documentos y sugiere a qué área derivarlos. La IA propone; las reglas y las personas deciden.
 4. Muestra un panel con KPIs y semáforos y avisa de lo pendiente.
 5. Lleva una **auditoría inmutable** de todo lo que pasa.
-6. Genera, numera y envía los documentos salientes, siempre con una aprobación.
+6. Genera, numera y envía los documentos salientes, siempre con una aprobación. Este módulo está **apagado** en esta etapa (`SALIENTES_ACTIVO=false`): queda en el código para más adelante.
 
 El alcance, las reglas y las fases están en [PLAN_SISTEMA_TRAMITE_DOCUMENTARIO.md](PLAN_SISTEMA_TRAMITE_DOCUMENTARIO.md), y las decisiones tomadas al construirlo, en [docs/decisiones.md](docs/decisiones.md).
 
@@ -112,6 +112,7 @@ Toda la configuración está en `.env`. [.env.example](.env.example) es la plant
 
 | Variable | Qué hace |
 |---|---|
+| `SALIENTES_ACTIVO` | `false` (por defecto) apaga «Documentos emitidos»: nadie lo ve ni lo usa |
 | `SALIENTES_DRIVER` | `gmail` envía desde el buzón central; `mailer` usa `MAIL_MAILER` |
 | `SALIENTES_POR_MINUTO` | Límite de envíos por minuto |
 | `SALIENTES_BUZON_CENTRAL` | Dirección del buzón central, que va en copia oculta de cada envío |

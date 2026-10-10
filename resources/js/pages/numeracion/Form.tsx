@@ -1,10 +1,10 @@
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
 import { FormDialog } from '@/components/layouts/FormDialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import type { Opcion } from '@/types';
+import type { Opcion, SharedProps } from '@/types';
 
 type Inicial = { tipo?: string; tipo_documento_id?: string; area_id?: string; anio?: string; siguiente?: string };
 
@@ -16,6 +16,7 @@ const TIPOS = [
 ];
 
 export default function NumeracionForm({ opcionesTipoDocumento, opcionesArea, inicial, onCerrar }: Props & { onCerrar: () => void }) {
+    const { salientes } = usePage<SharedProps>().props.app;
     const form = useForm({
         tipo: inicial.tipo ?? 'registro',
         tipo_documento_id: inicial.tipo_documento_id ?? '',
@@ -46,7 +47,7 @@ export default function NumeracionForm({ opcionesTipoDocumento, opcionesArea, in
         >
             <FormSection titulo="Correlativo">
                 <FormField etiqueta="Correlativo" requerido error={errors.tipo} className="md:col-span-2">
-                    {(c) => <Select {...c} opciones={TIPOS} value={data.tipo} onChange={(e) => setData('tipo', e.target.value)} />}
+                    {(c) => <Select {...c} opciones={salientes ? TIPOS : TIPOS.slice(0, 1)} value={data.tipo} onChange={(e) => setData('tipo', e.target.value)} />}
                 </FormField>
                 {data.tipo === 'saliente' && (
                     <>

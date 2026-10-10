@@ -19,6 +19,7 @@ class HandleInertiaRequests extends Middleware
             'app' => [
                 'nombre' => config('app.name'),
                 'local' => app()->isLocal(),
+                'salientes' => (bool) config('tramite.salientes.activo'),
             ],
             // La interfaz solo oculta lo que no corresponde; quien autoriza es la Policy.
             'auth' => [

@@ -40,6 +40,8 @@ return [
 
     // Documentos salientes (7.3.4): `gmail` envía desde la cuenta del buzón central; `mailer` usa MAIL_MAILER (log en desarrollo).
     'salientes' => [
+        // Apagado (decisión del usuario): el módulo queda para una etapa futura; nadie lo ve ni lo usa mientras esté en false.
+        'activo' => (bool) env('SALIENTES_ACTIVO', false),
         'driver' => env('SALIENTES_DRIVER', 'mailer'),
         // Ritmo para no chocar con los límites de envío de Google.
         'por_minuto' => (int) env('SALIENTES_POR_MINUTO', 20),

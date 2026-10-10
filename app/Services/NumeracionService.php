@@ -31,6 +31,9 @@ class NumeracionService
     public function lista(int $anio): array
     {
         $filas = [$this->fila(self::REGISTRO, $anio)];
+        if (! config('tramite.salientes.activo')) {
+            return $filas;
+        }
         $claves = DB::table('secuencias')->where('anio', $anio)->where('clave', 'like', 'saliente:%')->orderBy('clave')->pluck('clave');
 
         return [...$filas, ...$claves->map(fn (string $clave) => $this->fila($clave, $anio))->filter()->values()->all()];

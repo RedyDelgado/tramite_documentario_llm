@@ -26,6 +26,7 @@
         <env name="DB_DATABASE" value="tramite_test" force="true"/>
         <env name="DB_URL" value="" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="SALIENTES_ACTIVO" value="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="SCOUT_DRIVER" value="null"/>

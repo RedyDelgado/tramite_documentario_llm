@@ -8,6 +8,12 @@ use App\Models\User;
 /** Documentos salientes (5, 7.3.4): redactan registro, dirección y coordinación; aprueba el rol del tipo, nunca el autor. */
 class SalientePolicy
 {
+    /** Con el módulo apagado nadie lo usa, ni el superadmin: ocultarlo en React no basta. */
+    public function before(User $user, string $ability): ?bool
+    {
+        return config('tramite.salientes.activo') ? null : false;
+    }
+
     public function viewAny(User $user): bool
     {
         return $this->create($user) || $user->can('expedientes.ver_todos');

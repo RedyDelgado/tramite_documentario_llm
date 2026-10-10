@@ -59,6 +59,17 @@ class SalientesTest extends TestCase
         ]);
     }
 
+    public function test_apagado_nadie_ve_ni_usa_los_documentos_emitidos(): void
+    {
+        config(['tramite.salientes.activo' => false]);
+        $superadmin = User::factory()->create()->assignRole('superadmin');
+
+        $this->actingAs($superadmin)->get('/salientes')->assertForbidden();
+        $this->redactar([], $this->director)->assertForbidden();
+        $this->actingAs($this->director)->get("/expedientes/{$this->expediente->id}")->assertOk()
+            ->assertInertia(fn ($p) => $p->where('app.salientes', false)->where('expediente.permisos.redactar', false));
+    }
+
     public function test_lo_que_aprueba_el_coordinador_tambien_lo_aprueba_el_director_nunca_el_autor(): void
     {
         // Un área con un solo coordinador: si él redacta el informe, lo aprueba el director.

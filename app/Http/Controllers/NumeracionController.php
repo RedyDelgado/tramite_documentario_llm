@@ -42,7 +42,7 @@ class NumeracionController extends Controller
     {
         Gate::authorize('configuracion.gestionar');
         $datos = $request->validate([
-            'tipo' => ['required', Rule::in([NumeracionService::REGISTRO, 'saliente'])],
+            'tipo' => ['required', Rule::in(config('tramite.salientes.activo') ? [NumeracionService::REGISTRO, 'saliente'] : [NumeracionService::REGISTRO])],
             'tipo_documento_id' => ['exclude_unless:tipo,saliente', 'required', 'integer', Rule::exists('tipos_documento', 'id')],
             'area_id' => ['exclude_unless:tipo,saliente', 'required', 'integer', Rule::exists('areas', 'id')],
             'anio' => ['required', 'integer', 'min:'.now()->year, 'max:'.(now()->year + 1)],
