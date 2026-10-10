@@ -17,9 +17,9 @@ export function GraficoMensual({ filas, series, titulo, alto = 'normal' }: { fil
     return (
         <figure className={alto === 'compacto' ? 'h-44' : 'h-64'} aria-label={titulo}>
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={filas} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barGap={2}>
-                    <CartesianGrid vertical={false} stroke="var(--border)" />
-                    <XAxis dataKey="mes" tickFormatter={etiquetaMes} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <BarChart data={filas} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barGap={4}>
+                    <CartesianGrid vertical={false} stroke="var(--separador)" />
+                    <XAxis dataKey="mes" tickFormatter={etiquetaMes} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
                     <YAxis allowDecimals={false} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
                     <Tooltip
                         labelFormatter={(mes) => etiquetaMes(String(mes))}
@@ -27,8 +27,9 @@ export function GraficoMensual({ filas, series, titulo, alto = 'normal' }: { fil
                         contentStyle={{ borderRadius: 'var(--radio-control)', borderColor: 'var(--border)', fontSize: 14 }}
                     />
                     <Legend itemSorter={null} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: 'var(--text-primary)' }} />
+                    {/* Barras en cápsula: Recharts recorta el radio a la mitad del ancho. */}
                     {series.map((s, i) => (
-                        <Bar key={s.clave} dataKey={s.clave} name={s.nombre} fill={COLORES[i % COLORES.length]} radius={[4, 4, 0, 0]} />
+                        <Bar key={s.clave} dataKey={s.clave} name={s.nombre} fill={COLORES[i % COLORES.length]} radius={999} maxBarSize={18} />
                     ))}
                 </BarChart>
             </ResponsiveContainer>

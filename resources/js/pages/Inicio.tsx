@@ -1,4 +1,4 @@
-import { IcoAlerta, IcoCorrecto, IcoCorreo, IcoEnviar, IcoExpedientes, IcoTablero } from '@/components/ui/iconos';
+import { IcoAlerta, IcoCorrecto, IcoCorreo, IcoEnviar, IcoExpedientes, IcoIrA, IcoTablero } from '@/components/ui/iconos';
 import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { GraficoMensual } from '@/components/data/GraficoMensual';
@@ -43,29 +43,30 @@ function saludo(nombre: string): string {
 
 const hoy = () => new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Lima' });
 
+// La destacada va sobre el degradado de marca; con enlace, toda la tarjeta es clicable y lo anuncia la flecha.
 function Cifra({ titulo, valor, detalle, icono, href, destacar }: { titulo: string; valor: string | number; detalle: string; icono: ReactNode; href?: string; destacar?: boolean }) {
-    const contenido = (
-        <div className="flex items-start gap-3">
-            <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full', destacar ? 'bg-primary-600 text-on-primary' : 'bg-primary-50 text-primary-600')}>{icono}</span>
-            <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-fg-muted">{titulo}</p>
-                <p className="font-titulos text-lg font-bold tracking-tight text-fg tabular-nums">{valor}</p>
-                <p className="truncate text-sm text-fg-muted" title={detalle}>
-                    {detalle}
-                </p>
-            </div>
-        </div>
-    );
+    const circulo = 'flex size-9 shrink-0 items-center justify-center rounded-full';
 
     return (
-        <section className="rounded-card bg-surface px-4 py-3 shadow-card">
-            {href ? (
-                <Link href={href} className="block rounded-control transition-opacity hover:opacity-80">
-                    {contenido}
-                </Link>
-            ) : (
-                contenido
-            )}
+        <section className={cn('relative flex flex-col gap-2 rounded-card px-5 py-4 shadow-card', destacar ? 'bg-[image:var(--degradado-marca)] text-on-primary' : 'bg-surface text-fg')}>
+            <div className="flex items-center justify-between gap-2">
+                <h2 className="truncate text-base font-semibold">{titulo}</h2>
+                {href ? (
+                    <Link
+                        href={href}
+                        aria-label={`Ver ${titulo.toLowerCase()}`}
+                        className={cn(circulo, 'transition-opacity after:absolute after:inset-0 after:rounded-card hover:opacity-80', destacar ? 'bg-surface text-primary-700' : 'bg-primary-600 text-on-primary')}
+                    >
+                        <IcoIrA />
+                    </Link>
+                ) : (
+                    <span className={cn(circulo, destacar ? 'bg-marca-relleno' : 'bg-primary-50 text-primary-600')}>{icono}</span>
+                )}
+            </div>
+            <p className="font-titulos text-cifra font-bold tracking-tight tabular-nums">{valor}</p>
+            <p className={cn('truncate text-sm', destacar ? 'text-marca-suave' : 'text-fg-muted')} title={detalle}>
+                {detalle}
+            </p>
         </section>
     );
 }
@@ -87,7 +88,7 @@ function Ranking({ filas, vacio }: { filas: { clave: string; etiqueta: ReactNode
                             </span>
                             <span className="shrink-0 font-semibold text-fg tabular-nums">{f.texto ?? f.valor}</span>
                         </span>
-                        <span aria-hidden className="mt-1 block h-1.5 rounded-full bg-relleno">
+                        <span aria-hidden className="mt-1.5 block h-2 rounded-full bg-relleno">
                             <span className="block h-full rounded-full bg-primary-600" style={{ width: `${Math.max(2, (f.valor / max) * 100)}%` }} />
                         </span>
                     </>
@@ -135,14 +136,14 @@ export default function Inicio({ indicadores: i }: { indicadores: Indicadores | 
         <AppShell>
             <PageHeader titulo={titulo} descripcion={`${hoy()} · lo que puedes ver de los trámites`} />
             <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-4">
                     <Cifra
                         titulo="Por revisar"
                         valor={i.por_revisar}
                         detalle="Correos que esperan registro"
                         icono={<IcoCorreo />}
                         href="/expedientes?vista=por_revisar"
-                        destacar={i.por_revisar > 0}
+                        destacar
                     />
                     <Cifra titulo="Abiertos" valor={i.abiertos} detalle="Derivados o en atención" icono={<IcoExpedientes />} />
                     <Cifra titulo="Sin movimiento" valor={i.sin_movimiento} detalle={`Más de ${i.dias_sin_movimiento} días quietos`} icono={<IcoAlerta />} />

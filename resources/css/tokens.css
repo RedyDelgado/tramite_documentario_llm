@@ -45,12 +45,11 @@
     /* Separadores finos de listas: text-primary al 8 %. */
     --separador: rgb(31 31 31 / 0.08);
 
-    /* Barra lateral de marca: degradado del azul de Google a su tono 800; texto blanco (6,4:1 o más). */
-    --barra-fondo: linear-gradient(165deg, var(--primary-600) 0%, var(--primary-700) 55%, var(--primary-800) 100%);
-    /* Blanco al 80 % para lo secundario (≥ 4,5:1 sobre el azul más claro), al 10 % y 15 % para hover y selección (texto blanco ≥ 4,5:1). */
-    --barra-suave: rgb(255 255 255 / 0.8);
-    --barra-hover: rgb(255 255 255 / 0.1);
-    --barra-activo: rgb(255 255 255 / 0.15);
+    /* Superficie de marca (tarjeta destacada del inicio): degradado del azul a su tono 800; texto blanco (6,4:1 o más). */
+    --degradado-marca: linear-gradient(150deg, var(--primary-600) 0%, var(--primary-700) 55%, var(--primary-800) 100%);
+    /* Blanco al 80 % para lo secundario sobre la marca (≥ 4,5:1 sobre el azul más claro) y al 18 % para botones sobre ella. */
+    --marca-suave: rgb(255 255 255 / 0.8);
+    --marca-relleno: rgb(255 255 255 / 0.18);
 
     /* Fuente del sistema: SF en Apple, Segoe UI Variable en Windows, Roboto en Android. Sin CDN. */
     --fuente-base: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -58,8 +57,10 @@
 
     /* Esquinas redondeadas y continuas: controles, tarjetas y hojas (modales). */
     --radio-control: 8px;
-    --radio-tarjeta: 14px;
-    --radio-hoja: 18px;
+    --radio-tarjeta: 20px;
+    --radio-hoja: 20px;
+    /* Paneles flotantes del marco (barra lateral y superior). */
+    --radio-panel: 24px;
 
     /* Sombras en capas: un contorno casi invisible más una sombra difusa. */
     --sombra: 0 0 0 1px rgb(31 31 31 / 0.04), 0 1px 2px rgb(31 31 31 / 0.04), 0 4px 14px rgb(31 31 31 / 0.05);

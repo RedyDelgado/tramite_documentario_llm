@@ -51,7 +51,7 @@ export function Toaster() {
                     </T.Close>
                 </T.Root>
             ))}
-            <T.Viewport className="fixed top-16 right-4 z-50 flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2 outline-none" />
+            <T.Viewport className="fixed top-20 right-4 z-50 flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2 outline-none" />
         </T.Provider>
     );
 }

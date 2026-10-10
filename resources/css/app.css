@@ -39,9 +39,8 @@
     --color-relleno-fuerte: var(--relleno-fuerte);
     --color-separador: var(--separador);
     --color-border-campo: var(--border-campo);
-    --color-barra-suave: var(--barra-suave);
-    --color-barra-hover: var(--barra-hover);
-    --color-barra-activo: var(--barra-activo);
+    --color-marca-suave: var(--marca-suave);
+    --color-marca-relleno: var(--marca-relleno);
 
     --color-ok: var(--status-ok);
     --color-ok-soft: var(--status-ok-bg);
@@ -66,6 +65,9 @@
     --text-lg--line-height: 28px;
     --text-xl: 28px;
     --text-xl--line-height: 34px;
+    /* Solo para las cifras grandes del inicio. */
+    --text-cifra: 40px;
+    --text-cifra--line-height: 44px;
 
     /* Jerarquía por peso (HIG, Typography): nunca pesos finos. */
     --font-weight-normal: 400;
@@ -76,6 +78,7 @@
     --radius-control: var(--radio-control);
     --radius-card: var(--radio-tarjeta);
     --radius-hoja: var(--radio-hoja);
+    --radius-panel: var(--radio-panel);
     --radius-full: 9999px;
 
     --shadow-card: var(--sombra);

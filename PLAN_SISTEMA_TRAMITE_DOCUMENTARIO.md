@@ -130,7 +130,7 @@ Todo lo que ve el usuario (administración, bandejas, dashboard, registro de pap
 2. **Primitivos de UI** (`resources/js/components/ui/`): `Button`, `IconButton`, `Input`, `Textarea`, `Select`, `Combobox`, `DatePicker`, `Checkbox`, `Switch`, `Badge`, `Card`, `Tabs`, `Dialog`, `Drawer`, `Popover`, `Tooltip`, `Toast`, `Skeleton`, `EmptyState`, `Spinner`. Basados en Radix, con variantes (`cva`) y estados (hover, foco, deshabilitado, error, carga) definidos **una sola vez**.
 3. **Compuestos de formulario y datos** (`components/forms/`, `components/data/`): `FormField` (etiqueta + control + ayuda + error), `FormSection`, `DataTable` (cabecera fija, orden, selección, paginación, fila en hover/seleccionada, estado vacío y de carga), `FilterBar`, `CommandBar` (acciones a la izquierda, filtros y búsqueda a la derecha), `ConfirmDialog`, `FileDropzone`, `KpiCard`, `ChartCard`.
 4. **Compuestos de dominio** (`components/domain/`): `SemaforoBadge` (siempre icono + texto), `EstadoBadge`, `ExpedienteDrawer`, `LineaTiempo`, `EmisorCombobox`, `AreaSelect`, `ResponsableSelect`, `EtiquetaQR`, `LectorQR`, `CargaEscaneo`. Un componente de dominio nunca define estilos propios: compone capas 2 y 3.
-5. **Plantillas de página** (`components/layouts/`): `AppShell` (barra lateral de marca con la persona arriba, barra de búsqueda translúcida, selección en cápsula), `ListPage` (CommandBar + FilterBar + DataTable + `Pagination` de 10 filas + Drawer de detalle; los catálogos se filtran y paginan en el navegador con `useListaLocal`), `FormPage`, `DashboardPage`.
+5. **Plantillas de página** (`components/layouts/`): `AppShell` (barra lateral y barra superior como paneles flotantes, persona en la barra superior, selección con barra de marca), `ListPage` (CommandBar + FilterBar + DataTable + `Pagination` de 10 filas + Drawer de detalle; los catálogos se filtran y paginan en el navegador con `useListaLocal`), `FormPage`, `DashboardPage`.
 6. **Páginas** (`resources/js/pages/`): solo ensamblan plantillas y compuestos y llaman a Inertia. Sin CSS propio, sin HEX, sin lógica de negocio.
 
 **Reglas de reutilización**
@@ -155,18 +155,19 @@ Todo lo que ve el usuario (administración, bandejas, dashboard, registro de pap
 **Estilo:** forma, tipografía y capas al estilo de Apple (Human Interface Guidelines, escritorio); colores de Google (Material 3, abajo). Decisión del usuario, en reemplazo del estilo Fluent / Microsoft 365 inicial. Claro y centrado en la tarea: la jerarquía se da con tamaño, peso y espacio, no con bordes.
 
 **Estructura de pantalla**
-- Barra lateral de marca a toda la altura, con el degradado del azul de Google (`--barra-fondo`, de `primary-600` a `primary-800`) y texto blanco: arriba el nombre del sistema y la tarjeta de la persona (avatar de iniciales, nombre y rol; abre el menú de la cuenta); debajo sus opciones. Ítem activo en cápsula blanca al 15 % y hover al 10 %; colapsable (solo iconos en ventanas de menos de 1024 px).
-- Barra superior de 56 px translúcida (material con desenfoque) a la derecha de la barra lateral: botón para colapsarla y búsqueda global (campo relleno, sin borde).
+- Barra lateral blanca como panel flotante (separada 12 px de los bordes, esquinas de 24 px, sombra en capas): arriba el nombre del sistema con su icono sobre el degradado de marca (`--degradado-marca`, de `primary-600` a `primary-800`); debajo las opciones con títulos de grupo en versalitas grises. Ítem activo en negrita sobre `primary-50`, icono en `primary-600` y una barra de marca de 4 px pegada al borde; hover gris. Colapsable (solo iconos en ventanas de menos de 1024 px).
+- Barra superior de 64 px, también panel flotante translúcido (material con desenfoque) y fija al desplazar: botón para colapsar la barra lateral, búsqueda global (campo relleno, sin borde) y, a la derecha, la persona (avatar de iniciales, nombre y rol; abre el menú de la cuenta).
+- Inicio: cifras grandes (40 px) en tarjetas; la primera va sobre el degradado de marca y las que llevan a una lista muestran una flecha en círculo. Gráficos de barras en cápsula.
 - Las bandejas con varias vistas usan un control segmentado (`Pestanas`) sobre la tabla, con el total de cada vista.
 - Barra de comandos sobre cada tabla: acciones principales a la izquierda, filtros y búsqueda a la derecha.
-- Fondo de página gris claro; tarjetas blancas **sin borde**, con sombra en capas y esquinas de 14 px.
+- Fondo de página gris claro; tarjetas blancas **sin borde**, con sombra en capas y esquinas de 20 px.
 - Tablas como listas: cabecera fija translúcida sin franja de color, filas de 44 px con separadores finos, fila en hover y seleccionada.
 - Crear, editar y ver en modales tipo hoja (esquinas de 18 px, fondo desenfocado, entrada suave); detalle en lista agrupada etiqueta | valor.
 - Solo tema claro en la v1.
 
 **Tipografía:** fuente del sistema (`-apple-system`, SF Pro en Apple, Segoe UI Variable en Windows, Roboto en Android); los títulos usan la variante Display con interletrado algo cerrado. Sin fuentes externas (CDN): el sistema es local. Base 14 px; escala 12 / 14 / 16 / 20 / 28 px; pesos 400, 500, 600 y 700 (nunca pesos finos). Título de página en negrita de 28 px.
 
-**Forma y espaciado:** cuadrícula de 4 px; radio 8 px en controles, 14 px en tarjetas y 18 px en hojas; sombras en capas (`--sombra`, `--sombra-flotante`); campos de 36 px con borde gris de Google (3,7:1) y, al enfocar, halo azul de 3 px; anillo de foco de 2 px en `primary-600` con separación de 2 px en el resto. Botón secundario relleno de gris (no contorno); deshabilitado, atenuado al 40 %. Etiquetas en cápsula.
+**Forma y espaciado:** cuadrícula de 4 px; radio 8 px en campos, 20 px en tarjetas y hojas, 24 px en los paneles del marco; sombras en capas (`--sombra`, `--sombra-flotante`); campos de 36 px con borde gris de Google (3,7:1) y, al enfocar, halo azul de 3 px; anillo de foco de 2 px en `primary-600` con separación de 2 px en el resto. Botones en cápsula de 36 px; el secundario relleno de gris (no contorno); deshabilitado, atenuado al 40 %. Etiquetas en cápsula.
 
 **Paleta única (HEX)**
 

@@ -40,15 +40,17 @@ function iniciales(nombre: string): string {
 }
 
 function ItemNavegacion({ item, activa, colapsada }: { item: ItemNav; activa: boolean; colapsada: boolean }) {
-    // Cápsula translúcida sobre el fondo de marca: blanco al 15 % la selección, al 10 % el hover.
+    // Selección con fondo celeste, texto en negrita y una barra de marca pegada al borde de la barra lateral.
     const clases = cn(
-        'flex h-9 items-center gap-3 rounded-full text-base transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-primary',
+        'relative flex h-10 items-center gap-3 rounded-control text-base transition-colors',
         colapsada ? 'mx-auto w-10 justify-center' : 'mx-3 px-3',
-        activa ? 'bg-barra-activo font-semibold text-on-primary' : 'text-barra-suave hover:bg-barra-hover hover:text-on-primary',
+        activa
+            ? 'bg-primary-50 font-bold text-fg before:absolute before:inset-y-2 before:-left-3 before:w-1 before:rounded-r-full before:bg-primary-600'
+            : 'text-fg-muted hover:bg-relleno hover:text-fg',
     );
     const contenido = (
         <>
-            <span className="shrink-0">{item.icono}</span>
+            <span className={cn('shrink-0', activa && 'text-primary-600')}>{item.icono}</span>
             <span className={colapsada ? 'sr-only' : 'truncate'}>{item.etiqueta}</span>
         </>
     );
@@ -65,7 +67,7 @@ function ItemNavegacion({ item, activa, colapsada }: { item: ItemNav; activa: bo
     return colapsada ? <Tooltip texto={item.etiqueta}>{enlace}</Tooltip> : enlace;
 }
 
-/** Marco de toda página autenticada: barra lateral de marca con las opciones y barra superior translúcida con la búsqueda y la persona. */
+/** Marco de toda página autenticada: barra lateral y barra superior como paneles flotantes redondeados sobre el fondo gris. */
 export function AppShell({ children }: { children: ReactNode }) {
     const { props, url } = usePage();
     const [colapsada, setColapsada] = useState(leerColapsada);
@@ -85,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
 
     const avatar = usuario && (
-        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-on-primary">
+        <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-on-primary">
             {iniciales(usuario.name)}
         </span>
     );
@@ -96,15 +98,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                 id="navegacion"
                 aria-label="Navegación principal"
                 className={cn(
-                    'fixed inset-y-0 left-0 z-40 flex flex-col overflow-x-hidden bg-[image:var(--barra-fondo)] text-on-primary transition-[width]',
+                    'fixed inset-y-3 left-3 z-40 flex flex-col overflow-x-hidden rounded-panel bg-surface shadow-card transition-[width]',
                     colapsada ? 'w-16' : 'w-64',
                 )}
             >
                 <Link
                     href="/"
-                    className={cn('flex h-14 shrink-0 items-center gap-2 font-titulos text-md font-bold tracking-tight', colapsada ? 'justify-center' : 'px-6')}
+                    aria-label={colapsada ? props.app.nombre : undefined}
+                    className={cn('flex h-16 shrink-0 items-center gap-2.5 font-titulos text-md font-bold tracking-tight text-fg', colapsada ? 'justify-center' : 'px-5')}
                 >
-                    {colapsada ? <IcoExpedientes aria-label={props.app.nombre} /> : <span className="truncate">{props.app.nombre}</span>}
+                    <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[image:var(--degradado-marca)] text-on-primary">
+                        <IcoExpedientes />
+                    </span>
+                    {!colapsada && <span className="truncate">{props.app.nombre}</span>}
                 </Link>
 
                 <div className="flex-1 overflow-y-auto pb-4">
@@ -112,9 +118,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <div key={grupo.titulo ?? i} className={cn(i > 0 && 'mt-5')}>
                             {grupo.titulo &&
                                 (colapsada ? (
-                                    <div role="separator" className="mx-4 mb-2 h-px bg-barra-activo" />
+                                    <div role="separator" className="mx-4 mb-2 h-px bg-separador" />
                                 ) : (
-                                    <p className="px-6 pb-1.5 text-sm font-semibold tracking-wide text-barra-suave uppercase">{grupo.titulo}</p>
+                                    <p className="px-6 pb-1.5 text-sm font-semibold tracking-wide text-fg-muted uppercase">{grupo.titulo}</p>
                                 ))}
                             <ul className="flex flex-col gap-0.5">
                                 {grupo.items.map((item) => (
@@ -132,76 +138,72 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
             </nav>
 
-            <header
-                className={cn(
-                    'fixed top-0 right-0 z-30 flex h-14 items-center gap-3 border-b border-separador bg-material px-4 backdrop-blur-xl backdrop-saturate-150 transition-[left]',
-                    colapsada ? 'left-16' : 'left-64',
-                )}
-            >
-                <IconButton
-                    icono={<IcoPanelLateral />}
-                    etiqueta={colapsada ? 'Mostrar la barra lateral' : 'Ocultar la barra lateral'}
-                    aria-expanded={!colapsada}
-                    aria-controls="navegacion"
-                    onClick={alternar}
-                />
-                {tieneAlguno(props.auth.can, PERMISOS_EXPEDIENTES) && (
-                    <form
-                        role="search"
-                        className="w-full max-w-lg"
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            const q = new FormData(e.currentTarget).get('q')?.toString().trim();
-                            router.get('/expedientes', q ? { q } : {});
-                        }}
-                    >
-                        {/* Campo de búsqueda relleno, sin borde, como el de las barras de herramientas de Apple. */}
-                        <div className="relative">
-                            <IcoBuscar className="pointer-events-none absolute inset-y-0 left-3 my-auto text-fg-muted" />
-                            <input
-                                key={url}
-                                name="q"
-                                type="search"
-                                aria-label="Buscar expedientes"
-                                placeholder="Buscar por asunto, remitente, código o texto"
-                                defaultValue={new URLSearchParams(url.split('?')[1] ?? '').get('q') ?? ''}
-                                className={cn(campoClases, 'h-9 border-transparent bg-relleno pl-9 hover:border-transparent focus:bg-surface')}
+            <div className={cn('pr-3 transition-[padding]', colapsada ? 'pl-[5.5rem]' : 'pl-[17.5rem]')}>
+                {/* El «before» tapa la franja de 12 px sobre la barra para que el contenido no se vea pasar por encima. */}
+                <header className="sticky top-3 z-30 mt-3 flex h-16 items-center gap-3 rounded-panel bg-material px-4 shadow-card backdrop-blur-xl backdrop-saturate-150 before:absolute before:inset-x-0 before:-top-3 before:h-3 before:bg-app">
+                    <IconButton
+                        icono={<IcoPanelLateral />}
+                        etiqueta={colapsada ? 'Mostrar la barra lateral' : 'Ocultar la barra lateral'}
+                        aria-expanded={!colapsada}
+                        aria-controls="navegacion"
+                        onClick={alternar}
+                    />
+                    {tieneAlguno(props.auth.can, PERMISOS_EXPEDIENTES) && (
+                        <form
+                            role="search"
+                            className="w-full max-w-lg"
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const q = new FormData(e.currentTarget).get('q')?.toString().trim();
+                                router.get('/expedientes', q ? { q } : {});
+                            }}
+                        >
+                            {/* Campo de búsqueda relleno, sin borde, como el de las barras de herramientas de Apple. */}
+                            <div className="relative">
+                                <IcoBuscar className="pointer-events-none absolute inset-y-0 left-3 my-auto text-fg-muted" />
+                                <input
+                                    key={url}
+                                    name="q"
+                                    type="search"
+                                    aria-label="Buscar expedientes"
+                                    placeholder="Buscar por asunto, remitente, código o texto"
+                                    defaultValue={new URLSearchParams(url.split('?')[1] ?? '').get('q') ?? ''}
+                                    className={cn(campoClases, 'h-9 border-transparent bg-relleno pl-9 hover:border-transparent focus:bg-surface')}
+                                />
+                            </div>
+                        </form>
+                    )}
+                    {usuario && (
+                        <div className="ml-auto">
+                            <Menu
+                                disparador={
+                                    <button
+                                        type="button"
+                                        aria-label={`${usuario.name}: opciones de la cuenta`}
+                                        className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-relleno focus-visible:outline-2 focus-visible:outline-primary-600"
+                                    >
+                                        {avatar}
+                                        <span className="hidden min-w-0 sm:block">
+                                            <span className="block max-w-56 truncate text-base font-semibold text-fg">{usuario.name}</span>
+                                            <span className="block max-w-56 truncate text-sm text-fg-muted">{rol}</span>
+                                        </span>
+                                        <IcoFlechaAbajo16 className="shrink-0 text-fg-muted" />
+                                    </button>
+                                }
+                                encabezado={
+                                    <>
+                                        <p className="text-base font-semibold text-fg">{usuario.name}</p>
+                                        <p className="text-sm text-fg-muted">{usuario.email}</p>
+                                    </>
+                                }
+                                items={[{ etiqueta: 'Cerrar sesión', icono: <IcoSalir />, onSelect: () => router.post('/logout') }]}
                             />
                         </div>
-                    </form>
-                )}
-                {usuario && (
-                    <div className="ml-auto">
-                        <Menu
-                            disparador={
-                                <button
-                                    type="button"
-                                    aria-label={`${usuario.name}: opciones de la cuenta`}
-                                    className="flex h-10 cursor-pointer items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-relleno focus-visible:outline-2 focus-visible:outline-primary-600"
-                                >
-                                    {avatar}
-                                    <span className="hidden min-w-0 sm:block">
-                                        <span className="block max-w-56 truncate text-base font-semibold text-fg">{usuario.name}</span>
-                                        <span className="block max-w-56 truncate text-sm text-fg-muted">{rol}</span>
-                                    </span>
-                                    <IcoFlechaAbajo16 className="shrink-0 text-fg-muted" />
-                                </button>
-                            }
-                            encabezado={
-                                <>
-                                    <p className="text-base font-semibold text-fg">{usuario.name}</p>
-                                    <p className="text-sm text-fg-muted">{usuario.email}</p>
-                                </>
-                            }
-                            items={[{ etiqueta: 'Cerrar sesión', icono: <IcoSalir />, onSelect: () => router.post('/logout') }]}
-                        />
-                    </div>
-                )}
-            </header>
+                    )}
+                </header>
 
-            <main className={cn('pt-14 transition-[padding]', colapsada ? 'pl-16' : 'pl-64')}>
-                <div className="mx-auto max-w-[96rem] px-8 py-6">{children}</div>
-            </main>
+                <main className="mx-auto max-w-[96rem] px-5 py-6">{children}</main>
+            </div>
 
             <Toaster />
         </div>
