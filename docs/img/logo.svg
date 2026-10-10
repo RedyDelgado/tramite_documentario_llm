@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="titulo">
+  <title id="titulo">Trámite Documentario</title>
+  <defs>
+    <linearGradient id="marca" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B57D0"/>
+      <stop offset="1" stop-color="#062E6F"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#marca)"/>
+  <!-- Documento -->
+  <path d="M40 24h34l18 18v58a6 6 0 0 1-6 6H40a6 6 0 0 1-6-6V30a6 6 0 0 1 6-6z" fill="#FFFFFF"/>
+  <path d="M74 24v14a4 4 0 0 0 4 4h14z" fill="#D3E3FD"/>
+  <rect x="44" y="52" width="30" height="5" rx="2.5" fill="#A8C7FA"/>
+  <rect x="44" y="63" width="40" height="5" rx="2.5" fill="#A8C7FA"/>
+  <!-- Circuito de la IA: tres nodos que se enlazan -->
+  <path d="M50 88h12l8-8h10" stroke="#0B57D0" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="48" cy="88" r="5" fill="#0B57D0"/>
+  <circle cx="84" cy="80" r="5" fill="#0B57D0"/>
+  <circle cx="70" cy="80" r="3" fill="#137333"/>
+</svg>
