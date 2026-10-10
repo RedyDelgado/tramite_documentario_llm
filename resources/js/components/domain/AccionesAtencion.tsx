@@ -320,7 +320,10 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                                         <Button
                                             tamano="sm"
                                             icono={<IcoAgregar16 />}
-                                            onClick={() => derivar.setData('areas', [...derivar.data.areas, { area_id: '', responsable_id: '', fecha_limite: '' }])}
+                                            // La nueva área empieza con la fecha de la principal; se puede cambiar.
+                                            onClick={() =>
+                                                derivar.setData('areas', [...derivar.data.areas, { area_id: '', responsable_id: '', fecha_limite: derivar.data.areas[0]?.fecha_limite ?? '' }])
+                                            }
                                         >
                                             Agregar área
                                         </Button>
