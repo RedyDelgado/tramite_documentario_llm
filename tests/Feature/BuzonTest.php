@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Correo\DirectorioMailboxDriver;
 use App\Correo\GmailMailboxDriver;
 use App\Correo\MailboxDriver;
 use App\Correo\MensajeCrudo;
@@ -17,6 +18,7 @@ use Closure;
 use Database\Seeders\ReglasNoTramiteSeeder;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Queue;
@@ -138,6 +140,148 @@ class BuzonTest extends TestCase
 
         $this->post('/buzon/activar', ['activo' => false]);
         $this->assertFalse(app(BuzonService::class)->activo());
+    }
+
+    public function test_solo_el_superadmin_detiene_y_puede_reanudar_la_descarga(): void
+    {
+        Queue::fake();
+        $servicio = app(BuzonService::class);
+        $servicio->activar(true);
+        Cache::put(BuzonService::EN_CURSO, true, 120);
+        $director = User::factory()->create()->assignRole('director');
+        $this->actingAs($director)->post('/buzon/detener')->assertForbidden();
+        $this->assertFalse($servicio->detenida());
+
+        $this->actingAs($this->superadmin)->post('/buzon/detener')->assertRedirect('/buzon');
+        $this->assertTrue($servicio->detenida());
+        $this->assertFalse($servicio->activo());
+        $this->assertDatabaseHas('auditoria', ['accion' => 'buzon.descarga_detenida', 'usuario_id' => $this->superadmin->id]);
+        // Un trabajo que ya estaba en cola también debe respetar la detención.
+        $this->mock(IngestaCorreoService::class)->shouldNotReceive('procesarPendientes');
+        (new IngestarCorreos)->handle($servicio, app(IngestaCorreoService::class));
+        $this->assertFalse(Cache::has(BuzonService::EN_CURSO));
+        Queue::assertNotPushed(IngestarCorreos::class);
+
+        $this->post('/buzon/descargar', ['desde' => today()->toDateString()])->assertRedirect('/buzon');
+        $this->assertFalse($servicio->detenida());
+        Queue::assertPushed(IngestarCorreos::class, 1);
+    }
+
+    public function test_detener_entre_correos_conserva_el_ingresado_y_no_encadena_otro_lote(): void
+    {
+        Queue::fake();
+        Storage::fake('originales');
+        $directorio = sys_get_temp_dir().'/buzon-detener-'.uniqid();
+        File::copyDirectory(base_path('tests/fixtures/correos'), $directorio);
+        config(['tramite.correo.lote' => 3]);
+        $lector = new class($directorio) extends DirectorioMailboxDriver
+        {
+            public function marcarProcesado(MensajeCrudo $mensaje): void
+            {
+                parent::marcarProcesado($mensaje);
+                app(BuzonService::class)->detener();
+            }
+        };
+        $this->app->instance(MailboxDriver::class, $lector);
+
+        try {
+            (new IngestarCorreos)->handle(app(BuzonService::class), app(IngestaCorreoService::class));
+
+            $this->assertSame(1, CorreoLeido::count());
+            $this->assertSame(1, Expediente::count());
+            $this->assertCount(1, File::glob($directorio.'/*.procesado'));
+            Queue::assertNotPushed(IngestarCorreos::class);
+            $this->assertFalse(Cache::has(BuzonService::EN_CURSO));
+            $this->assertTrue(app(BuzonService::class)->detenida());
+
+            // Reanudar con el lector normal continúa con el siguiente correo.
+            config(['tramite.correo.lote' => 1]);
+            app(BuzonService::class)->descargar('2026-01-01');
+            $this->app->instance(MailboxDriver::class, new DirectorioMailboxDriver($directorio));
+            (new IngestarCorreos)->handle(app(BuzonService::class), app(IngestaCorreoService::class));
+            $this->assertSame(2, CorreoLeido::count());
+            $this->assertSame(2, Expediente::count());
+        } finally {
+            File::deleteDirectory($directorio);
+        }
+    }
+
+    public function test_un_trabajo_pendiente_no_oculta_que_otro_aun_esta_terminando(): void
+    {
+        app(BuzonService::class)->detener();
+        Cache::put(BuzonService::EN_CURSO, true, 120);
+        $candado = Cache::lock('ingesta-correo', 90);
+        $this->assertTrue($candado->get());
+
+        try {
+            (new IngestarCorreos)->handle(app(BuzonService::class), app(IngestaCorreoService::class));
+            $this->assertTrue(Cache::has(BuzonService::EN_CURSO));
+        } finally {
+            $candado->release();
+        }
+        (new IngestarCorreos)->handle(app(BuzonService::class), app(IngestaCorreoService::class));
+        $this->assertFalse(Cache::has(BuzonService::EN_CURSO));
+    }
+
+    public function test_reanudar_conserva_la_fecha_original_y_solo_lo_hace_el_superadmin(): void
+    {
+        Queue::fake();
+        $servicio = app(BuzonService::class);
+        $servicio->descargar('2026-01-01');
+        $servicio->detener();
+        (new IngestarCorreos)->handle($servicio, app(IngestaCorreoService::class));
+        $director = User::factory()->create()->assignRole('director');
+        $this->actingAs($director)->post('/buzon/reanudar')->assertForbidden();
+        $this->actingAs($director)->post('/buzon/finalizar')->assertForbidden();
+
+        $this->actingAs($this->superadmin)->post('/buzon/reanudar', ['desde' => '2026-02-01'])->assertRedirect('/buzon');
+        $this->assertSame('2026-01-01', $servicio->desde()->toDateString());
+        $this->assertFalse($servicio->detenida());
+        $this->assertFalse($servicio->estado()['finalizada']);
+        $this->assertFalse($servicio->activo());
+        Queue::assertPushed(IngestarCorreos::class, 2);
+        $this->assertDatabaseHas('auditoria', ['accion' => 'buzon.descarga_reanudada']);
+    }
+
+    public function test_finalizar_conserva_los_datos_bloquea_trabajos_antiguos_y_permite_reiniciar(): void
+    {
+        Queue::fake();
+        $expediente = Expediente::factory()->create();
+        CorreoLeido::create(['buzon' => 'directorio', 'uid' => 'ya-importado']);
+        $servicio = app(BuzonService::class);
+        $servicio->detener();
+
+        $this->actingAs($this->superadmin)->post('/buzon/finalizar')->assertRedirect('/buzon');
+        $this->assertTrue($servicio->estado()['finalizada']);
+        $this->assertTrue($servicio->detenida());
+        (new IngestarCorreos)->handle($servicio, app(IngestaCorreoService::class));
+        Queue::assertNotPushed(IngestarCorreos::class);
+        $this->assertTrue($expediente->fresh()->exists);
+        $this->assertSame(1, CorreoLeido::count());
+        $this->assertDatabaseHas('auditoria', ['accion' => 'buzon.descarga_finalizada']);
+
+        $this->post('/buzon/descargar', ['desde' => '2026-02-01'])->assertRedirect('/buzon');
+        $this->assertSame('2026-02-01', $servicio->desde()->toDateString());
+        $this->assertFalse($servicio->detenida());
+        $this->assertFalse($servicio->estado()['finalizada']);
+        $this->assertSame(1, CorreoLeido::count());
+        Queue::assertPushed(IngestarCorreos::class, 1);
+    }
+
+    public function test_no_se_reanuda_ni_finaliza_mientras_termina_el_correo_actual(): void
+    {
+        Queue::fake();
+        $servicio = app(BuzonService::class);
+        $servicio->detener();
+        Cache::put(BuzonService::EN_CURSO, true, 120);
+
+        foreach (['reanudar', 'finalizar', 'descargar'] as $accion) {
+            $this->actingAs($this->superadmin)->from('/buzon')
+                ->post('/buzon/'.$accion, ['desde' => '2026-01-01'])->assertRedirect('/buzon');
+        }
+        $this->assertTrue($servicio->detenida());
+        $this->assertFalse($servicio->estado()['finalizada']);
+        Queue::assertNotPushed(IngestarCorreos::class);
     }
 
     public function test_un_buzon_que_no_se_puede_leer_deja_el_error_a_la_vista(): void

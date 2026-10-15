@@ -41,17 +41,25 @@ class IngestaCorreoService
      * Procesa un lote de lo aún no leído de un buzón; un mensaje que falla no queda como leído y se reintenta en la
      * próxima pasada. `$nombre` identifica el buzón (la cuenta de Google) en lo ya leído. Con `$hasta` (microtime)
      * se corta al vencer el tiempo, antes de que el worker mate el job: `cortado` dice que quedó trabajo.
+     * `$detener` permite terminar entre correos sin interrumpir la transacción del que se está procesando.
      *
      * @return array{procesados: int, fallidos: int, cortado?: bool}
      */
-    public function procesarPendientes(MailboxDriver $buzon, int $limite, ?string $nombre = null, ?Buzon $cuenta = null, ?float $hasta = null): array
+    public function procesarPendientes(MailboxDriver $buzon, int $limite, ?string $nombre = null, ?Buzon $cuenta = null, ?float $hasta = null, ?\Closure $detener = null): array
     {
         $nombre ??= (string) config('tramite.correo.driver');
         $resultado = ['procesados' => 0, 'fallidos' => 0];
         $leido = fn (string $uid) => CorreoLeido::where('buzon', $nombre)->where('uid', $uid)->exists();
 
+        if ($detener && $detener()) {
+            return $resultado;
+        }
+
         try {
             foreach ($buzon->pendientes(app(BuzonService::class)->desde(), $limite, $leido) as $mensaje) {
+                if ($detener && $detener()) {
+                    break;
+                }
                 if ($hasta !== null && microtime(true) > $hasta) {
                     $resultado['cortado'] = true;
                     break;
@@ -64,6 +72,10 @@ class IngestaCorreoService
                     report($e);
                     $resultado['fallidos']++;
 
+                    if ($detener && $detener()) {
+                        break;
+                    }
+
                     continue;
                 }
                 try {
@@ -71,6 +83,9 @@ class IngestaCorreoService
                     $buzon->marcarProcesado($mensaje);
                 } catch (Throwable $e) {
                     report($e);
+                }
+                if ($detener && $detener()) {
+                    break;
                 }
             }
         } catch (Throwable $e) {

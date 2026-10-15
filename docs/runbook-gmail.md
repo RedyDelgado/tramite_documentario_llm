@@ -18,6 +18,10 @@ Se conecta desde el sistema: **Administración → Buzón central** (solo el sup
 3. Lo ya leído lo recuerda la base (`correos_leidos`), no la etiqueta de Gmail: pulsar otra vez no repite nada, y si se vacía la base vuelve a traerlo. En Gmail, cada correo leído queda además con la etiqueta `tramite/procesado`, solo para verlo.
 4. **Descarga automática**: encendida, lee las cuentas cada minuto (requiere el programador, `schedule:work`).
 5. Cada cuenta muestra cuántos correos se descargaron y su última lectura; si Google rechazó el acceso, el motivo (por ejemplo `invalid_grant`: volver a agregar la cuenta).
+6. **Detener descarga**: termina el correo en curso, conserva lo importado y evita continuar con otros correos o lotes. También apaga la descarga automática. Mientras termina se muestra «Deteniendo…». Al quedar pausada aparecen tres opciones:
+   - **Reanudar descarga**: continúa con la fecha original y omite lo ya ingresado.
+   - **Reiniciar descarga**: revisa desde la fecha elegida en **Desde**, conservando los correos y las marcas de lectura para evitar duplicados.
+   - **Finalizar descarga**: cierra la pausa, conserva los datos y mantiene apagada la descarga automática. Después se puede iniciar otra descarga normalmente.
 
 `CORREO_BACKFILL_DESDE` es la fecha por defecto hasta que se elija otra en el panel; lo anterior a `CORREO_INICIO_OPERACION` entra como histórico. Para dimensionar sin guardar nada: `docker compose exec app php artisan correo:estadisticas`.
 
@@ -38,3 +42,17 @@ El scope `gmail.modify` ya permite enviar (`users.messages.send`): no hace falta
 
 1. <https://myaccount.google.com/permissions> con la cuenta del buzón → quitar el acceso del cliente, o eliminar el ID de cliente en Google Cloud.
 2. En **Buzón central → Quitar** la cuenta (o, si se usó el `.env`, `CORREO_ACTIVO=false` y borrar `GMAIL_REFRESH_TOKEN`).
+
+## 5. Prueba en vivo antes de aprobar la conexión
+
+Las pruebas automáticas simulan Google: no sustituyen esta prueba con una cuenta propia de prueba. La conexión del buzón institucional requiere la autorización escrita del pendiente 1 del plan.
+
+1. Usar un entorno de desarrollo y una cuenta propia destinada a pruebas, con descarga automática apagada. Preparar un correo recibido con asunto único, texto y un PDF; conservar el mensaje original para comparar.
+2. Conectar únicamente esa cuenta por el panel siguiendo las secciones 1 y 2. Elegir una fecha que incluya el correo y pulsar **Descargar correos**. Comprobar que Horizon termina el lote y que la cuenta no muestra errores de lectura.
+3. Entrar como administrativo: localizar el correo, abrir su expediente y comprobar remitente, fecha, cuerpo y PDF. Descargar el `.eml` y el adjunto y comparar su contenido con los originales.
+4. En Gmail, comprobar que el mensaje permanece en su ubicación y conserva sus etiquetas anteriores; debe agregarse `tramite/procesado`. No debe enviarse a la papelera ni eliminarse.
+5. Volver a descargar desde la misma fecha: comprobar que sigue existiendo un solo correo y expediente para ese Message-ID y que no se duplicó el adjunto.
+6. Si se usarán varias cuentas, repetir con una segunda cuenta propia y verificar la etiqueta de ambas: sus IDs internos pueden ser distintos aunque el nombre sea idéntico.
+7. Al terminar, quitar las cuentas de prueba y revocar el acceso si ya no se necesita.
+
+Registrar fecha, entorno, cuenta de prueba parcialmente ocultada, Message-ID del ejemplo, resultado de la primera y segunda descarga y evidencia de conservación y etiquetado. No adjuntar access tokens, refresh tokens ni secretos OAuth. Dejar el punto como pendiente hasta ejecutar la prueba y registrar el resultado real.

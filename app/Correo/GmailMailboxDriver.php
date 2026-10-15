@@ -105,8 +105,12 @@ class GmailMailboxDriver implements MailboxDriver
     private function idEtiqueta(): string
     {
         $nombre = $this->config['etiqueta'];
+        // Los IDs de etiqueta pertenecen a cada buzón, aunque usen el mismo nombre y usuario «me».
+        $clave = 'gmail.etiqueta.'.hash('sha256', json_encode([
+            $this->config['client_id'], $this->config['refresh_token'], $this->config['usuario'], $nombre,
+        ]));
 
-        return Cache::rememberForever("gmail.etiqueta.{$nombre}", function () use ($nombre) {
+        return Cache::rememberForever($clave, function () use ($nombre) {
             $existente = collect($this->api()->get('labels')->throw()->json('labels', []))->firstWhere('name', $nombre);
 
             return $existente['id'] ?? $this->api()->post('labels', [
@@ -124,7 +128,7 @@ class GmailMailboxDriver implements MailboxDriver
             ->acceptJson()
             ->timeout(30)
             // Cuota de Google: ante 429 o 5xx se reintenta con espera creciente.
-            ->retry(3, fn (int $intento) => $intento * 1000, fn ($e) => $e instanceof RequestException && in_array($e->response->status(), [429, 500, 502, 503], true));
+            ->retry(3, fn (int $intento) => $intento * 1000, fn ($e) => $e instanceof RequestException && ($e->response->status() === 429 || $e->response->serverError()));
     }
 
     private function token(): string

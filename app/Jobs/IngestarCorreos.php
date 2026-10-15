@@ -21,6 +21,11 @@ class IngestarCorreos implements ShouldQueue
 
     public function handle(BuzonService $buzones, IngestaCorreoService $ingesta): void
     {
+        if ($buzones->detenida()) {
+            Cache::lock('ingesta-correo', 90)->get(fn () => Cache::forget(BuzonService::EN_CURSO));
+
+            return;
+        }
         $lote = (int) config('tramite.correo.lote');
 
         // Trabaja hasta 40 s y deja que la siguiente pasada continúe: el worker corta los jobs al minuto.
@@ -28,13 +33,17 @@ class IngestarCorreos implements ShouldQueue
 
         // Una sola lectura a la vez (la programada y la del botón pueden coincidir); el candado vence si el job muere.
         $hayMas = Cache::lock('ingesta-correo', 90)->get(function () use ($buzones, $ingesta, $lote, $hasta) {
+            Cache::put(BuzonService::EN_CURSO, true, 120);
             $hayMas = false;
             foreach ($buzones->lectores() as [$nombre, $lector, $cuenta]) {
+                if ($buzones->detenida()) {
+                    return false;
+                }
                 if (microtime(true) > $hasta) {
                     return true;
                 }
                 try {
-                    $r = $ingesta->procesarPendientes($lector, $lote, $nombre, $cuenta, $hasta);
+                    $r = $ingesta->procesarPendientes($lector, $lote, $nombre, $cuenta, $hasta, fn () => $buzones->detenida());
                     $hayMas = $hayMas || ($r['cortado'] ?? false) || ($r['procesados'] > 0 && $lote <= $r['procesados'] + $r['fallidos']);
                 } catch (Throwable $e) {
                     // Una cuenta caída (acceso revocado) no frena a las demás; su error queda en Buzón central.
@@ -42,10 +51,12 @@ class IngestarCorreos implements ShouldQueue
                 }
             }
 
-            return $hayMas;
+            return ! $buzones->detenida() && $hayMas;
         });
 
-        if ($hayMas) {
+        if ($hayMas !== null && $buzones->detenida()) {
+            Cache::forget(BuzonService::EN_CURSO);
+        } elseif ($hayMas) {
             Cache::put(BuzonService::EN_CURSO, true, 120);
             self::dispatch()->delay(now()->addSeconds(2));
         } elseif ($hayMas === false) {

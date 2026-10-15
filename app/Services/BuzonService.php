@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Correo\GmailMailboxDriver;
 use App\Correo\MailboxDriver;
+use App\Exceptions\ReglaDeNegocio;
 use App\Jobs\IngestarCorreos;
 use App\Models\Buzon;
 use App\Models\Configuracion;
@@ -29,6 +30,10 @@ class BuzonService
 
     // Mientras dura una descarga en segundo plano, para mostrarlo en Buzón central.
     public const EN_CURSO = 'correo.descarga_en_curso';
+
+    private const DETENIDA = 'correo.descarga_detenida';
+
+    private const FINALIZADA = 'correo.descarga_finalizada';
 
     public function __construct(private readonly AuditoriaService $auditoria) {}
 
@@ -106,13 +111,58 @@ class BuzonService
     /** Un clic: fija la fecha y descarga en segundo plano todo lo recibido desde entonces que aún no se leyó. */
     public function descargar(string $desde): void
     {
+        $this->comprobarSinDescargaEnCurso();
         $antes = $this->desde()->toDateString();
         Configuracion::updateOrCreate(['clave' => self::DESDE], ['valor' => $desde]);
         if ($antes !== $desde) {
             $this->auditoria->registrar('buzon.desde', 'buzon', antes: ['desde' => $antes], despues: ['desde' => $desde]);
         }
+        Cache::forget(self::DETENIDA);
+        Cache::forget(self::FINALIZADA);
         Cache::put(self::EN_CURSO, true, 120);
         IngestarCorreos::dispatch();
+    }
+
+    public function detenida(): bool
+    {
+        return Cache::has(self::DETENIDA);
+    }
+
+    /** Detención cooperativa: termina el correo actual y conserva lo ya ingresado. */
+    public function detener(): void
+    {
+        Cache::forget(self::FINALIZADA);
+        Cache::forever(self::DETENIDA, true);
+        $this->activar(false);
+        $this->auditoria->registrar('buzon.descarga_detenida', 'buzon');
+    }
+
+    public function reanudar(): void
+    {
+        $this->comprobarSinDescargaEnCurso();
+        if (! $this->detenida() || Cache::has(self::FINALIZADA)) {
+            throw new ReglaDeNegocio('No hay una descarga pausada para reanudar.');
+        }
+        $this->descargar($this->desde()->toDateString());
+        $this->auditoria->registrar('buzon.descarga_reanudada', 'buzon');
+    }
+
+    public function finalizar(): void
+    {
+        $this->comprobarSinDescargaEnCurso();
+        if (! $this->detenida()) {
+            throw new ReglaDeNegocio('Primero detén la descarga para poder finalizarla.');
+        }
+        // Conserva la señal de detención para que trabajos antiguos en cola no vuelvan a descargar.
+        Cache::forever(self::FINALIZADA, true);
+        $this->auditoria->registrar('buzon.descarga_finalizada', 'buzon');
+    }
+
+    private function comprobarSinDescargaEnCurso(): void
+    {
+        if (Cache::has(self::EN_CURSO)) {
+            throw new ReglaDeNegocio('Espera a que termine la descarga o la detención en curso.');
+        }
     }
 
     /** Agrega una cuenta (o renueva su acceso); la primera queda como principal. */
@@ -152,6 +202,10 @@ class BuzonService
 
     public function activar(bool $activo): void
     {
+        if ($activo) {
+            Cache::forget(self::DETENIDA);
+            Cache::forget(self::FINALIZADA);
+        }
         $antes = $this->activo();
         Configuracion::updateOrCreate(['clave' => self::ACTIVO], ['valor' => $activo]);
         $this->auditoria->registrar('buzon.descarga_automatica', 'buzon', antes: ['activa' => $antes], despues: ['activa' => $activo]);
@@ -183,6 +237,8 @@ class BuzonService
             'activo' => $this->activo(),
             'desde' => $this->desde()->toDateString(),
             'en_curso' => Cache::has(self::EN_CURSO),
+            'detenida' => $this->detenida(),
+            'finalizada' => Cache::has(self::FINALIZADA),
             // Sin cuentas conectadas: lo leído del buzón del .env (carpeta de prueba).
             'prueba' => $this->conectado() ? null : ['descargados' => (int) ($leidos[config('tramite.correo.driver')] ?? 0), 'ultima_lectura' => Configuracion::find(self::LECTURA)?->valor],
             'inicio_operacion' => config('tramite.correo.inicio_operacion'),

@@ -20,6 +20,8 @@ type Buzon = {
     activo: boolean;
     desde: string;
     en_curso: boolean;
+    detenida: boolean;
+    finalizada: boolean;
     prueba: { descargados: number; ultima_lectura: Lectura } | null;
     inicio_operacion: string | null;
     cliente_configurado: boolean;
@@ -44,6 +46,7 @@ export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
     const post = (ruta: string, datos: Record<string, string | boolean>, cerrar?: () => void) =>
         router.post(ruta, datos, { preserveScroll: true, onStart: () => setEnviando(ruta), onFinish: () => (setEnviando(null), cerrar?.()) });
     const total = b.cuentas.reduce((n, c) => n + c.descargados, 0) + (b.prueba?.descargados ?? 0);
+    const pausada = b.detenida && !b.finalizada && !b.en_curso;
 
     // Mientras descarga en segundo plano, el total se actualiza solo.
     useEffect(() => {
@@ -65,25 +68,63 @@ export default function BuzonIndex({ buzon: b }: { buzon: Buzon }) {
                         <div className="flex flex-wrap items-end gap-2">
                             <label className="flex flex-col gap-1 text-base font-medium text-fg">
                                 Desde
-                                <Input type="date" className="w-44" value={desde} onChange={(e) => setDesde(e.target.value)} />
+                                <Input type="date" className="w-44" disabled={b.en_curso} value={desde} onChange={(e) => setDesde(e.target.value)} />
                             </label>
+                            {pausada && (
+                                <Button
+                                    variante="primario"
+                                    disabled={enviando !== null}
+                                    cargando={enviando === '/buzon/reanudar'}
+                                    onClick={() => post('/buzon/reanudar', {})}
+                                >
+                                    Reanudar descarga
+                                </Button>
+                            )}
                             <Button
-                                variante="primario"
+                                variante={pausada ? 'secundario' : 'primario'}
                                 icono={<IcoDescargar />}
-                                disabled={!desde}
+                                disabled={!desde || b.en_curso || enviando !== null}
                                 cargando={enviando === '/buzon/descargar'}
                                 onClick={() => post('/buzon/descargar', { desde })}
                             >
-                                Descargar correos
+                                {pausada ? 'Reiniciar descarga' : 'Descargar correos'}
                             </Button>
+                            {pausada && (
+                                <Button
+                                    variante="secundario"
+                                    disabled={enviando !== null}
+                                    cargando={enviando === '/buzon/finalizar'}
+                                    onClick={() => post('/buzon/finalizar', {})}
+                                >
+                                    Finalizar descarga
+                                </Button>
+                            )}
+                            {b.en_curso && (
+                                <Button
+                                    variante="secundario"
+                                    disabled={b.detenida}
+                                    cargando={enviando === '/buzon/detener'}
+                                    onClick={() => post('/buzon/detener', {})}
+                                >
+                                    {b.detenida ? 'Deteniendo…' : 'Detener descarga'}
+                                </Button>
+                            )}
                         </div>
+                        {pausada && (
+                            <p className="text-sm text-fg-muted">
+                                Reanudar continúa desde el {formatearFecha(b.desde)}. Reiniciar revisa desde la fecha elegida sin repetir lo importado.
+                                Finalizar cierra la descarga y conserva todos los correos guardados.
+                            </p>
+                        )}
                         <p className="text-sm text-fg-muted">
                             Trae de todas las cuentas lo recibido desde esa fecha que aún no está en el sistema, en segundo plano. Lo ya descargado no se repite.
                             {b.inicio_operacion && ` Lo anterior al ${formatearFecha(b.inicio_operacion)} entra como histórico.`}
                         </p>
                         <p className="flex items-center gap-2 text-base text-fg">
                             {b.en_curso && <Spinner />}
-                            {b.en_curso && 'Descargando… '}
+                            {b.en_curso && (b.detenida ? 'Terminando el correo en curso… ' : 'Descargando… ')}
+                            {pausada && 'Descarga pausada. '}
+                            {b.finalizada && 'Descarga finalizada. '}
                             {total} {total === 1 ? 'correo descargado' : 'correos descargados'} en total
                         </p>
                         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-separador pt-4">

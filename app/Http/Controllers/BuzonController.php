@@ -71,6 +71,30 @@ class BuzonController extends Controller
         return $this->aviso('info', 'Descargando los correos en segundo plano, de '.config('tramite.correo.lote').' en '.config('tramite.correo.lote').'. Van apareciendo en Expedientes.');
     }
 
+    public function detener(): RedirectResponse
+    {
+        Gate::authorize('gestionar-buzon');
+        $this->buzon->detener();
+
+        return $this->aviso('info', 'Deteniendo la descarga: termina el correo en curso y conserva lo ya descargado. La descarga automática queda apagada.');
+    }
+
+    public function reanudar(): RedirectResponse
+    {
+        Gate::authorize('gestionar-buzon');
+        $this->buzon->reanudar();
+
+        return $this->aviso('info', 'Descarga reanudada desde la fecha anterior. Lo ya descargado no se repite.');
+    }
+
+    public function finalizar(): RedirectResponse
+    {
+        Gate::authorize('gestionar-buzon');
+        $this->buzon->finalizar();
+
+        return $this->aviso('ok', 'Descarga finalizada. Lo importado se conserva; puedes iniciar otra descarga cuando quieras.');
+    }
+
     public function activar(Request $request): RedirectResponse
     {
         Gate::authorize('gestionar-buzon');
