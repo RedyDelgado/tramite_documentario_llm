@@ -14,6 +14,7 @@ use App\Models\Correo;
 use App\Models\CorreoLeido;
 use App\Models\Documento;
 use App\Models\Expediente;
+use App\Models\NotificacionEnviada;
 use App\Models\ReglaNoTramite;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -205,13 +206,17 @@ class IngestaCorreoService
         }
         if ($mensaje->enRespuestaA !== []) {
             $id = Correo::whereIn('message_id', $mensaje->enRespuestaA)->orderBy('id')->value('expediente_id')
-                ?? $this->entregas->envioReferido($mensaje)?->saliente?->expediente_id;
+                ?? $this->entregas->envioReferido($mensaje)?->saliente?->expediente_id
+                // El aviso de derivación no es un Correo: su Message-ID está en la notificación.
+                ?? (NotificacionEnviada::whereIn('message_id', $mensaje->enRespuestaA)->whereIn('tipo', ['derivacion', 'copia'])->value('expedientes')[0] ?? null);
             if ($id) {
                 return Expediente::find($id);
             }
         }
 
-        return Expediente::porCodigoEn($mensaje->asunto);
+        // Si borraron el código del asunto, queda la línea del aviso citada en el cuerpo de la respuesta.
+        return Expediente::porCodigoEn($mensaje->asunto)
+            ?? (preg_match('/C[óo]digo del tr[áa]mite\W*(REG-\d{4}-\d{1,7})/iu', $mensaje->cuerpo, $m) ? Expediente::porCodigoEn($m[1]) : null);
     }
 
     private function estadoInicial(CarbonImmutable $fecha, ?ReglaNoTramite $regla): EstadoExpediente

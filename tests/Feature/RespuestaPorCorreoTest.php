@@ -124,4 +124,57 @@ class RespuestaPorCorreoTest extends TestCase
         $this->assertStringContainsString('«RE: [REG-2026-00038] Para atender: Lista de matriculados 2026-II»', $this->expediente->atenciones()->sole()->nota_atencion);
         $this->assertSame('atendido', Movimiento::latest('id')->first()->tipo);
     }
+
+    public function test_con_el_buzon_conectado_el_aviso_sale_por_gmail_aunque_el_env_diga_log(): void
+    {
+        Mail::fake();
+        config(['mail.default' => 'log']);
+        $otra = Area::factory()->create();
+        AreaResponsable::create(['area_id' => $otra->id, 'user_id' => User::factory()->create()->assignRole('coordinador')->id, 'tipo' => 'titular', 'vigente_desde' => '2026-01-01']);
+        app(AtencionService::class)->derivar($this->expediente->fresh(), [
+            'tipo_tramite_id' => $this->expediente->fresh()->tipo_tramite_id, 'requiere_respuesta' => true,
+            'areas' => [['area_id' => $this->area->id], ['area_id' => $otra->id]],
+        ]);
+
+        Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->mailer === 'gmail');
+    }
+
+    public function test_la_respuesta_de_un_area_no_atiende_las_demas_areas_derivadas(): void
+    {
+        Queue::fake();
+        $otra = Area::factory()->create(['nombre' => 'Biblioteca']);
+        AreaResponsable::create(['area_id' => $otra->id, 'user_id' => User::factory()->create()->assignRole('coordinador')->id, 'tipo' => 'titular', 'vigente_desde' => '2026-01-01']);
+        app(AtencionService::class)->derivar($this->expediente->fresh(), [
+            'tipo_tramite_id' => $this->expediente->fresh()->tipo_tramite_id, 'requiere_respuesta' => true,
+            'areas' => [['area_id' => $this->area->id], ['area_id' => $otra->id]],
+        ]);
+        $correo = $this->respuesta();
+
+        // Quien coordina no entra al sistema: confirma quien deriva, y solo para el área que respondió.
+        $this->post("/correos/{$correo->id}/atender")->assertInertiaFlash('toast.mensaje', 'Área atendida con la respuesta por correo; faltan otras áreas.');
+
+        $this->assertSame(['atendido', 'derivado'], [
+            $this->expediente->atenciones()->where('area_id', $this->area->id)->value('estado'),
+            $this->expediente->atenciones()->where('area_id', $otra->id)->value('estado'),
+        ]);
+    }
+
+    public function test_sin_el_codigo_en_el_asunto_la_respuesta_llega_por_el_codigo_citado_en_el_cuerpo(): void
+    {
+        Queue::fake();
+        $eml = implode("\r\n", [
+            'From: Servicios <servicios@uni.edu.pe>',
+            'To: tramite@uni.edu.pe',
+            'Subject: Lista de matriculados',
+            'Message-ID: <respuesta-sin-asunto@uni.edu.pe>',
+            'Date: Mon, 05 Oct 2026 10:00:00 -0500',
+            'Content-Type: text/plain; charset=utf-8',
+            '',
+            'Adjunto la lista.',
+            '',
+            '> Código del trámite: **REG-2026-00038** (no lo borres al responder)',
+        ]);
+
+        $this->assertSame($this->expediente->id, app(IngestaCorreoService::class)->procesar($eml, 'sin-asunto')->id);
+    }
 }

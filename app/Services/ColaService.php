@@ -9,6 +9,7 @@ use App\Jobs\OcrDocumento;
 use App\Models\Documento;
 use App\Models\Envio;
 use App\Models\Expediente;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Vuelve a encolar el trabajo pendiente según la base, por si la cola (Redis) se perdió.
@@ -16,7 +17,7 @@ use App\Models\Expediente;
  */
 class ColaService
 {
-    public function __construct(private AuditoriaService $auditoria) {}
+    public function __construct(private AuditoriaService $auditoria, private TextoDocumentoService $texto) {}
 
     /** @return array{envios: int, ocr: int, clasificaciones: int} */
     public function reencolar(): array
@@ -30,6 +31,10 @@ class ColaService
         $ocr = Documento::whereNull('texto_extraido')->whereIn('mime', OcrService::MIMES)
             ->pluck('id')
             ->each(fn ($id) => OcrDocumento::dispatch($id));
+
+        // Word y Excel de antes de que se leyera su texto: se leen aquí mismo, sin cola.
+        Documento::whereNull('texto_extraido')->whereIn('mime', array_keys(TextoDocumentoService::OFFICE))->get()
+            ->each(fn (Documento $d) => $d->forceFill(['texto_extraido' => $this->texto->extraer(Storage::disk('originales')->path($d->ruta), $d->mime)])->save());
 
         $clasificaciones = Expediente::whereNotNull('secuencia')
             ->whereNotIn('estado', [EstadoExpediente::NoTramite, EstadoExpediente::Anulado, EstadoExpediente::Historico])

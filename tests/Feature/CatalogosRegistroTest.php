@@ -30,6 +30,14 @@ class CatalogosRegistroTest extends TestCase
         $this->administrativo = User::factory()->create()->assignRole('administrativo');
     }
 
+    public function test_un_emisor_con_titulo_o_apellidos_primero_es_el_mismo(): void
+    {
+        $this->actingAs($this->admin)->post('/emisores', ['nombre' => 'Dra. Estela Quispe Ramos', 'tipo' => 'externo'])->assertRedirect('/emisores');
+
+        $this->actingAs($this->admin)->post('/emisores', ['nombre' => 'QUISPE RAMOS, Estela', 'tipo' => 'externo'])
+            ->assertSessionHasErrors(['nombre' => 'Ya existe «Dra. Estela Quispe Ramos».']);
+    }
+
     public function test_un_emisor_con_el_mismo_nombre_normalizado_se_bloquea(): void
     {
         $this->actingAs($this->admin)->post('/emisores', ['nombre' => 'Oficina de Gestión Académica', 'tipo' => 'interno'])->assertRedirect('/emisores');

@@ -6,6 +6,7 @@ use App\Enums\EstadoExpediente;
 use App\Exceptions\ReglaDeNegocio;
 use App\Mail\AvisoDerivacion;
 use App\Models\AreaResponsable;
+use App\Models\Correo;
 use App\Models\DocumentoSaliente;
 use App\Models\Expediente;
 use App\Models\ExpedienteArea;
@@ -170,7 +171,7 @@ class AtencionService
                     'expedientes' => [$expediente->id],
                     'message_id' => NotificacionEnviada::nuevoMessageId($tipo),
                 ]);
-                Mail::to($destinatario)->queue(new AvisoDerivacion($destinatario, $expediente, $movimiento, $notificacion, $atencion));
+                Mail::mailer(app(BuzonService::class)->mailer())->to($destinatario)->queue(new AvisoDerivacion($destinatario, $expediente, $movimiento, $notificacion, $atencion));
                 $this->auditoria->registrar("notificacion.{$tipo}", $destinatario, despues: [
                     'destinatario' => $destinatario->email,
                     'expediente_id' => $expediente->id,
@@ -201,10 +202,12 @@ class AtencionService
     }
 
     /** El área deja constancia de cómo lo atendió; el expediente queda atendido cuando lo atendieron todas. */
-    public function atender(Expediente $expediente, string $nota): Expediente
+    public function atender(Expediente $expediente, string $nota, ?array $soloAreas = null): Expediente
     {
-        return $this->paso($expediente, self::ABIERTOS, 'marcar como atendido', function (Expediente $e) use ($nota) {
-            $filas = Gate::getPolicyFor($e)->areasQueAtiende(Auth::user(), $e);
+        return $this->paso($expediente, self::ABIERTOS, 'marcar como atendido', function (Expediente $e) use ($nota, $soloAreas) {
+            $filas = $soloAreas === null
+                ? Gate::getPolicyFor($e)->areasQueAtiende(Auth::user(), $e)
+                : $e->atenciones()->where('estado', '!=', 'atendido')->whereIn('area_id', $soloAreas)->get();
             if ($filas->isEmpty()) {
                 throw new ReglaDeNegocio('No tienes nada pendiente en este expediente.');
             }
@@ -215,6 +218,28 @@ class AtencionService
                 'tipo' => 'atendido', 'nota' => $nota, ...$this->destino($filas),
             ]];
         });
+    }
+
+    /**
+     * La respuesta por correo atiende solo el área de quien la envió (su responsable o quien la coordina hoy), no las
+     * demás derivadas; quien coordina no entra al sistema, así que la confirma quien deriva o registra.
+     */
+    public function atenderConCorreo(Correo $correo): Expediente
+    {
+        $e = $correo->expediente;
+        $email = mb_strtolower($correo->de_email);
+        $pendientes = $e->atenciones()->where('estado', '!=', 'atendido')->with('responsable:id,email')->get();
+        $coordina = AreaResponsable::vigentes()->whereIn('area_id', $pendientes->pluck('area_id'))
+            ->whereHas('user', fn ($q) => $q->whereRaw('lower(email) = ?', [$email]))->pluck('area_id');
+        $areas = $pendientes->filter(fn (ExpedienteArea $a) => mb_strtolower((string) $a->responsable?->email) === $email || $coordina->contains($a->area_id))
+            ->pluck('area_id')->all();
+        if ($areas === [] && ! Gate::allows('atender', $e)) {
+            throw new ReglaDeNegocio("{$correo->de_email} no es responsable ni coordina un área pendiente de este expediente.");
+        }
+        $de = $correo->de_nombre ?? $correo->de_email;
+
+        // Remitente no reconocido: lo que atiende quien confirma, como al marcarlo a mano.
+        return $this->atender($e, "Respondió por correo {$de} el {$correo->fecha->timezone('America/Lima')->format('d/m/Y H:i')}: «{$correo->asunto}»", $areas ?: null);
     }
 
     /** Enviada la respuesta vinculada, el expediente queda atendido sin que nadie lo marque (7.3.5, punto 7). */

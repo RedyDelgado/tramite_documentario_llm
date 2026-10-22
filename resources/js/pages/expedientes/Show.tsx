@@ -231,7 +231,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         {e.correos.length === 0 ? (
                             <EmptyState icono={<IcoCorreo />} titulo="Sin correos" />
                         ) : (
-                            e.correos.map((c) => <Correo key={c.id} c={c} documentos={e.documentos} puedeAtender={e.permisos.atender} />)
+                            e.correos.map((c) => <Correo key={c.id} c={c} documentos={e.documentos} puedeAtender={e.permisos.atender_correo} />)
                         )}
                     </Card>
                 )}

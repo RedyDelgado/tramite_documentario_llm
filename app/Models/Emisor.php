@@ -32,6 +32,9 @@ class Emisor extends Model
         .'colegio|instituci[oó]n|i\.?e\.?|escuela|instituto|vicerrectorado|rectorado|facultad|centro|asociaci[oó]n|empresa|s\.?a\.?c\.?|e\.?i\.?r\.?l\.?|'
         .'comisar[ií]a|fiscal[ií]a|poder judicial|sunat|reniec|essalud|policl[ií]nico|posta|unidad|coordinaci[oó]n|subprefectura|prefectura)\b/iu';
 
+    // Títulos que no distinguen a una persona: «Dra. Estela Quispe» es «Estela Quispe».
+    private const TITULOS = ['dr', 'dra', 'mg', 'mgt', 'mgtr', 'mag', 'msc', 'lic', 'ing', 'abog', 'abg', 'arq', 'cpc', 'prof', 'sr', 'sra', 'srta', 'don', 'dona', 'phd'];
+
     // Similitud de trigramas desde la que dos nombres se proponen como posible duplicado.
     public const UMBRAL_PARECIDO = 0.5;
 
@@ -76,11 +79,23 @@ class Emisor extends Model
             ->all();
     }
 
-    /** Emisor no fusionado con el mismo nombre normalizado, si existe. */
+    /** Sin títulos ni orden de palabras: «QUISPE RAMOS, Estela» y «Dra. Estela Quispe Ramos» dan la misma clave. */
+    public static function clave(string $nombre): string
+    {
+        $palabras = array_values(array_diff(explode(' ', self::normalizar($nombre)), self::TITULOS));
+        sort($palabras);
+
+        return implode(' ', $palabras);
+    }
+
+    /** Emisor no fusionado con el mismo nombre (sin importar mayúsculas, tildes, títulos ni orden), si existe. */
     public static function mismoNombre(string $nombre, ?int $excepto = null): ?self
     {
-        return self::whereNull('fusionado_en_id')->where('nombre_normalizado', self::normalizar($nombre))
-            ->when($excepto, fn ($q) => $q->whereKeyNot($excepto))->first();
+        $clave = self::clave($nombre);
+
+        // ponytail: recorre los emisores en PHP, va bien con miles; columna con la clave e índice si crece.
+        return self::whereNull('fusionado_en_id')->when($excepto, fn ($q) => $q->whereKeyNot($excepto))
+            ->get()->first(fn (self $e) => self::clave($e->nombre) === $clave);
     }
 
     /**

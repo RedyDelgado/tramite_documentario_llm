@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Documento;
 use App\Models\Expediente;
 use App\Models\ExpedienteArea;
 use App\Models\Movimiento;
@@ -11,6 +12,7 @@ use App\Services\BuzonService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Headers;
@@ -48,5 +50,18 @@ class AvisoDerivacion extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(markdown: 'mail.aviso-derivacion');
+    }
+
+    /** Quien coordina no entra al sistema: los documentos van en el correo, hasta 20 MB entre todos (Gmail admite 25). */
+    public function attachments(): array
+    {
+        $total = 0;
+
+        return $this->expediente->documentos()->whereNull('amenaza')->get()
+            ->filter(function (Documento $d) use (&$total) {
+                return ($total += $d->tamano) <= 20 * 1024 * 1024;
+            })
+            ->map(fn (Documento $d) => Attachment::fromStorageDisk('originales', $d->ruta)->as($d->nombre_original)->withMime($d->mime))
+            ->values()->all();
     }
 }

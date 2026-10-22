@@ -27,11 +27,11 @@ Te llega en copia, **para conocimiento**: no tienes que atenderlo.
 **Indicaciones:** {{ $movimiento->nota }}
 @endif
 
-<x-mail::button :url="route('expedientes.show', $expediente)">
-Abrir el expediente
-</x-mail::button>
-
 @if ($atencion)
-Atiéndelo desde el sistema: ahí están los documentos y el historial; al terminar, márcalo como atendido.
+**Para responder, contesta este mismo correo** con lo que hizo tu área y adjunta lo que corresponda: la respuesta se anexa sola al trámite. Los documentos del trámite van adjuntos.
 @endif
+
+Código del trámite: **{{ $expediente->codigo ?? 'sin código' }}** (no lo borres al responder; con él la respuesta llega a su trámite).
+
+Si tienes acceso al sistema, también puedes [abrir el expediente]({{ route('expedientes.show', $expediente) }}).
 </x-mail::message>

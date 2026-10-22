@@ -1,7 +1,9 @@
 """OCR local en español (sección 10): nada sale del servidor."""
 
+import os
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # Resolución del rasterizado de PDF: 300 ppp es el punto óptimo de Tesseract para texto de oficio.
@@ -53,6 +55,8 @@ def reconocer(contenido: bytes, mime: str, max_paginas: int | None = None) -> tu
         else:
             raise TipoNoSoportado(mime)
 
-        textos = [_tesseract(p).strip() for p in paginas]
+        # Una página por núcleo: cada Tesseract usa un hilo (OMP_THREAD_LIMIT=1), así un PDF largo tarda una fracción.
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as hilos:
+            textos = [t.strip() for t in hilos.map(_tesseract, paginas)]
         # Salto de página como separador: la extracción por reglas lo usa para ubicar el encabezado.
         return "\n\f\n".join(textos), total or len(paginas)

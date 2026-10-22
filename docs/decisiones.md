@@ -2,6 +2,18 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-19 — Correo de derivación, coordinadores sin acceso e IA cerrada (decisión del usuario)
+
+- **El buzón conectado manda sobre `MAIL_MAILER=log`** (`BuzonService::mailer`): los avisos de derivación y el resumen diario salían al log aunque Gmail estuviera conectado, y la notificación quedaba como «enviado».
+- **Quien coordina no entra al sistema**: responde contestando el aviso. El aviso lleva adjuntos los documentos del trámite (hasta 20 MB) y la línea «Código del trámite: REG-…»; la respuesta se enlaza por el `Message-ID` del aviso, por el código del asunto o, si lo borraron, por esa línea citada en el cuerpo.
+- **«Dar por atendido con esta respuesta» atiende solo el área de quien envió el correo** (su responsable o quien la coordina hoy), no todas las derivadas; lo confirma quien deriva o registra. Remitente no reconocido: las áreas que atiende quien confirma.
+- **Emisores sin duplicados por orden o títulos**: «QUISPE RAMOS, Estela» y «Dra. Estela Quispe Ramos» son el mismo (`Emisor::clave`); las instituciones usan la misma regla.
+- **La IA no sale a internet**: `ai` y `ollama` viven solo en la red `ia` (`internal: true`); `app`, `horizon` y `scheduler` están en las dos. Bajar un modelo de Ollama exige conectarlo un momento a `default`.
+- **Word y Excel aportan su texto** (XML dentro del zip) a la búsqueda y a la IA; `colas:reencolar` corre cada noche para leer y clasificar lo que quedó pendiente.
+- **OCR una página por núcleo** en paralelo.
+- **Indicaciones con contexto**: tipo de documento, quién lo envía, si requiere respuesta, reglas de forma y un ejemplo; tope de 220 tokens para que el modelo en CPU termine antes.
+- **No se entrena con los datos locales**: el clasificador aprende de decisiones validadas por personas y guarda ids de áreas y tipos; los datos de prueba enseñarían a la IA cosas falsas. Producción usa el modo similitud hasta reunir ejemplos reales.
+
 ## 2026-10-10 — Marco con paneles flotantes e inicio con cifras grandes (decisión del usuario)
 
 - Inspiración enviada por el usuario (un panel de proyectos verde); se toma la forma y se mantiene el azul de marca.

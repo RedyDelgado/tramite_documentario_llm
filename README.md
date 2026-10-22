@@ -79,7 +79,7 @@ sequenceDiagram
     B->>S: La ingesta lo anexa al trámite por su código
     S->>IA: ¿Responde a lo pedido?
     IA-->>S: Propone «responde» o «no parece responder»
-    P->>S: Confirma «Dar por atendido con esta respuesta»
+    P->>S: Quien deriva confirma «Dar por atendido con esta respuesta» (solo esa área)
 ```
 
 ## Guía rápida para alumnos (Windows)
@@ -237,6 +237,14 @@ Toda la configuración está en `.env`. [.env.example](.env.example) es la plant
 | `OLLAMA_URL` / `LLM_MODELO` | Modelo de lenguaje local: completa lo que las reglas no leen al registrar en papel, redacta las indicaciones al derivar, sugiere respuestas y revisa si la respuesta de un área atiende lo pedido. Vacío = desactivado ([runbook](docs/runbook-ia-borradores.md)) |
 | `LLM_HILOS` | Hilos de CPU del modelo: los núcleos físicos que tenga Docker. Más hilos que núcleos lo hacen más lento |
 
+**IA sin salida a internet.** `ai` y `ollama` están solo en la red interna `ia` de Docker: los documentos que leen no pueden salir. Para bajar un modelo, conecta Ollama un momento a la red normal y desconéctalo:
+
+```bash
+docker network connect tramite_default tramite-ollama-1
+docker compose exec ollama ollama pull qwen2.5:3b
+docker network disconnect tramite_default tramite-ollama-1
+```
+
 ### Correo entrante (buzón central)
 
 | Variable | Qué hace |
@@ -257,7 +265,7 @@ Toda la configuración está en `.env`. [.env.example](.env.example) es la plant
 | `SALIENTES_DRIVER` | `gmail` envía desde el buzón central; `mailer` usa `MAIL_MAILER` |
 | `SALIENTES_POR_MINUTO` | Límite de envíos por minuto |
 | `SALIENTES_BUZON_CENTRAL` | Dirección del buzón central, que va en copia oculta de cada envío |
-| `MAIL_MAILER`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Correo del sistema (avisos y resúmenes). En producción, `gmail`: sale de la cuenta principal del buzón y las respuestas de las áreas vuelven a él y se anexan al trámite por su código. `log` en desarrollo solo lo escribe en el log; `MAIL_FROM_ADDRESS` se usa solo si no hay cuenta conectada |
+| `MAIL_MAILER`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | Correo del sistema (avisos y resúmenes). Con una cuenta conectada en Buzón central sale por ella aunque diga `log`, y las respuestas de las áreas vuelven y se anexan al trámite por su código. Sin cuenta, `log` solo lo escribe en el log; `MAIL_FROM_ADDRESS` se usa solo si no hay cuenta conectada |
 
 ### Registro, seguridad y respaldos
 

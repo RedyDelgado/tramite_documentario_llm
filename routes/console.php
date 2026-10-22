@@ -19,6 +19,9 @@ Schedule::command('auditoria:verificar')->dailyAt('03:00')->withoutOverlapping()
 Schedule::job(new IngestarCorreos)->everyMinute()->when(fn () => app(BuzonService::class)->activo());
 
 // Los vencimientos y los días sin movimiento cambian el color sin que nadie toque el expediente (8).
+// Cada noche, lo que quedó sin leer o sin clasificar vuelve a la cola: la IA revisa todo documento en segundo plano.
+Schedule::command('colas:reencolar')->dailyAt('01:30')->withoutOverlapping();
+
 Schedule::command('semaforos:recalcular')->hourly()->withoutOverlapping();
 
 // Resumen a cada coordinador en días laborables, antes de empezar la jornada (8).

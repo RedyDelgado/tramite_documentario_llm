@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
+use ZipArchive;
 
 /** Texto buscable de un documento con capa de texto; los escaneos pasan por el OCR (OcrDocumento). */
 class TextoDocumentoService
@@ -11,12 +12,20 @@ class TextoDocumentoService
     // Tope del texto guardado por documento: suficiente para buscar, acota el índice.
     private const MAX_CARACTERES = 200_000;
 
+    // Word y Excel son zip con XML: de cada uno, la parte que lleva el texto.
+    public const OFFICE = [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'word/document.xml',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xl/sharedStrings.xml',
+    ];
+
     /** Devuelve null si el tipo no tiene texto extraíble o la extracción falla. */
     public function extraer(string $rutaAbsoluta, string $mime): ?string
     {
         $texto = match (true) {
             $mime === 'application/pdf' => $this->pdf($rutaAbsoluta),
             str_starts_with($mime, 'text/') => file_get_contents($rutaAbsoluta),
+            // Sin su texto, la IA y la búsqueda no veían los Word ni los Excel.
+            isset(self::OFFICE[$mime]) => $this->office($rutaAbsoluta, self::OFFICE[$mime]),
             default => null,
         };
 
@@ -42,6 +51,19 @@ class TextoDocumentoService
         $resultado = Process::timeout(30)->run(['pdfinfo', $rutaAbsoluta]);
 
         return $resultado->successful() && preg_match('/^Pages:\s+(\d+)/m', $resultado->output(), $m) ? (int) $m[1] : null;
+    }
+
+    private function office(string $ruta, string $parte): ?string
+    {
+        $zip = new ZipArchive;
+        if ($zip->open($ruta, ZipArchive::RDONLY) !== true) {
+            return null;
+        }
+        $xml = $zip->getFromName($parte);
+        $zip->close();
+
+        // Fin de párrafo o celda, salto de línea; el resto de etiquetas se van.
+        return $xml === false ? null : html_entity_decode(strip_tags(preg_replace('#</(w:p|si)>#', "\n", $xml)), ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
     private function pdf(string $ruta): ?string

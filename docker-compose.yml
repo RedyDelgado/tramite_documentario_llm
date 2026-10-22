@@ -10,6 +10,8 @@ x-php: &php
     - ./:/var/www/html
     # Para respaldar y restaurar los modelos entrenados junto con la base.
     - modelos_ia:/var/www/modelos_ia
+  # `ia` no tiene salida a internet: así llegan a la IA sin que ella pueda llegar afuera.
+  networks: [default, ia]
   depends_on:
     postgres:
       condition: service_healthy
@@ -111,6 +113,9 @@ services:
       dockerfile: ../docker/ai/Dockerfile
     environment:
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN}
+      HF_HUB_DISABLE_TELEMETRY: "1"
+    # Solo en la red interna: los documentos que lee no pueden salir a internet (decisión del usuario).
+    networks: [ia]
     volumes:
       - modelos_ia:/srv/models
     healthcheck:
@@ -132,15 +137,22 @@ services:
 
   # Modelo de lenguaje local para sugerir respuestas (fase 6). Opcional: `--profile llm`, OLLAMA_URL=http://ollama:11434 y
   # `docker compose exec ollama ollama pull qwen2.5:3b` (~2 GB). Sin puerto publicado; en CPU usa ~3 GB de RAM al responder.
+  # Sin internet (red `ia`): para bajar un modelo se conecta un momento a `default` (README, «IA sin salida a internet»).
   ollama:
     image: ollama/ollama:latest
     profiles: ["llm"]
+    networks: [ia]
     environment:
       # El modelo queda en memoria una hora sin uso (por defecto 5 min): cargarlo de nuevo suma segundos a cada registro.
       OLLAMA_KEEP_ALIVE: 1h
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
+
+networks:
+  default:
+  ia:
+    internal: true
 
 volumes:
   postgres_data:

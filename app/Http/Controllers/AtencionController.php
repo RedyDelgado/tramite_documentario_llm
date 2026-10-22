@@ -52,11 +52,11 @@ class AtencionController extends Controller
     public function atenderConCorreo(Correo $correo): RedirectResponse
     {
         abort_unless($correo->respuesta_area, 404);
-        Gate::authorize('atender', $correo->expediente);
-        $de = $correo->de_nombre ?? $correo->de_email;
-        $expediente = $this->atencion->atender($correo->expediente, "Respondió por correo {$de} el {$correo->fecha->timezone('America/Lima')->format('d/m/Y H:i')}: «{$correo->asunto}»");
+        // Quien coordina no entra al sistema: también lo confirma quien deriva o registra.
+        Gate::authorize('responder', $correo->expediente);
+        $expediente = $this->atencion->atenderConCorreo($correo);
 
-        return $this->listo($expediente->atendido_at ? 'Atendido con la respuesta por correo: ya lo atendieron todas las áreas.' : 'Atendido por tu área con la respuesta por correo; faltan otras áreas.');
+        return $this->listo($expediente->atendido_at ? 'Atendido con la respuesta por correo: ya lo atendieron todas las áreas.' : 'Área atendida con la respuesta por correo; faltan otras áreas.');
     }
 
     public function comentar(Request $request, Expediente $expediente): RedirectResponse

@@ -43,6 +43,14 @@ class BuzonService
         return $this->conectado() ? 'gmail' : config('tramite.correo.driver');
     }
 
+    /** Con el buzón conectado, `log` del .env no frena los avisos: salen por Gmail, como ya se lee por Gmail. */
+    public function mailer(): string
+    {
+        $env = config('mail.default');
+
+        return $env === 'log' && $this->conectado() ? 'gmail' : $env;
+    }
+
     public function principal(): ?Buzon
     {
         return Buzon::orderByDesc('principal')->orderBy('id')->first();

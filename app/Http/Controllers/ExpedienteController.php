@@ -224,6 +224,8 @@ class ExpedienteController extends Controller
                     'derivar' => $derivable,
                     'tomar' => $mias->contains('estado', 'derivado'),
                     'atender' => $mias->isNotEmpty(),
+                    // Dar por atendida un área con su respuesta por correo: quien coordina no entra al sistema.
+                    'atender_correo' => $abierto && ($mias->isNotEmpty() || $user->can('responder', $expediente)),
                     'comentar' => ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('comentar', $expediente),
                     'solicitar_cierre' => $abierto && ! $expediente->cierre_solicitado_at && $user->can('atender', $expediente),
                     'resolver_cierre' => $abierto && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),

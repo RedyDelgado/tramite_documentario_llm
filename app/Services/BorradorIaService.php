@@ -57,31 +57,47 @@ class BorradorIaService
      */
     public function indicaciones(Expediente $expediente, ?string $borrador, ?string $instruccion, array $areas, User $usuario): string
     {
-        $expediente->loadMissing(['documentos', 'correos']);
-        $documento = $expediente->documentos->pluck('texto_extraido')->filter()->implode("\n\n") ?: $expediente->correos->pluck('cuerpo_texto')->filter()->implode("\n\n");
+        $expediente->loadMissing(['documentos', 'correos', 'tipoDocumento:id,nombre', 'emisor:id,nombre', 'institucion:id,nombre']);
+        $documento = $expediente->documentos->pluck('texto_extraido')->filter()->implode('
+
+') ?: $expediente->correos->pluck('cuerpo_texto')->filter()->implode('
+
+');
 
         $destino = $areas !== [] ? implode(', ', $areas) : 'el área que corresponda';
-        // Un modelo pequeño copia lo que tiene delante: para mejorar un borrador no se le da el documento, solo el asunto.
+        $remitente = collect([$expediente->emisor?->nombre ?? $expediente->remitente_nombre, $expediente->institucion?->nombre])->filter()->unique()->implode(', ');
+        // Lo que un modelo pequeño necesita para no escribir vaguedades: qué es, de quién, a quién, qué se espera y un ejemplo.
+        $contexto = array_filter([
+            'Documento derivado: '.($expediente->tipoDocumento?->nombre ?? 'documento')." «{$expediente->asunto}»".($remitente ? ", enviado por {$remitente}" : '').'.',
+            "Se deriva a: {$destino}.",
+            $instruccion ? "Instrucción elegida: {$instruccion}." : null,
+            $expediente->requiere_respuesta
+                ? 'Requiere respuesta: el área debe contestar al correo del aviso con lo que hizo y adjuntar lo que corresponda.'
+                : 'No requiere respuesta escrita: es para conocimiento o acción del área.',
+            'Reglas: empieza con un verbo en infinitivo (Revisar, Atender, Informar, Remitir…); di qué hacer en concreto con este documento y, si requiere respuesta, cómo responder. '
+                .'2 a 4 oraciones, formales, sin saludo ni firma. No inventes plazos, nombres ni datos que no estén aquí.',
+            'Ejemplo de buenas indicaciones: «Revisar la solicitud de ampliación de matrícula del estudiante y verificar si cumple los requisitos del reglamento. '
+                .'Responder a este correo con su opinión y adjuntar el informe correspondiente.»',
+        ]);
+        // Un modelo pequeño copia lo que tiene delante: para mejorar un borrador no se le da el documento, solo el contexto.
         $prompt = $borrador
-            ? implode("\n", array_filter([
-                'Mejora la redacción de estas indicaciones que escribió quien deriva un documento en la Filial Quillabamba de la Universidad Andina del Cusco.',
-                'Hazlas claras, formales y directas, en 2 a 5 oraciones, sin saludo ni firma. No agregues tareas, plazos ni datos nuevos.',
-                "Documento derivado: «{$expediente->asunto}». Se deriva a: {$destino}.",
-                $instruccion ? "Instrucción elegida: {$instruccion}." : null,
+            ? implode('
+', [
+                'Mejora la redacción de estas indicaciones que escribió quien deriva un documento en la Filial Quillabamba de la Universidad Andina del Cusco. No agregues tareas nuevas.',
+                ...$contexto,
                 "Indicaciones a mejorar: «{$borrador}»",
                 'Indicaciones mejoradas:',
-            ]))
-            : implode("\n", array_filter([
-                'Eres asistente de la Filial Quillabamba de la Universidad Andina del Cusco.',
+            ])
+            : implode('
+', [
+                'Eres asistente de la Filial Quillabamba de la Universidad Andina del Cusco. Escribe las indicaciones para quien atenderá este documento.',
                 // Menos texto que la respuesta sugerida: en CPU cada carácter alarga la espera.
-                'Documento: '.Str::limit($documento ?: $expediente->asunto, 2000),
-                '',
-                "En 2 a 4 oraciones formales, sin saludo ni firma, escribe qué debe hacer {$destino} con este documento. No copies el documento ni inventes plazos o datos.",
-                $instruccion ? "Instrucción elegida: {$instruccion}." : null,
+                'Texto del documento: '.Str::limit($documento ?: $expediente->asunto, 2000),
+                ...$contexto,
                 'Indicaciones:',
-            ]));
+            ]);
         // Por si igual repite el encabezado de la respuesta o las comillas.
-        $texto = trim(preg_replace('/^\s*Indicaciones( mejoradas)?\s*:\s*/u', '', $this->generar($prompt)), " \n«»\"");
+        $texto = trim(preg_replace('/^\s*Indicaciones( mejoradas)?\s*:\s*/u', '', $this->generar($prompt, 220)), " \n«»\"");
 
         $this->auditoria->registrar('ia.indicaciones_sugeridas', $expediente, despues: [
             'modelo' => config('tramite.llm.modelo'), 'caracteres' => mb_strlen($texto), 'mejora' => $borrador !== null, 'usuario' => $usuario->id,
@@ -121,7 +137,8 @@ class BorradorIaService
             : null;
     }
 
-    private function generar(string $prompt): string
+    /** @param  ?int  $tope  tokens como máximo: unas indicaciones no pasan de un párrafo y cortar antes ahorra segundos en CPU */
+    private function generar(string $prompt, ?int $tope = null): string
     {
         if (! self::activo()) {
             throw new ReglaDeNegocio('La IA no está activada en este servidor.');
@@ -133,7 +150,7 @@ class BorradorIaService
                 'model' => config('tramite.llm.modelo'),
                 'prompt' => $prompt,
                 'stream' => false,
-                'options' => $this->opciones(['temperature' => 0.3]),
+                'options' => $this->opciones(array_filter(['temperature' => 0.3, 'num_predict' => $tope])),
             ])->throw()->json();
         } catch (ConnectionException) {
             throw new ReglaDeNegocio('El modelo de IA no responde. Inténtalo en unos minutos o escríbelo sin ayuda.');
