@@ -177,4 +177,26 @@ class RespuestaPorCorreoTest extends TestCase
 
         $this->assertSame($this->expediente->id, app(IngestaCorreoService::class)->procesar($eml, 'sin-asunto')->id);
     }
+
+    public function test_quien_deriva_da_por_atendida_cada_area_y_cierra(): void
+    {
+        $otra = Area::factory()->create(['nombre' => 'Biblioteca']);
+        app(AtencionService::class)->derivar($this->expediente->fresh(), [
+            'tipo_tramite_id' => $this->expediente->fresh()->tipo_tramite_id, 'requiere_respuesta' => true,
+            'areas' => [['area_id' => $this->area->id], ['area_id' => $otra->id]],
+        ]);
+        $url = "/expedientes/{$this->expediente->id}";
+
+        $this->post("{$url}/atender", ['nota' => 'Entregó la lista en papel.', 'areas' => []])->assertSessionHasErrors('areas');
+        $this->post("{$url}/atender", ['nota' => 'Entregó la lista en papel.', 'areas' => [$this->area->id]])
+            ->assertInertiaFlash('toast.mensaje', 'Área atendida; faltan otras áreas.');
+        $this->assertSame('derivado', $this->expediente->atenciones()->where('area_id', $otra->id)->value('estado'));
+
+        $this->post("{$url}/atender", ['nota' => 'Respondió por teléfono.', 'areas' => [$otra->id]]);
+        $this->assertSame(EstadoExpediente::Atendido, $this->expediente->fresh()->estado);
+
+        // Ya atendido, quien deriva lo cierra.
+        $this->post("{$url}/solicitar-cierre", ['nota' => 'Completo.'])->assertInertiaFlash('toast.mensaje', 'Expediente cerrado.');
+        $this->assertSame(EstadoExpediente::Cerrado, $this->expediente->fresh()->estado);
+    }
 }

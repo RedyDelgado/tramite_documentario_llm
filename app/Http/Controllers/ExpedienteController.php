@@ -223,12 +223,14 @@ class ExpedienteController extends Controller
                 'permisos' => [
                     'derivar' => $derivable,
                     'tomar' => $mias->contains('estado', 'derivado'),
-                    'atender' => $mias->isNotEmpty(),
+                    'atender' => ($gestiona = $abierto ? Gate::getPolicyFor($expediente)->areasQueGestiona($user, $expediente) : collect())->isNotEmpty(),
+                    // Qué áreas puede dar por atendidas: con varias, elige cuáles.
+                    'atender_areas' => $gestiona->pluck('area_id')->values(),
                     // Dar por atendida un área con su respuesta por correo: quien coordina no entra al sistema.
                     'atender_correo' => $abierto && ($mias->isNotEmpty() || $user->can('responder', $expediente)),
                     'comentar' => ($abierto || $expediente->estado === EstadoExpediente::Registrado) && $user->can('comentar', $expediente),
-                    'solicitar_cierre' => $abierto && ! $expediente->cierre_solicitado_at && $user->can('atender', $expediente),
-                    'resolver_cierre' => $abierto && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),
+                    'solicitar_cierre' => ($cerrable = $abierto || $expediente->estado === EstadoExpediente::Atendido) && ! $expediente->cierre_solicitado_at && $user->can('solicitarCierre', $expediente),
+                    'resolver_cierre' => $cerrable && $expediente->cierre_solicitado_at && $user->can('aprobarCierre', $expediente),
                     'custodiar' => $custodia,
                     'agrupar' => $agrupable,
                     // Responder desde el sistema (7.2): solo lo registrado y aún sin cerrar.

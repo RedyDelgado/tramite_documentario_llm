@@ -42,10 +42,14 @@ class AtencionController extends Controller
     public function atender(Request $request, Expediente $expediente): RedirectResponse
     {
         Gate::authorize('atender', $expediente);
-        $nota = $request->validate(['nota' => ['required', 'string', 'max:2000']], attributes: ['nota' => 'cómo se atendió'])['nota'];
-        $expediente = $this->atencion->atender($expediente, $nota);
+        $datos = $request->validate([
+            'nota' => ['required', 'string', 'max:2000'],
+            'areas' => ['nullable', 'array', 'min:1'],
+            'areas.*' => ['integer'],
+        ], attributes: ['nota' => 'cómo se atendió', 'areas' => 'áreas']);
+        $expediente = $this->atencion->atender($expediente, $datos['nota'], $datos['areas'] ?? null);
 
-        return $this->listo($expediente->atendido_at ? 'Atendido: ya lo atendieron todas las áreas.' : 'Atendido por tu área; faltan otras áreas.');
+        return $this->listo($expediente->atendido_at ? 'Atendido: ya lo atendieron todas las áreas.' : 'Área atendida; faltan otras áreas.');
     }
 
     /** Una persona del área confirma que el correo que llegó responde a lo pedido; la IA solo lo propuso. */
@@ -70,7 +74,7 @@ class AtencionController extends Controller
 
     public function solicitarCierre(Request $request, Expediente $expediente): RedirectResponse
     {
-        Gate::authorize('atender', $expediente);
+        Gate::authorize('solicitarCierre', $expediente);
         $nota = $request->validate(['nota' => ['nullable', 'string', 'max:2000']])['nota'] ?? null;
         $expediente = $this->atencion->solicitarCierre($expediente, $nota);
 

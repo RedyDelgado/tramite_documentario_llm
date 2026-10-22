@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-21 — Solo administrativo y director usan el sistema (decisión del usuario)
+
+- Coordinadores y docentes no entran: todo lo que sigue a la derivación lo gestionan administrativo y director.
+- **Quien deriva da por atendida cada área** (`ExpedientePolicy::areasQueGestiona`): por la respuesta del correo o con «Marcar atendido», eligiendo el área si hay varias. Atender una no atiende las demás.
+- **Un expediente «Atendido» se cierra** desde «Solicitar cierre», que también pide quien deriva. Si el tipo exige aprobación del coordinador, la da el director.
+- La toma («Tomar en atención») queda solo para quien es titular o responsable del área; quien deriva no la usa.
+
 ## 2026-10-19 — Correo de derivación, coordinadores sin acceso e IA cerrada (decisión del usuario)
 
 - **El buzón conectado manda sobre `MAIL_MAILER=log`** (`BuzonService::mailer`): los avisos de derivación y el resumen diario salían al log aunque Gmail estuviera conectado, y la notificación quedaba como «enviado».

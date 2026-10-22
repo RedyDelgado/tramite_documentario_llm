@@ -107,7 +107,7 @@ class DerivacionVariasAreasTest extends TestCase
         $this->actingAs($this->deSistemas)->post("/expedientes/{$expediente->id}/tomar")->assertSessionHasNoErrors();
         $this->assertSame(EstadoExpediente::EnAtencion, $expediente->fresh()->estado);
         $this->actingAs($this->deSistemas)->post("/expedientes/{$expediente->id}/atender", ['nota' => 'Se respondió con el Oficio 045'])
-            ->assertInertiaFlash('toast.mensaje', 'Atendido por tu área; faltan otras áreas.');
+            ->assertInertiaFlash('toast.mensaje', 'Área atendida; faltan otras áreas.');
 
         // Sistemas ya cumplió: no atiende lo de Contabilidad.
         $this->assertFalse($this->deSistemas->can('atender', $expediente->fresh()));

@@ -53,10 +53,29 @@ class ExpedientePolicy
         return $user->can('expedientes.derivar') && $this->view($user, $expediente);
     }
 
-    /** Atender (tomar, marcar atendido, solicitar el cierre): quien es responsable de alguna de sus áreas pendientes o la coordina. */
+    /** Atender (marcar atendido): quien es responsable de alguna de sus áreas pendientes o la coordina, y quien deriva. */
     public function atender(User $user, Expediente $expediente): bool
     {
-        return $this->areasQueAtiende($user, $expediente)->isNotEmpty();
+        return $this->areasQueGestiona($user, $expediente)->isNotEmpty();
+    }
+
+    /**
+     * Las áreas pendientes que este usuario puede dar por atendidas: las suyas y, si deriva, todas. Quien coordina no
+     * entra al sistema y responde por correo: lo registra quien deriva (decisión del usuario).
+     *
+     * @return Collection<int, ExpedienteArea>
+     */
+    public function areasQueGestiona(User $user, Expediente $expediente): Collection
+    {
+        return $this->derivar($user, $expediente)
+            ? $expediente->atenciones()->where('estado', '!=', 'atendido')->get()
+            : $this->areasQueAtiende($user, $expediente);
+    }
+
+    /** Solicitar el cierre: quien atiende o quien deriva. */
+    public function solicitarCierre(User $user, Expediente $expediente): bool
+    {
+        return $this->areasQueAtiende($user, $expediente)->isNotEmpty() || $this->derivar($user, $expediente);
     }
 
     /**
@@ -99,7 +118,8 @@ class ExpedientePolicy
         return $user->id !== $expediente->registrado_por
             && match ($expediente->tipoTramite?->aprueba_cierre) {
                 'director' => $user->hasRole('director'),
-                'coordinador' => $expediente->atenciones()->pluck('area_id')->contains(fn (int $area) => $this->coordina($user, $expediente, $area)),
+                // Quien coordina no entra al sistema: el director aprueba en su lugar.
+                'coordinador' => $user->hasRole('director') || $expediente->atenciones()->pluck('area_id')->contains(fn (int $area) => $this->coordina($user, $expediente, $area)),
                 default => false,
             };
     }

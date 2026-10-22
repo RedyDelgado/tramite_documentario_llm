@@ -75,11 +75,17 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
         }).catch(() => setErrorIa((actual) => actual ?? 'El modelo de IA no responde. Inténtalo en unos minutos.'));
     };
 
-    const nota = useForm({ nota: '', aprobar: true });
+    const nota = useForm({ nota: '', aprobar: true, areas: [] as number[] });
+    // Quien deriva puede dar por atendida cualquier área pendiente: con varias, elige cuáles.
+    const pendientes = e.atenciones.filter((a) => e.permisos.atender_areas.includes(a.area_id));
     const soloConocimiento = !e.requiere_respuesta && !e.fecha_limite;
 
     const enviarNota = (accion: string, aprobar?: boolean) => {
-        nota.transform((d) => ({ nota: d.nota || null, ...(aprobar === undefined ? {} : { aprobar }) }));
+        nota.transform((d) => ({
+            nota: d.nota || null,
+            ...(aprobar === undefined ? {} : { aprobar }),
+            ...(accion === 'atender' && pendientes.length > 1 ? { areas: d.areas } : {}),
+        }));
         nota.post(url(accion), {
             preserveScroll: true,
             onSuccess: () => {
@@ -351,9 +357,27 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                 abierto={abierto === 'atender'}
                 onCambiar={(v) => !v && cerrar()}
                 titulo="Marcar atendido"
-                descripcion="Deja constancia de cómo lo atendió tu área. El expediente queda atendido cuando lo atiendan todas sus áreas."
+                descripcion="Deja constancia de cómo se atendió. El expediente queda atendido cuando lo atiendan todas sus áreas."
                 pie={pieNota('atender', 'Marcar atendido')}
             >
+                {pendientes.length > 1 && (
+                    <fieldset className="mb-4 flex flex-col gap-2">
+                        <legend className="mb-1 text-base font-medium text-fg">
+                            Áreas que lo atendieron<span className="text-danger" aria-hidden> *</span>
+                        </legend>
+                        {pendientes.map((a) => (
+                            <Checkbox
+                                key={a.area_id}
+                                etiqueta={a.area}
+                                checked={nota.data.areas.includes(a.area_id)}
+                                onChange={(ev) =>
+                                    nota.setData('areas', ev.target.checked ? [...nota.data.areas, a.area_id] : nota.data.areas.filter((id) => id !== a.area_id))
+                                }
+                            />
+                        ))}
+                        {(nota.errors as Record<string, string | undefined>).areas && <p className="text-sm text-danger">{(nota.errors as Record<string, string | undefined>).areas}</p>}
+                    </fieldset>
+                )}
                 {campoNota('Cómo se atendió', true, 'Por ejemplo: «Se respondió con el Oficio N° 045-2026, entregado en mesa de partes».')}
             </Dialog>
 

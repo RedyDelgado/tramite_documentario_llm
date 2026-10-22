@@ -205,9 +205,11 @@ class AtencionService
     public function atender(Expediente $expediente, string $nota, ?array $soloAreas = null): Expediente
     {
         return $this->paso($expediente, self::ABIERTOS, 'marcar como atendido', function (Expediente $e) use ($nota, $soloAreas) {
-            $filas = $soloAreas === null
-                ? Gate::getPolicyFor($e)->areasQueAtiende(Auth::user(), $e)
-                : $e->atenciones()->where('estado', '!=', 'atendido')->whereIn('area_id', $soloAreas)->get();
+            $filas = Gate::getPolicyFor($e)->areasQueGestiona(Auth::user(), $e);
+            // Quien deriva elige el área: dar por atendida una no atiende las demás.
+            if ($soloAreas !== null) {
+                $filas = $filas->whereIn('area_id', $soloAreas)->values();
+            }
             if ($filas->isEmpty()) {
                 throw new ReglaDeNegocio('No tienes nada pendiente en este expediente.');
             }
@@ -233,13 +235,12 @@ class AtencionService
             ->whereHas('user', fn ($q) => $q->whereRaw('lower(email) = ?', [$email]))->pluck('area_id');
         $areas = $pendientes->filter(fn (ExpedienteArea $a) => mb_strtolower((string) $a->responsable?->email) === $email || $coordina->contains($a->area_id))
             ->pluck('area_id')->all();
-        if ($areas === [] && ! Gate::allows('atender', $e)) {
-            throw new ReglaDeNegocio("{$correo->de_email} no es responsable ni coordina un área pendiente de este expediente.");
+        if ($areas === []) {
+            throw new ReglaDeNegocio("{$correo->de_email} no es responsable ni coordina un área pendiente: usa «Marcar atendido» y elige el área.");
         }
         $de = $correo->de_nombre ?? $correo->de_email;
 
-        // Remitente no reconocido: lo que atiende quien confirma, como al marcarlo a mano.
-        return $this->atender($e, "Respondió por correo {$de} el {$correo->fecha->timezone('America/Lima')->format('d/m/Y H:i')}: «{$correo->asunto}»", $areas ?: null);
+        return $this->atender($e, "Respondió por correo {$de} el {$correo->fecha->timezone('America/Lima')->format('d/m/Y H:i')}: «{$correo->asunto}»", $areas);
     }
 
     /** Enviada la respuesta vinculada, el expediente queda atendido sin que nadie lo marque (7.3.5, punto 7). */
@@ -301,7 +302,8 @@ class AtencionService
     /** Sin aprobación configurada en el tipo, solicitar el cierre ya cierra (5). */
     public function solicitarCierre(Expediente $expediente, ?string $nota): Expediente
     {
-        return $this->paso($expediente, self::ABIERTOS, 'solicitar cierre', function (Expediente $e) use ($nota) {
+        // Atendido también se cierra: es lo normal cuando ya respondieron todas las áreas.
+        return $this->paso($expediente, [...self::ABIERTOS, EstadoExpediente::Atendido], 'solicitar cierre', function (Expediente $e) use ($nota) {
             if ($e->cierre_solicitado_at) {
                 throw new ReglaDeNegocio('El cierre ya está solicitado; falta su aprobación.');
             }
@@ -311,7 +313,7 @@ class AtencionService
 
                 return ['accion' => 'expediente.cierre_solicitado', 'movimiento' => ['tipo' => 'cierre_solicitado', 'nota' => $nota]];
             }
-            $e->forceFill(['estado' => EstadoExpediente::Cerrado, 'atendido_at' => now()]);
+            $e->forceFill(['estado' => EstadoExpediente::Cerrado, 'atendido_at' => $e->atendido_at ?? now()]);
 
             return ['accion' => 'expediente.cerrado', 'movimiento' => ['tipo' => 'cierre_aprobado', 'nota' => $nota]];
         });
@@ -319,12 +321,12 @@ class AtencionService
 
     public function resolverCierre(Expediente $expediente, bool $aprobar, ?string $nota): Expediente
     {
-        return $this->paso($expediente, self::ABIERTOS, 'resolver el cierre', function (Expediente $e) use ($aprobar, $nota) {
+        return $this->paso($expediente, [...self::ABIERTOS, EstadoExpediente::Atendido], 'resolver el cierre', function (Expediente $e) use ($aprobar, $nota) {
             if (! $e->cierre_solicitado_at) {
                 throw new ReglaDeNegocio('No hay un cierre pendiente de aprobación.');
             }
             $e->forceFill($aprobar
-                ? ['estado' => EstadoExpediente::Cerrado, 'atendido_at' => now(), 'cierre_solicitado_at' => null]
+                ? ['estado' => EstadoExpediente::Cerrado, 'atendido_at' => $e->atendido_at ?? now(), 'cierre_solicitado_at' => null]
                 : ['cierre_solicitado_at' => null]);
 
             return [

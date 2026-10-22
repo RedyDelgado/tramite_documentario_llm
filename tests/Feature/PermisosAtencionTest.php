@@ -9,6 +9,7 @@ use App\Models\Expediente;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
 /** Cada rol ve y hace solo lo que debe (5), por rol y por área. */
@@ -96,12 +97,14 @@ class PermisosAtencionTest extends TestCase
         $this->actingAs($ajeno)->get("/expedientes/{$this->expediente->id}")->assertForbidden();
     }
 
-    public function test_el_director_ve_todo_pero_no_atiende(): void
+    public function test_el_director_ve_todo_y_da_por_atendido_lo_que_no_es_suyo(): void
     {
         $director = $this->rol('director');
 
         $this->assertTrue($director->can('view', $this->expediente));
-        $this->assertFalse($director->can('atender', $this->expediente));
+        // Quien coordina no entra al sistema: lo registra quien deriva, sin que sea un área suya.
+        $this->assertTrue($director->can('atender', $this->expediente));
+        $this->assertTrue(Gate::getPolicyFor($this->expediente)->areasQueAtiende($director, $this->expediente)->isEmpty());
     }
 
     public function test_el_titular_de_un_area_la_atiende_sea_cual_sea_su_rol(): void
@@ -114,7 +117,7 @@ class PermisosAtencionTest extends TestCase
         $deDireccion = $this->derivadoA($direccion);
 
         $this->assertTrue($director->can('atender', $deDireccion));
-        $this->assertFalse($director->can('atender', $this->expediente));
+        $this->assertTrue(Gate::getPolicyFor($this->expediente)->areasQueAtiende($director, $this->expediente)->isEmpty());
     }
 
     public function test_el_superadmin_no_ve_ni_atiende_tramites(): void

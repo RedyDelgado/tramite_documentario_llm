@@ -303,13 +303,12 @@ Los comandos de artisan que escriben en `storage/` se corren con `docker compose
 flowchart TD
     SA["Superadmin<br/>configura áreas, usuarios, catálogos y el buzón<br/>no ve el contenido de los trámites"]
     DI["Director<br/>ve todo · deriva · aprueba cierres"]
-    AD["Administrativo · mesa de partes<br/>registra correos y papel · deriva"]
-    CO["Coordinador de área<br/>atiende lo de su área y de las que dependen de ella"]
-    OT["Otros · docentes y personal<br/>atienden lo que se les asigna"]
+    AD["Administrativo · mesa de partes<br/>registra · deriva · da por atendida cada área · cierra"]
+    CO["Coordinadores y docentes<br/>no entran al sistema: reciben el aviso<br/>y responden por correo"]
     SA -.-> DI
     DI --> AD
-    AD -->|"deriva a"| CO
-    CO -->|"asigna a"| OT
+    AD -->|"aviso por correo"| CO
+    CO -->|"responden al buzón"| AD
 ```
 
 ### Pruebas
