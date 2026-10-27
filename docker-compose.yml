@@ -70,6 +70,9 @@ services:
       # El superusuario es el dueño; la aplicación entra con su propio rol (db:actualizar).
       POSTGRES_USER: ${DB_DUENO_USERNAME:-${DB_USERNAME}}
       POSTGRES_PASSWORD: ${DB_DUENO_PASSWORD:-${DB_PASSWORD}}
+    # Solo en 127.0.0.1: para abrir la base con DBeaver u otro cliente desde la misma PC.
+    ports:
+      - "127.0.0.1:${DB_PUERTO_LOCAL:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro

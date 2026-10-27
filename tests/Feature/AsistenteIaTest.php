@@ -38,14 +38,15 @@ class AsistenteIaTest extends TestCase
         Http::assertSent(fn (Request $r) => str_contains($r['prompt'], '[REG-2026-00047] Carta circular de matrícula extemporánea'));
     }
 
-    public function test_sin_resultados_no_pregunta_al_modelo(): void
+    public function test_las_preguntas_de_cantidad_usan_el_resumen_general(): void
     {
-        Http::fake();
+        Expediente::factory()->count(2)->create(['estado' => EstadoExpediente::PorRevisar, 'asunto' => 'Solicitud']);
+        Http::fake(['ollama:11434/api/generate' => Http::response(['response' => 'Hay 2 por revisar.'])]);
 
         $this->actingAs(User::factory()->create()->assignRole('administrativo'))
-            ->postJson('/asistente-ia', ['pregunta' => 'presupuesto de laboratorio'])
-            ->assertOk()->assertJson(['fuentes' => []]);
-        Http::assertNothingSent();
+            ->postJson('/asistente-ia', ['pregunta' => '¿Cuántos quedan pendientes de revisar?'])
+            ->assertOk()->assertJson(['respuesta' => 'Hay 2 por revisar.', 'fuentes' => []]);
+        Http::assertSent(fn (Request $r) => str_contains($r['prompt'], 'Por revisar: 2'));
     }
 
     public function test_coordinadores_y_docentes_no_lo_usan(): void

@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     {!colapsada && <span className="truncate">{props.app.nombre}</span>}
                 </Link>
 
-                <div className={cn('min-h-0 overflow-y-auto pb-4', !asistente && 'flex-1')}>
+                <div className={cn('scroll-fino min-h-0 overflow-y-auto pb-4', !asistente && 'flex-1')}>
                     {grupos.map((grupo, i) => (
                         <div key={grupo.titulo ?? i} className={cn(i > 0 && 'mt-5')}>
                             {grupo.titulo &&

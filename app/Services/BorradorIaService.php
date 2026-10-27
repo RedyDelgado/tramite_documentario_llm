@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoExpediente;
 use App\Exceptions\ReglaDeNegocio;
 use App\Models\Expediente;
 use App\Models\Movimiento;
@@ -139,8 +140,8 @@ class BorradorIaService
     }
 
     /**
-     * Chat de consulta: busca los expedientes que el usuario ve y responde solo con ellos, citando el código. Sin
-     * resultados no pregunta al modelo, que inventaría.
+     * Chat de consulta: busca los expedientes que el usuario ve y responde solo con ellos, citando el código. Le da
+     * además las cifras por estado para las preguntas de cantidad.
      *
      * @param  list<array{rol: string, texto: string}>  $historial  turnos previos, para preguntas de seguimiento
      * @return array{respuesta: string, fuentes: list<array{id: int, numero: ?string, asunto: string}>}
@@ -148,9 +149,11 @@ class BorradorIaService
     public function consultar(string $pregunta, array $historial, User $usuario): array
     {
         $expedientes = $this->relacionados($pregunta.' '.collect($historial)->where('rol', 'usuario')->pluck('texto')->implode(' '), $usuario);
-        if ($expedientes->isEmpty()) {
-            return ['respuesta' => 'No encontré trámites relacionados con tu consulta. Prueba con el asunto, el remitente, el área o el código (REG-2026-00038).', 'fuentes' => []];
-        }
+        // Cifras de todo lo visible: con solo 5 fichas el modelo no puede contestar «¿cuántos…?».
+        $porEstado = Expediente::visiblesPara($usuario)->toBase()->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
+        $resumen = collect(EstadoExpediente::cases())->map(fn (EstadoExpediente $e) => $e->etiqueta().': '.($porEstado[$e->value] ?? 0))->implode(', ')
+            .'. Derivados con alguna área que aún no atiende: '.Expediente::visiblesPara($usuario)->whereHas('atenciones', fn ($q) => $q->where('estado', '!=', 'atendido'))->count()
+            .'. Con respuesta de un área sin revisar: '.Expediente::visiblesPara($usuario)->conRespuestaNueva()->count().'.';
 
         $fichas = $expedientes->map(fn (Expediente $e) => implode("\n", array_filter([
             "[{$e->codigo}] {$e->asunto}",
@@ -164,10 +167,12 @@ class BorradorIaService
         $texto = $this->generar(implode("\n", [
             'Eres el asistente de trámite documentario de la Filial Quillabamba de la Universidad Andina del Cusco. Responde en español, en 2 a 4 oraciones completas,',
             'usando SOLO los trámites de abajo: qué es, en qué estado está, qué áreas lo atienden y qué respondieron. Menciona el código entre corchetes de cada trámite del que hablas.',
-            'Si la respuesta no está en los trámites, dilo; no inventes. Ejemplo: «El trámite [REG-2026-00012] es una solicitud de constancia de la Escuela de Derecho; está derivado a Secretaría Académica, que aún no responde.»',
+            'Para preguntas de cantidades usa las cifras del resumen general y da el número directo, sin nombrar el resumen. Si la respuesta no está aquí, dilo; no inventes. Ejemplo: «El trámite [REG-2026-00012] es una solicitud de constancia de la Escuela de Derecho; está derivado a Secretaría Académica, que aún no responde.»',
+            '',
+            "Resumen general (cantidad de trámites): {$resumen}",
             '',
             'Trámites:',
-            $fichas,
+            $fichas ?: '(ninguno relacionado con la pregunta)',
             '',
             ...collect($historial)->take(-4)->map(fn ($t) => ($t['rol'] === 'usuario' ? 'Usuario: ' : 'Asistente: ').Str::limit($t['texto'], 500)),
             "Usuario: {$pregunta}",
@@ -179,12 +184,12 @@ class BorradorIaService
             'pregunta' => Str::limit($pregunta, 500), 'expedientes' => $expedientes->pluck('id')->all(), 'modelo' => config('tramite.llm.modelo'),
         ]);
 
-        // Enlaza solo los que la IA citó; si no citó ninguno, todos los que leyó.
+        // Enlaza solo los que la IA citó: en una respuesta de cantidades, lo que leyó de paso no viene al caso.
         $citados = $expedientes->filter(fn (Expediente $e) => $e->codigo && str_contains($texto, $e->codigo));
 
         return [
             'respuesta' => $texto,
-            'fuentes' => ($citados->isNotEmpty() ? $citados : $expedientes)->map(fn (Expediente $e) => ['id' => $e->id, 'numero' => $e->numero_registro, 'asunto' => $e->asunto])->values()->all(),
+            'fuentes' => $citados->map(fn (Expediente $e) => ['id' => $e->id, 'numero' => $e->numero_registro, 'asunto' => $e->asunto])->values()->all(),
         ];
     }
 

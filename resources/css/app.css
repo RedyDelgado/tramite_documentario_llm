@@ -187,3 +187,12 @@
         transform: scale(1.25);
     }
 }
+
+/* Barra de desplazamiento fina como la de macOS: no se ve hasta pasar el puntero por la zona que se desplaza. */
+@utility scroll-fino {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    &:hover {
+        scrollbar-color: var(--color-fg-disabled) transparent;
+    }
+}

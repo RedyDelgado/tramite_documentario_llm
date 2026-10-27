@@ -216,6 +216,7 @@ Toda la configuración está en `.env`. [.env.example](.env.example) es la plant
 | `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE` | PostgreSQL dentro de Docker (`postgres:5432`, base `tramite`) |
 | `DB_USERNAME` / `DB_PASSWORD` | Rol con el que trabaja la aplicación. Conviene que sea uno propio, por ejemplo `tramite_app` |
 | `DB_DUENO_USERNAME` / `DB_DUENO_PASSWORD` | Superusuario dueño de las tablas: migra y respalda. Si se dejan vacíos, se usa el rol de arriba, que entonces sí podría alterar la auditoría |
+| `DB_PUERTO_LOCAL` | Puerto en `127.0.0.1` para abrir la base con DBeaver u otro cliente desde la misma PC (por defecto `5432`; cámbialo si ya hay otro PostgreSQL). En DBeaver: host `127.0.0.1`, base `tramite` y el usuario y la clave de arriba |
 
 ### Sesión, colas, caché y búsqueda
 
