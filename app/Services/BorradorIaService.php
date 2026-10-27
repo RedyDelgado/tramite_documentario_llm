@@ -7,6 +7,7 @@ use App\Models\Expediente;
 use App\Models\Movimiento;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Throwable;
@@ -135,6 +136,82 @@ class BorradorIaService
         return is_array($resultado) && is_bool($resultado['responde'] ?? null)
             ? ['responde' => $resultado['responde'], 'motivo' => Str::limit(trim((string) ($resultado['motivo'] ?? '')), 300, '')]
             : null;
+    }
+
+    /**
+     * Chat de consulta: busca los expedientes que el usuario ve y responde solo con ellos, citando el código. Sin
+     * resultados no pregunta al modelo, que inventaría.
+     *
+     * @param  list<array{rol: string, texto: string}>  $historial  turnos previos, para preguntas de seguimiento
+     * @return array{respuesta: string, fuentes: list<array{id: int, numero: ?string, asunto: string}>}
+     */
+    public function consultar(string $pregunta, array $historial, User $usuario): array
+    {
+        $expedientes = $this->relacionados($pregunta.' '.collect($historial)->where('rol', 'usuario')->pluck('texto')->implode(' '), $usuario);
+        if ($expedientes->isEmpty()) {
+            return ['respuesta' => 'No encontré trámites relacionados con tu consulta. Prueba con el asunto, el remitente, el área o el código (REG-2026-00038).', 'fuentes' => []];
+        }
+
+        $fichas = $expedientes->map(fn (Expediente $e) => implode("\n", array_filter([
+            "[{$e->codigo}] {$e->asunto}",
+            'Remitente: '.($e->remitente_nombre ?? $e->remitente_email ?? '—').($e->institucion ? " ({$e->institucion->nombre})" : ''),
+            "Ingreso: {$e->fecha_ingreso->format('d/m/Y')}. Estado: {$e->estado->etiqueta()}.".($e->fecha_limite ? " Fecha límite: {$e->fecha_limite->format('d/m/Y')}." : ''),
+            $e->atenciones->isNotEmpty() ? 'Áreas: '.$e->atenciones->map(fn ($a) => $a->area->nombre.' ('.($a->estado === 'atendido' ? 'atendido'.($a->nota_atencion ? ': '.Str::limit($a->nota_atencion, 200) : '') : 'pendiente').')')->implode('; ') : null,
+            ($r = $e->correos->where('respuesta_area', true)->last()) ? "Respuesta de {$r->de_email} el {$r->created_at->format('d/m/Y')}: ".Str::limit((string) $r->cuerpo_texto, 500) : null,
+            'Texto: '.Str::limit($e->textoCompleto(1200), 700),
+        ])))->implode("\n\n");
+
+        $texto = $this->generar(implode("\n", [
+            'Eres el asistente de trámite documentario de la Filial Quillabamba de la Universidad Andina del Cusco. Responde en español, en 2 a 4 oraciones completas,',
+            'usando SOLO los trámites de abajo: qué es, en qué estado está, qué áreas lo atienden y qué respondieron. Menciona el código entre corchetes de cada trámite del que hablas.',
+            'Si la respuesta no está en los trámites, dilo; no inventes. Ejemplo: «El trámite [REG-2026-00012] es una solicitud de constancia de la Escuela de Derecho; está derivado a Secretaría Académica, que aún no responde.»',
+            '',
+            'Trámites:',
+            $fichas,
+            '',
+            ...collect($historial)->take(-4)->map(fn ($t) => ($t['rol'] === 'usuario' ? 'Usuario: ' : 'Asistente: ').Str::limit($t['texto'], 500)),
+            "Usuario: {$pregunta}",
+            'Asistente:',
+        ]), 400);
+
+        // Se audita la pregunta y qué expedientes leyó la IA; no la respuesta, que no es un documento del sistema.
+        $this->auditoria->registrar('ia.consulta', $usuario, despues: [
+            'pregunta' => Str::limit($pregunta, 500), 'expedientes' => $expedientes->pluck('id')->all(), 'modelo' => config('tramite.llm.modelo'),
+        ]);
+
+        // Enlaza solo los que la IA citó; si no citó ninguno, todos los que leyó.
+        $citados = $expedientes->filter(fn (Expediente $e) => $e->codigo && str_contains($texto, $e->codigo));
+
+        return [
+            'respuesta' => $texto,
+            'fuentes' => ($citados->isNotEmpty() ? $citados : $expedientes)->map(fn (Expediente $e) => ['id' => $e->id, 'numero' => $e->numero_registro, 'asunto' => $e->asunto])->values()->all(),
+        ];
+    }
+
+    /** Hasta 5 expedientes visibles: por código citado, por el índice de búsqueda y, si este no trae nada, por el asunto. */
+    private function relacionados(string $texto, User $usuario): Collection
+    {
+        $con = ['institucion:id,nombre', 'atenciones.area:id,nombre', 'correos', 'documentos'];
+        if (($porCodigo = Expediente::porCodigoEn($texto)) && $usuario->can('view', $porCodigo)) {
+            return collect([$porCodigo->load($con)]);
+        }
+        // Sin palabras vacías la búsqueda no exige «qué», «del» o «trámite» en el documento.
+        $palabras = collect(preg_split('/[^\p{L}\p{N}-]+/u', mb_strtolower($texto)))
+            ->filter(fn ($p) => mb_strlen($p) > 3 && ! in_array($p, ['para', 'sobre', 'cual', 'cuál', 'cuales', 'cuáles', 'como', 'cómo', 'donde', 'dónde', 'cuando', 'cuándo', 'quien', 'quién', 'tiene', 'tienen', 'hay', 'este', 'esta', 'estos', 'esas', 'esos', 'trámite', 'tramite', 'trámites', 'tramites', 'expediente', 'expedientes', 'llegó', 'llego', 'dime', 'muestra', 'respondió', 'respondio', 'pasado', 'pasados'], true))
+            ->unique()->take(8)->values();
+        if ($palabras->isEmpty()) {
+            return collect();
+        }
+
+        $busqueda = Expediente::search($palabras->implode(' '))->query(fn ($q) => $q->visiblesPara($usuario)->with($con));
+        if (($tokens = Expediente::tokensVisiblesPara($usuario)) !== null) {
+            $busqueda->whereIn('visible_para', $tokens);
+        }
+        $encontrados = $busqueda->take(5)->get();
+
+        return $encontrados->isNotEmpty() ? $encontrados : Expediente::visiblesPara($usuario)->with($con)
+            ->where(fn ($q) => $palabras->each(fn ($p) => $q->orWhere('asunto', 'ilike', "%{$p}%")->orWhere('remitente_nombre', 'ilike', "%{$p}%")))
+            ->latest('fecha_ingreso')->limit(5)->get();
     }
 
     /** @param  ?int  $tope  tokens como máximo: unas indicaciones no pasan de un párrafo y cortar antes ahorra segundos en CPU */

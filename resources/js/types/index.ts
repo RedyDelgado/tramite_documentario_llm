@@ -16,8 +16,10 @@ export type UsuarioFila = Usuario & {
 export type Toast ={ tipo: 'ok' | 'error' | 'info'; mensaje: string };
 
 export type SharedProps = {
-    app: { nombre: string; local: boolean; salientes: boolean };
+    app: { nombre: string; local: boolean; salientes: boolean; ia: boolean };
     auth: { user: Usuario | null; roles: string[]; can: string[] };
+    // Respuestas de áreas aún sin revisar; solo para quien deriva.
+    respuestasNuevas: { id: number; numero_registro: string | null; asunto: string }[];
 };
 
 export type Opcion<V = string | number> = { value: V; label: string };
@@ -60,6 +62,8 @@ export type ExpedienteFila = {
     fecha_ingreso: string;
     area?: string | null;
     documentos_count?: number;
+    // Última respuesta de un área por correo; «nueva» mientras nadie marque atendida un área después de ella.
+    respuesta?: { fecha: string; nueva: boolean } | null;
     puede_registrar: boolean;
 };
 

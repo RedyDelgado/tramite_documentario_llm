@@ -1,37 +1,23 @@
 <x-mail::message>
-# Hola, {{ $destinatario->name }}
+Hola, {{ $destinatario->name }}:
 
 @if ($atencion)
-Se derivó un trámite a **{{ $atencion->area->nombre }}** para atender.
+Se derivó a **{{ $atencion->area->nombre }}** el siguiente trámite para su atención{{ $atencion->fecha_limite ? ', con plazo hasta el '.$atencion->fecha_limite->format('d/m/Y') : '' }}.
 @else
-Te llega en copia, **para conocimiento**: no tienes que atenderlo.
+Le enviamos en copia, para conocimiento, el siguiente trámite. No requiere que lo atienda.
 @endif
 
-<x-mail::table>
-| | |
-|:--|:--|
-| Expediente | {{ $expediente->numero_registro ?? 'Sin número' }} |
-| Asunto | {{ str_replace('|', '/', \Illuminate\Support\Str::limit($expediente->asunto, 120)) }} |
-| Remitente | {{ str_replace('|', '/', $expediente->remitente_nombre ?? $expediente->remitente_email ?? '—') }} |
-| Áreas que lo atienden | {{ str_replace('|', '/', implode(', ', $movimiento->areas ?? [$movimiento->aArea?->nombre ?? '—'])) }} |
-@if ($atencion)
-| Fecha límite | {{ $atencion->fecha_limite?->format('d/m/Y') ?? 'Sin plazo' }} |
-@endif
-</x-mail::table>
-
+- **Asunto:** {{ \Illuminate\Support\Str::limit($expediente->asunto, 120) }}
+- **Remitente:** {{ $expediente->remitente_nombre ?? $expediente->remitente_email ?? '—' }}
+- **Expediente:** {{ $expediente->numero_registro ?? 'Sin número' }}
 @if ($movimiento->instruccion)
-**Instrucción:** {{ $movimiento->instruccion }}
+- **Instrucción:** {{ $movimiento->instruccion }}
 @endif
-
 @if ($movimiento->nota)
-**Indicaciones:** {{ $movimiento->nota }}
+- **Indicaciones:** {{ $movimiento->nota }}
 @endif
 
-@if ($atencion)
-**Para responder, contesta este mismo correo** con lo que hizo tu área y adjunta lo que corresponda: la respuesta se anexa sola al trámite. Los documentos del trámite van adjuntos.
-@endif
+Los documentos del trámite van adjuntos.{{ $atencion ? ' Para responder, conteste este correo y adjunte lo que corresponda.' : '' }}
 
-Código del trámite: **{{ $expediente->codigo ?? 'sin código' }}** (no lo borres al responder; con él la respuesta llega a su trámite).
-
-Si tienes acceso al sistema, también puedes [abrir el expediente]({{ route('expedientes.show', $expediente) }}).
+Código del trámite: {{ $expediente->codigo ?? 'sin código' }}
 </x-mail::message>

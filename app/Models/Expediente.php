@@ -172,6 +172,25 @@ class Expediente extends Model
                 DB::table('expediente_areas_copia')->whereIn('area_id', $areas)->select('expediente_id'))));
     }
 
+    /** Llegada de la última respuesta de un área (no la fecha que dice el correo) y última atención marcada: si la respuesta es posterior, nadie la revisó aún. */
+    public function scopeConRespuesta(Builder $query): void
+    {
+        $query->withMax(['correos as respondido_at' => fn ($q) => $q->where('respuesta_area', true)], 'created_at')
+            ->withMax('atenciones as revisado_at', 'atendido_at');
+    }
+
+    /** La misma regla de scopeConRespuesta, para filtrar: avisa a quien deriva que llegó algo por revisar. */
+    public function scopeConRespuestaNueva(Builder $query): void
+    {
+        $query->whereExists(fn ($c) => $c->from('correos')->whereColumn('correos.expediente_id', 'expedientes.id')->where('respuesta_area', true)
+            ->whereRaw("correos.created_at > coalesce((select max(atendido_at) from expediente_areas where expediente_areas.expediente_id = expedientes.id), '1900-01-01')"));
+    }
+
+    public function respuestaNueva(): bool
+    {
+        return $this->respondido_at !== null && ($this->revisado_at === null || strtotime($this->respondido_at) > strtotime($this->revisado_at));
+    }
+
     /** Áreas que lo atienden, la principal primero. @return HasMany<ExpedienteArea, $this> */
     public function atenciones(): HasMany
     {

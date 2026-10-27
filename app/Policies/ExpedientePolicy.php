@@ -18,6 +18,12 @@ class ExpedientePolicy
         return $user->canAny(['expedientes.ver_todos', 'expedientes.ver_areas', 'expedientes.ver_asignados']);
     }
 
+    /** El chat con la IA sobre los trámites: solo quien gestiona todo lo que entra (administrativo y director). */
+    public function consultarIa(User $user): bool
+    {
+        return $user->can('expedientes.derivar');
+    }
+
     public function view(User $user, Expediente $expediente): bool
     {
         return Expediente::whereKey($expediente->id)->visiblesPara($user)->exists();

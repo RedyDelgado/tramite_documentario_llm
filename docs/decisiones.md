@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-10-26 — Respuestas de las áreas a la vista (decisión del usuario)
+
+- **Columna «Respuesta»** en Expedientes: «Respondido» si un área contestó por correo, con «Nuevo» mientras nadie marque atendida un área después de que llegó (`Expediente::scopeConRespuesta`). Cuenta la hora de llegada al buzón, no la fecha que dice el correo.
+- **Campana en la barra superior** solo para quien deriva (`expedientes.derivar`: administrativo y director), con las 10 últimas respuestas nuevas. Sin tabla de leídos: se apaga al atender, que es lo que hay que hacer con ella.
+- **Asistente IA en la barra lateral** (administrativo y director, `ExpedientePolicy::consultarIa`): busca hasta 5 expedientes visibles (código citado, Meilisearch o, si no trae nada, el asunto) y el modelo local responde solo con ellos, enlazando los que cita. Sin resultados no se llama al modelo. Se audita la pregunta y qué leyó (`ia.consulta`). La conversación vive en `sessionStorage` de la pestaña. En CPU tarda alrededor de un minuto.
+- **El aviso de derivación es sobrio**: sin título grande, sin tabla y sin enlace al sistema, porque quien lo recibe no tiene acceso.
+
 ## 2026-10-21 — Solo administrativo y director usan el sistema (decisión del usuario)
 
 - Coordinadores y docentes no entran: todo lo que sigue a la derivación lo gestionan administrativo y director.

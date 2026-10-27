@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Expediente;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /** @mixin Expediente */
 class ExpedienteResource extends JsonResource
@@ -28,6 +29,7 @@ class ExpedienteResource extends JsonResource
             // La principal y cuántas más lo atienden: «Dirección +2».
             'area' => $this->whenLoaded('area', fn () => $this->area?->nombre.(($this->atenciones_count ?? 1) > 1 ? ' +'.($this->atenciones_count - 1) : '')),
             'documentos_count' => $this->whenCounted('documentos'),
+            'respuesta' => $this->respondido_at ? ['fecha' => Carbon::parse($this->respondido_at)->toIso8601String(), 'nueva' => $this->respuestaNueva()] : null,
             // La fila ya pasó por visiblesPara; basta el permiso (evita una consulta por fila).
             'puede_registrar' => $request->user()->can('expedientes.registrar'),
         ];

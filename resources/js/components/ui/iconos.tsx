@@ -1,5 +1,5 @@
 import type { LucideIcon, LucideProps } from 'lucide-react';
-import { Activity, Archive, ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, ArrowUpRight, Ban, BrainCircuit, CalendarX, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleUser, Clock, Copy, CornerUpRight, Download, FilePlus, FileSearch, FileText, FileUp, Files, FolderOpen, Gauge, Hash, History, House, Image, Info, Landmark, LayoutDashboard, LayoutGrid, ListChecks, Lock, LogOut, Mail, MailWarning, MailX, Merge, MessageSquare, Network, PanelLeft, Paperclip, Pencil, Plus, Printer, QrCode, Route, Search, Send, ShieldAlert, SlidersHorizontal, Timer, Trash2, Undo2, UserCheck, UserCog, Users, X } from 'lucide-react';
+import { Activity, Archive, ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, ArrowUpRight, Ban, Bell, BrainCircuit, CalendarX, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleAlert, CircleCheck, CircleUser, Clock, Copy, CornerUpRight, Download, FilePlus, FileSearch, FileText, FileUp, Files, FolderOpen, Gauge, Hash, History, House, Image, Info, Landmark, LayoutDashboard, LayoutGrid, ListChecks, Lock, LogOut, Mail, MailCheck, MailWarning, MailX, Merge, MessageSquare, Network, PanelLeft, Paperclip, Pencil, Plus, Printer, QrCode, Route, Search, Send, ShieldAlert, SlidersHorizontal, Timer, Trash2, Undo2, UserCheck, UserCog, Users, X } from 'lucide-react';
 
 // Trazo de 1,75 y esquinas redondeadas, al estilo de SF Symbols (HIG, Icons): un solo set en todo el sistema (5.3).
 function icono(Icono: LucideIcon, tamano: number) {
@@ -20,6 +20,7 @@ export const IcoArchivo = icono(Archive, 18);
 export const IcoArchivo16 = icono(Archive, 16);
 export const IcoAreas = icono(Network, 18);
 export const IcoBuscar = icono(Search, 18);
+export const IcoCampana = icono(Bell, 18);
 export const IcoBuscarDocumento16 = icono(FileSearch, 16);
 export const IcoCandado = icono(Lock, 18);
 export const IcoCandado16 = icono(Lock, 16);
@@ -37,6 +38,7 @@ export const IcoCorreo = icono(Mail, 18);
 export const IcoCorreoAviso = icono(MailWarning, 18);
 export const IcoCorreoBloqueado = icono(MailX, 18);
 export const IcoCorreo16 = icono(Mail, 16);
+export const IcoRespondido16 = icono(MailCheck, 16);
 export const IcoImagen = icono(Image, 18);
 export const IcoDerivar = icono(CornerUpRight, 18);
 export const IcoDerivar16 = icono(CornerUpRight, 16);

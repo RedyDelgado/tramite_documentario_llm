@@ -88,7 +88,7 @@ class ExpedienteController extends Controller
         if ($texto) {
             // Meilisearch filtra por permisos (visible_para); el scope en la base es la segunda barrera.
             $busqueda = Expediente::search($texto)
-                ->query(fn ($q) => $q->visiblesPara($user)->with(['area:id,nombre', 'institucion:id,nombre'])->withCount(['documentos', 'atenciones']));
+                ->query(fn ($q) => $q->visiblesPara($user)->with(['area:id,nombre', 'institucion:id,nombre'])->withCount(['documentos', 'atenciones'])->conRespuesta());
             if (($tokens = Expediente::tokensVisiblesPara($user)) !== null) {
                 $busqueda->whereIn('visible_para', $tokens);
             }
@@ -105,7 +105,7 @@ class ExpedienteController extends Controller
         } else {
             $pagina = Expediente::visiblesPara($user)
                 ->with(['area:id,nombre', 'institucion:id,nombre'])
-                ->withCount(['documentos', 'atenciones'])
+                ->withCount(['documentos', 'atenciones'])->conRespuesta()
                 ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
                 ->when($estadosVista, fn ($q, $estados) => $q->whereIn('estado', $estados))
                 ->when($filtros['semaforo'] ?? null, fn ($q, $semaforo) => $q->where('semaforo', $semaforo))
@@ -142,6 +142,20 @@ class ExpedienteController extends Controller
         Gate::authorize('responder', $expediente);
 
         return response()->json(['texto' => $borradores->sugerir($expediente, $request->user())]);
+    }
+
+    /** Chat con la IA local sobre lo que ingresó al sistema; responde solo con los expedientes que el usuario ve. */
+    public function consultarIa(Request $request, BorradorIaService $ia): JsonResponse
+    {
+        Gate::authorize('consultarIa', Expediente::class);
+        $datos = $request->validate([
+            'pregunta' => ['required', 'string', 'max:1000'],
+            'historial' => ['array', 'max:10'],
+            'historial.*.rol' => ['required', 'in:usuario,asistente'],
+            'historial.*.texto' => ['required', 'string', 'max:4000'],
+        ]);
+
+        return response()->json($ia->consultar($datos['pregunta'], $datos['historial'] ?? [], $request->user()));
     }
 
     /** Indicaciones de la derivación con la IA local: las redacta desde el documento o mejora las que escribió quien deriva. */

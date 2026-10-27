@@ -1,4 +1,4 @@
-import { IcoAdjunto16, IcoBuscar, IcoExpedientes, IcoNuevoDocumento } from '@/components/ui/iconos';
+import { IcoAdjunto16, IcoBuscar, IcoExpedientes, IcoNuevoDocumento, IcoRespondido16 } from '@/components/ui/iconos';
 import { Link, router, usePage } from '@inertiajs/react';
 import type { ComponentProps } from 'react';
 import type { Columna } from '@/components/data/DataTable';
@@ -11,6 +11,7 @@ import { botonClases } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useFiltros } from '@/hooks/useFiltros';
 import { formatearFechaHora } from '@/lib/fechas';
 import { cerrarModal, rutaModal } from '@/lib/modal';
@@ -61,6 +62,32 @@ const columnas: Columna<ExpedienteFila>[] = [
                 <span className="inline-flex items-center gap-1">
                     <IcoAdjunto16 aria-hidden />
                     {e.documentos_count}
+                </span>
+            ) : (
+                <span className="text-fg-muted">—</span>
+            ),
+    },
+    {
+        clave: 'respuesta',
+        titulo: 'Respuesta',
+        ancho: '11rem',
+        celda: (e) =>
+            e.respuesta ? (
+                <span className="flex flex-wrap items-center gap-1">
+                    <Tooltip texto={`Respondido el ${formatearFechaHora(e.respuesta.fecha)}`}>
+                        <span tabIndex={0}>
+                            <Badge tono="ok" icono={<IcoRespondido16 aria-hidden />}>
+                                Respondido
+                            </Badge>
+                        </span>
+                    </Tooltip>
+                    {e.respuesta.nueva && (
+                        <Tooltip texto="Llegó una respuesta que aún no se revisa">
+                            <span tabIndex={0}>
+                                <Badge tono="marca">Nuevo</Badge>
+                            </span>
+                        </Tooltip>
+                    )}
                 </span>
             ) : (
                 <span className="text-fg-muted">—</span>

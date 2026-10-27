@@ -1,6 +1,7 @@
-import { IcoBuscar, IcoExpedientes, IcoFlechaAbajo16, IcoPanelLateral, IcoSalir } from '@/components/ui/iconos';
+import { IcoBuscar, IcoCampana, IcoExpedientes, IcoIa, IcoRespondido16, IcoFlechaAbajo16, IcoPanelLateral, IcoSalir } from '@/components/ui/iconos';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
+import { AsistenteIa } from '@/components/domain/AsistenteIa';
 import { IconButton } from '@/components/ui/IconButton';
 import { Menu } from '@/components/ui/Menu';
 import { Toaster } from '@/components/ui/Toaster';
@@ -73,6 +74,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     const [colapsada, setColapsada] = useState(leerColapsada);
     const grupos = navegacionVisible(props);
     const usuario = props.auth.user;
+    // El chat con la IA es para quien gestiona todo lo que entra; la Policy lo vuelve a comprobar.
+    const asistente = props.app.ia && props.auth.can.includes('expedientes.derivar');
     const rol = props.auth.roles.map((r) => ROLES[r] ?? r).join(' · ');
 
     const alternar = () => {
@@ -113,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     {!colapsada && <span className="truncate">{props.app.nombre}</span>}
                 </Link>
 
-                <div className="flex-1 overflow-y-auto pb-4">
+                <div className={cn('min-h-0 overflow-y-auto pb-4', !asistente && 'flex-1')}>
                     {grupos.map((grupo, i) => (
                         <div key={grupo.titulo ?? i} className={cn(i > 0 && 'mt-5')}>
                             {grupo.titulo &&
@@ -136,6 +139,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                         </div>
                     ))}
                 </div>
+                {asistente &&
+                    (colapsada ? (
+                        <div className="mt-auto flex justify-center pb-4">
+                            <IconButton icono={<IcoIa />} etiqueta="Abrir el asistente IA" onClick={alternar} />
+                        </div>
+                    ) : (
+                        <div className="flex min-h-72 flex-1 flex-col pb-3">
+                            <AsistenteIa />
+                        </div>
+                    ))}
             </nav>
 
             <div className={cn('pr-3 transition-[padding]', colapsada ? 'pl-[5.5rem]' : 'pl-[17.5rem]')}>
@@ -174,7 +187,38 @@ export function AppShell({ children }: { children: ReactNode }) {
                         </form>
                     )}
                     {usuario && (
-                        <div className="ml-auto">
+                        <div className="ml-auto flex items-center gap-2">
+                            {props.auth.can.includes('expedientes.derivar') && (
+                                <Menu
+                                    disparador={
+                                        <button
+                                            type="button"
+                                            aria-label={`Avisos: ${props.respuestasNuevas.length} respuestas nuevas`}
+                                            className="relative flex size-10 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-relleno hover:text-fg focus-visible:outline-2 focus-visible:outline-primary-600"
+                                        >
+                                            <IcoCampana />
+                                            {props.respuestasNuevas.length > 0 && (
+                                                <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-sm leading-none font-bold text-on-primary">
+                                                    {props.respuestasNuevas.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                    }
+                                    encabezado={
+                                        <>
+                                            <p className="text-base font-semibold text-fg">Respuestas nuevas</p>
+                                            <p className="text-sm text-fg-muted">
+                                                {props.respuestasNuevas.length ? 'Las áreas respondieron por correo; revísalas y márcalas atendidas.' : 'No hay respuestas por revisar.'}
+                                            </p>
+                                        </>
+                                    }
+                                    items={props.respuestasNuevas.map((e) => ({
+                                        etiqueta: `${e.numero_registro ?? 'Sin número'} · ${e.asunto.length > 48 ? `${e.asunto.slice(0, 48)}…` : e.asunto}`,
+                                        icono: <IcoRespondido16 />,
+                                        onSelect: () => router.visit(`/expedientes/${e.id}`),
+                                    }))}
+                                />
+                            )}
                             <Menu
                                 disparador={
                                     <button

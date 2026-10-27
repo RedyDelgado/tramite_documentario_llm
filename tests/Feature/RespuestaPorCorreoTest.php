@@ -199,4 +199,22 @@ class RespuestaPorCorreoTest extends TestCase
         $this->post("{$url}/solicitar-cierre", ['nota' => 'Completo.'])->assertInertiaFlash('toast.mensaje', 'Expediente cerrado.');
         $this->assertSame(EstadoExpediente::Cerrado, $this->expediente->fresh()->estado);
     }
+
+    public function test_la_respuesta_queda_nueva_en_la_lista_y_la_campana_hasta_que_se_atiende(): void
+    {
+        Queue::fake();
+        $correo = $this->respuesta();
+        $director = User::factory()->create()->assignRole('director');
+
+        $this->actingAs($director)->get('/expedientes?vista=todos')->assertOk()
+            ->assertInertia(fn ($p) => $p->where('expedientes.data.0.respuesta.nueva', true)->where('respuestasNuevas.0.id', $this->expediente->id));
+        // Quien coordina no entra al sistema: no tiene campana.
+        $this->actingAs($this->coordinador)->get('/expedientes')->assertInertia(fn ($p) => $p->where('respuestasNuevas', []));
+
+        $this->travel(5)->minutes();
+        $this->actingAs($director)->post("/correos/{$correo->id}/atender");
+
+        $this->get('/expedientes?vista=todos')
+            ->assertInertia(fn ($p) => $p->where('expedientes.data.0.respuesta.nueva', false)->where('respuestasNuevas', []));
+    }
 }

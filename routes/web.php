@@ -133,6 +133,7 @@ Route::middleware('auth')->group(function () {
     Route::get('salientes/{saliente}/descargar/{formato}', [SalienteController::class, 'descargar'])->name('salientes.descargar');
     Route::resource('salientes', SalienteController::class)->parameters(['salientes' => 'saliente'])->except(['destroy']);
 
+    Route::post('asistente-ia', [ExpedienteController::class, 'consultarIa'])->middleware('throttle:10,1')->name('asistente-ia');
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');
     Route::get('expedientes/{expediente}', [ExpedienteController::class, 'show'])->name('expedientes.show');
     Route::post('expedientes/{expediente}/indicaciones-ia', [ExpedienteController::class, 'indicacionesIa'])->middleware('throttle:10,1')->name('expedientes.indicaciones-ia');
