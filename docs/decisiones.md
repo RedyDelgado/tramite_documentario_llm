@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-11-11 — Un sistema más guiado para quien empieza (decisión del usuario)
+
+- **Siguiente paso en cada expediente** (`PasosExpediente`, sobre el primitivo `Pasos`): Recibido → Registrado → Derivado → Atendido → Cerrado con el actual resaltado, y una frase con lo que toca. Si quien mira puede hacerlo, la frase nombra el botón; si no, dice lo que falta. Una respuesta cuenta si vino de un área aún pendiente. No trámite, histórico y anulado no muestran pasos: explican qué significan.
+- **El semáforo dice los días** (`SemaforoPlazo`): «Vence en 2 días», «Venció hace 3 días», en días de calendario desde hoy en Lima (la fecha límite ya trae los hábiles). También en cada área pendiente del detalle.
+- **El aviso de derivación pide responder ahí mismo sin cambiar el asunto**: un correo nuevo no se enlaza al trámite. Las copias no lo llevan.
+- **Términos explicados**: estados y pestañas de Expedientes explican su significado al pasar el mouse; «Reasignar» pasa a «Cambiar áreas», «Umbrales» a «Semáforo e IA» y «Colas (Horizon)» a «Tareas en segundo plano». Los modos de la IA se dicen en palabras simples.
+
 ## 2026-10-26 — Respuestas de las áreas a la vista (decisión del usuario)
 
 - **Columna «Respuesta»** en Expedientes: «Respondido» si un área contestó por correo, con «Nuevo» mientras nadie marque atendida un área después de que llegó (`Expediente::scopeConRespuesta`). Cuenta la hora de llegada al buzón, no la fecha que dice el correo.

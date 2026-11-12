@@ -88,9 +88,11 @@ class DerivacionVariasAreasTest extends TestCase
         // El plazo de 5 días vence en sábado y pasa al lunes; la del expediente es la más próxima de lo pendiente.
         $this->assertSame('2026-10-12', $expediente->fecha_limite->toDateString());
 
-        Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->hasTo($this->deSistemas->email) && $m->atencion?->area_id === $this->sistemas->id);
+        Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->hasTo($this->deSistemas->email) && $m->atencion?->area_id === $this->sistemas->id
+            // Si escriben un correo nuevo, la respuesta no se enlaza: el aviso lo dice claro.
+            && str_contains($m->render(), 'no cambie el asunto'));
         Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->hasTo($this->deContabilidad->email) && $m->atencion?->fecha_limite->toDateString() === '2026-10-20');
-        Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->hasTo($this->deCopia->email) && $m->atencion === null);
+        Mail::assertQueued(AvisoDerivacion::class, fn (AvisoDerivacion $m) => $m->hasTo($this->deCopia->email) && $m->atencion === null && ! str_contains($m->render(), 'no cambie el asunto'));
         Mail::assertQueuedCount(3);
         $this->assertSame(['copia', 'derivacion', 'derivacion'], NotificacionEnviada::orderBy('tipo')->pluck('tipo')->all());
 

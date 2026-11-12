@@ -119,10 +119,10 @@ export default function IaIndex({ precision, correcciones, modo, modelo }: Props
                     <Card titulo="Estado">
                         <DetalleLista
                             items={[
-                                { etiqueta: 'Modo', valor: <Badge tono={modo === 'activo' ? 'marca' : 'neutro'}>{modo === 'activo' ? 'Activo: propone al derivar' : 'Sombra: mide sin mostrar'}</Badge> },
+                                { etiqueta: 'Modo', valor: <Badge tono={modo === 'activo' ? 'marca' : 'neutro'}>{modo === 'activo' ? 'Activo: su propuesta aparece al derivar' : 'Sombra: propone en silencio para medir cuánto acierta'}</Badge> },
                                 {
                                     etiqueta: 'Modelo',
-                                    valor: modelo === null ? 'Servicio de IA sin respuesta' : (modelo.version ?? 'Similitud con el catálogo (sin entrenar)'),
+                                    valor: modelo === null ? 'Servicio de IA sin respuesta' : (modelo.version ?? 'Sin entrenar: compara el documento con la descripción y las palabras clave de cada área'),
                                 },
                                 ...(modelo?.entrenado_en ? [{ etiqueta: 'Entrenado', valor: `${modelo.entrenado_en} · ${modelo.ejemplos ?? '?'} ejemplos` }] : []),
                             ]}

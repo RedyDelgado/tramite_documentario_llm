@@ -41,7 +41,7 @@ const NAVEGACION: GrupoNav[] = [
             { etiqueta: 'Feriados', href: '/feriados', icono: <IcoFeriado />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Numeración', href: '/numeracion', icono: <IcoNumeral />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Reglas de derivación', href: '/reglas-derivacion', icono: <IcoRuta />, permisos: ['configuracion.gestionar'] },
-            { etiqueta: 'Umbrales', href: '/umbrales', icono: <IcoVelocimetro />, permisos: ['configuracion.gestionar'] },
+            { etiqueta: 'Semáforo e IA', href: '/umbrales', icono: <IcoVelocimetro />, permisos: ['configuracion.gestionar'] },
             { etiqueta: 'Inteligencia artificial', href: '/ia', icono: <IcoIa />, permisos: ['ia.validar', 'configuracion.gestionar'] },
             { etiqueta: 'Usuarios', href: '/usuarios', icono: <IcoUsuarios />, permisos: ['usuarios.gestionar'] },
         ],
@@ -61,7 +61,7 @@ const NAVEGACION: GrupoNav[] = [
         items: [
             { etiqueta: 'Buzón central', href: '/buzon', icono: <IcoCorreo />, rol: 'superadmin' },
             { etiqueta: 'Notificaciones', href: '/notificaciones', icono: <IcoCorreoAviso />, permisos: ['configuracion.gestionar'] },
-            { etiqueta: 'Colas (Horizon)', href: '/horizon', icono: <IcoColas />, rol: 'superadmin', externo: true },
+            { etiqueta: 'Tareas en segundo plano', href: '/horizon', icono: <IcoColas />, rol: 'superadmin', externo: true },
             // Catálogo de componentes para desarrollar: solo el superadmin, en local.
             { etiqueta: 'Componentes', href: '/ui', icono: <IcoComponentes />, rol: 'superadmin', soloLocal: true },
         ],

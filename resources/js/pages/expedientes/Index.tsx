@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import type { Columna } from '@/components/data/DataTable';
 import { type Pestana, Pestanas } from '@/components/data/Pestanas';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
-import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
+import { SemaforoPlazo } from '@/components/domain/SemaforoPlazo';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Badge } from '@/components/ui/Badge';
 import { botonClases } from '@/components/ui/Button';
@@ -94,7 +94,7 @@ const columnas: Columna<ExpedienteFila>[] = [
             ),
     },
     { clave: 'estado', titulo: 'Estado', ancho: '10rem', celda: (e) => <EstadoBadge estado={e.estado} /> },
-    { clave: 'semaforo', titulo: 'Semáforo', ancho: '9rem', celda: (e) => (e.semaforo ? <SemaforoBadge estado={e.semaforo} /> : <span className="text-fg-muted">—</span>) },
+    { clave: 'semaforo', titulo: 'Semáforo', ancho: '10rem', celda: (e) => (e.semaforo ? <SemaforoPlazo semaforo={e.semaforo} fechaLimite={e.fecha_limite} /> : <span className="text-fg-muted">—</span>) },
 ];
 
 type Props = {

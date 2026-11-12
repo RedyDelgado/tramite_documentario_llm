@@ -1,6 +1,8 @@
+import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 
-export type Pestana = { valor: string; etiqueta: string; total?: number };
+// `ayuda` explica la vista al pasar el mouse, para quien no conoce el término («Histórico»).
+export type Pestana = { valor: string; etiqueta: string; total?: number; ayuda?: string };
 
 type Props = {
     etiqueta: string;
@@ -15,8 +17,7 @@ export function Pestanas({ etiqueta, pestanas, activa, onCambiar }: Props) {
         <div role="tablist" aria-label={etiqueta} className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-relleno p-1">
             {pestanas.map((p) => {
                 const seleccionada = p.valor === activa;
-
-                return (
+                const boton = (
                     <button
                         key={p.valor}
                         type="button"
@@ -35,6 +36,14 @@ export function Pestanas({ etiqueta, pestanas, activa, onCambiar }: Props) {
                             </span>
                         )}
                     </button>
+                );
+
+                return p.ayuda ? (
+                    <Tooltip key={p.valor} texto={p.ayuda}>
+                        {boton}
+                    </Tooltip>
+                ) : (
+                    boton
                 );
             })}
         </div>

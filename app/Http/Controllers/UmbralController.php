@@ -55,7 +55,7 @@ class UmbralController extends Controller
             'ia.umbral_alta' => round((float) $datos['ia_umbral_alta'], 2),
         ]);
 
-        Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => 'Umbrales actualizados.']);
+        Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => 'Semáforo e IA actualizados.']);
 
         return back();
     }

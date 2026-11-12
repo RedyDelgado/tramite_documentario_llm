@@ -17,7 +17,11 @@ Le enviamos en copia, para conocimiento, el siguiente trámite. No requiere que 
 - **Indicaciones:** {{ $movimiento->nota }}
 @endif
 
-Los documentos del trámite van adjuntos.{{ $atencion ? ' Para responder, conteste este correo y adjunte lo que corresponda.' : '' }}
+Los documentos del trámite van adjuntos.
+@if ($atencion)
+
+**Para responder, pulse «Responder» en este mismo correo y no cambie el asunto.** Adjunte lo que corresponda. Si escribe un correo nuevo, su respuesta no quedará enlazada al trámite.
+@endif
 
 Código del trámite: {{ $expediente->codigo ?? 'sin código' }}
 </x-mail::message>

@@ -114,7 +114,7 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
         <>
             {e.permisos.derivar && (
                 <Button variante={e.estado.valor === 'registrado' ? 'primario' : 'secundario'} icono={<IcoDerivar />} onClick={() => setAbierto('derivar')}>
-                    {e.estado.valor === 'registrado' ? 'Derivar' : 'Reasignar'}
+                    {e.estado.valor === 'registrado' ? 'Derivar' : 'Cambiar áreas'}
                 </Button>
             )}
             {e.permisos.tomar && (
@@ -163,7 +163,7 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                     onCambiar={(v) => !v && cerrar()}
                     tamano="xl"
                     ocupado={redaccion.processing && <IaPensando>{derivar.data.nota.trim() ? 'Aclarando las indicaciones' : 'Redactando las indicaciones'}</IaPensando>}
-                    titulo={e.estado.valor === 'registrado' ? 'Derivar' : 'Reasignar'}
+                    titulo={e.estado.valor === 'registrado' ? 'Derivar' : 'Cambiar áreas'}
                     descripcion={
                         [
                             sugerencia && `Sugerencia de la regla «${sugerencia.regla}».`,
@@ -196,7 +196,7 @@ export function AccionesAtencion({ expediente: e, derivacion }: Props) {
                                     derivar.post(url('derivar'), { preserveScroll: true, onSuccess: () => cerrar() });
                                 }}
                             >
-                                {e.estado.valor === 'registrado' ? 'Derivar' : 'Reasignar'}
+                                {e.estado.valor === 'registrado' ? 'Derivar' : 'Cambiar áreas'}
                             </Button>
                         </>
                     }

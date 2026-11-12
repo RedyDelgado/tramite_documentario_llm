@@ -9,8 +9,9 @@ import { RespuestaCorreo } from '@/components/domain/RespuestaCorreo';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
 import { LineaTiempo } from '@/components/domain/LineaTiempo';
 import { OriginalPapel } from '@/components/domain/OriginalPapel';
+import { PasosExpediente } from '@/components/domain/PasosExpediente';
 import { SerieCard } from '@/components/domain/SerieCard';
-import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
+import { SemaforoPlazo } from '@/components/domain/SemaforoPlazo';
 import { Badge } from '@/components/ui/Badge';
 import { Button, botonClases } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -180,10 +181,6 @@ function Correo({ c, documentos, puedeAtender }: { c: CorreoDetalle; documentos:
     );
 }
 
-// En rojo sin haber vencido: el área no tiene quien lo atienda (8).
-const motivoRojo = (e: ExpedienteDetalle) =>
-    e.semaforo === 'rojo' && (!e.fecha_limite || e.fecha_limite >= new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })) ? 'Sin responsable' : undefined;
-
 export type DetalleExpedienteProps = {
     expediente: ExpedienteDetalle;
     historial: EventoHistorial[];
@@ -220,6 +217,9 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                     </>
                 }
         >
+            <Card className="mb-4">
+                <PasosExpediente expediente={e} />
+            </Card>
             <div className="grid items-start gap-4 lg:grid-cols-3">
                 {/* Un papel sin correos no muestra la tarjeta vacía: su lugar lo toma el historial. Si le llega una respuesta con su código, aparece. */}
                 {sinCorreos ? (
@@ -241,7 +241,7 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         <DetalleLista
                             items={[
                                 { etiqueta: 'Estado', valor: <EstadoBadge estado={e.estado} /> },
-                                ...(e.semaforo ? [{ etiqueta: 'Semáforo', valor: <SemaforoBadge estado={e.semaforo} texto={motivoRojo(e)} /> }] : []),
+                                ...(e.semaforo ? [{ etiqueta: 'Semáforo', valor: <SemaforoPlazo semaforo={e.semaforo} fechaLimite={e.fecha_limite} /> }] : []),
                                 ...(e.cierre_solicitado_at ? [{ etiqueta: 'Cierre', valor: <Badge tono="aviso">Pendiente de aprobación</Badge> }] : []),
                                 { etiqueta: 'Código', valor: e.codigo ?? 'Se asigna al registrar como trámite' },
                                 ...(e.motivo_anulacion ? [{ etiqueta: 'Motivo de anulación', valor: e.motivo_anulacion }] : []),

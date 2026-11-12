@@ -35,7 +35,7 @@ export default function UmbralesForm({ umbrales, onCerrar }: { umbrales: Umbrale
     };
 
     return (
-        <FormDialog onCerrar={onCerrar} titulo="Editar umbrales" descripcion="Los cambios rigen desde el siguiente cálculo, sin desplegar." onEnviar={enviar} procesando={form.processing}>
+        <FormDialog onCerrar={onCerrar} titulo="Editar semáforo e IA" descripcion="Los cambios rigen desde el siguiente cálculo, sin desplegar." onEnviar={enviar} procesando={form.processing}>
             <FormSection
                 titulo="Semáforo: pasa a amarillo"
                 descripcion="Verde: en plazo y con responsable. Rojo: plazo vencido o sin responsable. Amarillo: cuando se cumple cualquiera de estos umbrales."

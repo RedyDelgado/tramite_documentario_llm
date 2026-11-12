@@ -66,8 +66,11 @@ class ExpedienteHttpTest extends TestCase
         $this->actingAs($this->administrativo)->get('/expedientes')->assertInertia(fn (AssertableInertia $p) => $p
             ->where('vista', 'por_revisar')
             ->has('expedientes.data', 1)
-            ->where('vistas.0', ['valor' => 'por_revisar', 'etiqueta' => 'Por revisar', 'total' => 1])
-            ->where('vistas.3', ['valor' => 'no_tramite', 'etiqueta' => 'No trámite', 'total' => 1])
+            ->where('vistas.0', ['valor' => 'por_revisar', 'etiqueta' => 'Por revisar', 'ayuda' => 'Lo que llegó y espera que se decida si es un trámite.', 'total' => 1])
+            ->where('vistas.3.etiqueta', 'No trámite')
+            ->where('vistas.3.total', 1)
+            // Cada pestaña explica su término a quien no lo conoce.
+            ->where('vistas.3.ayuda', fn (string $ayuda) => str_contains($ayuda, 'No se borran'))
             ->where('vistas.5.total', 2));
 
         $this->get('/expedientes?vista=no_tramite')->assertInertia(fn (AssertableInertia $p) => $p

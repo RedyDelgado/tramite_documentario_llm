@@ -58,6 +58,16 @@ class ExpedienteController extends Controller
         'todos' => 'Todos',
     ];
 
+    // Lo que la etiqueta no dice sola, para quien no conoce los términos.
+    private const AYUDAS_VISTA = [
+        'por_revisar' => 'Lo que llegó y espera que se decida si es un trámite.',
+        'en_curso' => 'Registrados, derivados o atendidos que aún no se cierran.',
+        'cerrados' => 'Trámites concluidos.',
+        'no_tramite' => 'Boletines, publicidad y avisos automáticos: archivados sin número. No se borran.',
+        'historico' => 'Lo que llegó antes de que el sistema empezara a operar: sin plazo ni semáforo.',
+        'todos' => 'Todo lo que puedes ver, en cualquier estado.',
+    ];
+
     public function __construct(private readonly ExpedienteService $expedientes) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -124,7 +134,7 @@ class ExpedienteController extends Controller
         ]);
     }
 
-    /** @return list<array{valor: string, etiqueta: string, total: int}> pestañas con lo que el usuario ve en cada una */
+    /** @return list<array{valor: string, etiqueta: string, ayuda: string, total: int}> pestañas con lo que el usuario ve en cada una */
     private function vistas(User $user): array
     {
         $porEstado = Expediente::visiblesPara($user)->toBase()->selectRaw('estado, count(*) as total')->groupBy('estado')->pluck('total', 'estado');
@@ -132,6 +142,7 @@ class ExpedienteController extends Controller
         return collect(self::VISTAS)->map(fn (?array $estados, string $vista) => [
             'valor' => $vista,
             'etiqueta' => self::ETIQUETAS_VISTA[$vista],
+            'ayuda' => self::AYUDAS_VISTA[$vista],
             'total' => (int) ($estados === null ? $porEstado->sum() : collect($estados)->sum(fn (EstadoExpediente $e) => $porEstado[$e->value] ?? 0)),
         ])->values()->all();
     }
