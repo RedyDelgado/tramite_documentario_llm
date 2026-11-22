@@ -2,6 +2,13 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-11-22 — Lo urgente primero en la lista de Expedientes (decisión del usuario)
+
+- **«En trámite» se ordena por lo que pide acción**: primero lo registrado sin derivar (ningún área lo conoce), luego vencido, por vencer y en plazo por su fecha límite, y al final lo atendido que solo falta cerrar. Antes ordenaba por llegada y lo urgente podía quedar en otra página.
+- **«Por revisar» empieza por lo que más espera**: el plazo corre desde que llegó el correo (se mantiene así, decisión del usuario), así que lo viejo es lo urgente.
+- **El clic en «Ingreso» sigue disponible**: en «En trámite» recorre urgencia → más recientes → más antiguos; cambiar de pestaña vuelve al orden de cada una. Con búsqueda manda la relevancia.
+- **Cada fila dice cuánto**: «Vence en 2 días» / «Venció hace 3 días» bajo el semáforo (derivado o en atención), y «Hace 4 días» bajo el ingreso mientras no tiene área (por revisar o registrado). Días de calendario en Lima.
+
 ## 2026-11-22 — Tipo de trámite en la lista de Expedientes (pedido del cliente)
 
 - **Problema**: los correos llegan uno tras otro y en la lista no se distingue un trámite de otro; el tipo solo se veía abriendo el expediente, y algunos trámites se perdían.

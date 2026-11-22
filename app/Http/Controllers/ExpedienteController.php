@@ -29,6 +29,7 @@ use App\Services\ClasificacionService;
 use App\Services\ExpedienteService;
 use App\Services\SerieService;
 use App\Support\AccionesAuditoria;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -122,8 +123,7 @@ class ExpedienteController extends Controller
                 ->when($filtros['semaforo'] ?? null, fn ($q, $semaforo) => $q->where('semaforo', $semaforo))
                 ->when($filtros['tipo'] ?? null, fn ($q, $tipo) => $q->where('tipo_tramite_id', $tipo))
                 ->when($filtros['area'] ?? null, fn ($q, $area) => $q->conArea((int) $area))
-                ->orderBy('fecha_ingreso', $filtros['dir'] ?? 'desc')
-                ->orderByDesc('id')
+                ->tap(fn ($q) => $this->ordenar($q, $vista, $filtros['dir'] ?? null))
                 ->paginate(10);
         }
 
@@ -137,6 +137,25 @@ class ExpedienteController extends Controller
             'tipos' => TipoTramite::opciones(),
             'areas' => Area::opciones(),
         ]);
+    }
+
+    /**
+     * Sin orden elegido, lo que pide acción primero: en trámite, lo que falta derivar (ningún área lo conoce), luego
+     * vencido, por vencer y en plazo según su fecha límite, y al final lo atendido que solo falta cerrar; por revisar,
+     * lo que más espera, porque su plazo corre desde que llegó. Elegir la fecha de ingreso manda sobre esto.
+     */
+    private function ordenar(Builder $query, string $vista, ?string $dir): void
+    {
+        if ($dir === null && $vista === 'en_curso') {
+            $query->orderByRaw("case when estado = 'registrado' then 0 when estado = 'atendido' then 5 when semaforo = 'rojo' then 1 when semaforo = 'amarillo' then 2 when semaforo = 'verde' then 3 else 4 end")
+                ->orderByRaw('fecha_limite asc nulls last')
+                ->orderBy('fecha_ingreso')
+                ->orderBy('id');
+
+            return;
+        }
+        $dir ??= $vista === 'por_revisar' ? 'asc' : 'desc';
+        $query->orderBy('fecha_ingreso', $dir)->orderBy('id', $dir);
     }
 
     /** @return list<array{valor: string, etiqueta: string, total: int}> pestañas con lo que el usuario ve en cada una */

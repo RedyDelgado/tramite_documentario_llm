@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useFiltros } from '@/hooks/useFiltros';
-import { formatearFechaHora } from '@/lib/fechas';
+import { formatearFechaHora, textoEspera, textoVencimiento } from '@/lib/fechas';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import type { ExpedienteFila, Opcion, Paginado, SharedProps } from '@/types';
 import RegistroNuevo from '../registro/Nuevo';
@@ -63,7 +63,20 @@ const columnas: Columna<ExpedienteFila>[] = [
         ),
     },
     { clave: 'tipo', titulo: 'Tipo de trámite', ancho: '13rem', celda: (e) => <Tipo e={e} /> },
-    { clave: 'fecha', titulo: 'Ingreso', sinCorte: true, ordenable: true, ancho: '11rem', celda: (e) => formatearFechaHora(e.fecha_ingreso) },
+    {
+        clave: 'fecha',
+        titulo: 'Ingreso',
+        sinCorte: true,
+        ordenable: true,
+        ancho: '11rem',
+        celda: (e) => (
+            <>
+                {formatearFechaHora(e.fecha_ingreso)}
+                {/* Aún sin área: lo que lleva esperando es lo que se le está gastando del plazo. */}
+                {(e.estado.valor === 'por_revisar' || e.estado.valor === 'registrado') && <p className="text-sm text-fg-muted">{textoEspera(e.fecha_ingreso)}</p>}
+            </>
+        ),
+    },
     { clave: 'area', titulo: 'Área', ancho: '12rem', celda: (e) => e.area ?? <span className="text-fg-muted">Sin asignar</span> },
     {
         clave: 'adjuntos',
@@ -107,8 +120,30 @@ const columnas: Columna<ExpedienteFila>[] = [
             ),
     },
     { clave: 'estado', titulo: 'Estado', ancho: '10rem', celda: (e) => <EstadoBadge estado={e.estado} /> },
-    { clave: 'semaforo', titulo: 'Semáforo', ancho: '9rem', celda: (e) => (e.semaforo ? <SemaforoBadge estado={e.semaforo} /> : <span className="text-fg-muted">—</span>) },
+    {
+        clave: 'semaforo',
+        titulo: 'Semáforo',
+        ancho: '10rem',
+        celda: (e) =>
+            e.semaforo ? (
+                <>
+                    <SemaforoBadge estado={e.semaforo} />
+                    {/* El color dice si urge; la fecha, cuánto. */}
+                    {e.fecha_limite && (e.estado.valor === 'derivado' || e.estado.valor === 'en_atencion') && (
+                        <p className="mt-1 text-sm text-fg-muted">{textoVencimiento(e.fecha_limite)}</p>
+                    )}
+                </>
+            ) : (
+                <span className="text-fg-muted">—</span>
+            ),
+    },
 ];
+
+/** En trámite el clic recorre urgencia → más recientes → más antiguos → urgencia; en lo demás, alterna. */
+function siguienteOrden(vista: string, dir: Filtros['dir']): Filtros['dir'] {
+    if (vista === 'en_curso') return dir === undefined ? 'desc' : dir === 'desc' ? 'asc' : undefined;
+    return (dir ?? (vista === 'por_revisar' ? 'asc' : 'desc')) === 'asc' ? 'desc' : 'asc';
+}
 
 type Props = {
     expedientes: Paginado<ExpedienteFila>;
@@ -124,6 +159,7 @@ type Props = {
 
 export default function ExpedientesIndex({ expedientes, filtros: iniciales, vista, vistas, estados, semaforos, tipos, areas, registro, expediente, historial, ...detalle }: Props) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
+    const dirIngreso = filtros.dir ?? (vista === 'por_revisar' ? 'asc' : 'desc');
     const hayFiltros = Boolean(filtros.q || filtros.estado || filtros.semaforo || filtros.tipo || filtros.area);
     const puedeRegistrar = usePage<SharedProps>().props.auth.can.includes('expedientes.registrar');
 
@@ -134,7 +170,7 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, vist
             <ListPage
                 titulo="Expedientes"
                 descripcion="Todo lo que ingresa por el buzón central o en papel: revisa lo que llega, regístralo como trámite y síguelo hasta cerrarlo."
-                pestanas={<Pestanas etiqueta="Vista" pestanas={vistas} activa={vista} onCambiar={(v) => cambiar({ vista: v })} />}
+                pestanas={<Pestanas etiqueta="Vista" pestanas={vistas} activa={vista} onCambiar={(v) => cambiar({ vista: v, dir: undefined })} />}
                 acciones={
                     puedeRegistrar && (
                         <Link href={rutaModal('/registro/nuevo')} preserveScroll className={botonClases({ variante: 'primario' })}>
@@ -194,9 +230,9 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, vist
                     columnas: vista === 'por_revisar' ? columnas.filter((c) => c.clave !== 'tipo') : columnas,
                     filas: expedientes.data,
                     claveFila: (e) => e.id,
-                    // Con búsqueda manda la relevancia; sin ella, la fecha de ingreso.
-                    orden: filtros.q ? undefined : { clave: 'fecha', dir: filtros.dir ?? 'desc' },
-                    onOrdenar: filtros.q ? undefined : () => cambiar({ dir: filtros.dir === 'asc' ? 'desc' : 'asc' }),
+                    // Con búsqueda manda la relevancia; sin ella y sin orden elegido, la urgencia en trámite y lo que más espera en por revisar.
+                    orden: filtros.q || (!filtros.dir && vista === 'en_curso') ? undefined : { clave: 'fecha', dir: dirIngreso },
+                    onOrdenar: filtros.q ? undefined : () => cambiar({ dir: siguienteOrden(vista, filtros.dir) }),
                     seleccionada: expediente?.id ?? null,
                     onElegirFila: (e) => router.visit(rutaModal(`/expedientes/${e.id}`), { preserveScroll: true }),
                     cargando,

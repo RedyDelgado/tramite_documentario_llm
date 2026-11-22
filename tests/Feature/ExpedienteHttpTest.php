@@ -112,6 +112,33 @@ class ExpedienteHttpTest extends TestCase
         $this->get("/expedientes?q=constancia&tipo={$constancia->id}")->assertInertia(fn (AssertableInertia $p) => $p->has('expedientes.data', 1));
     }
 
+    public function test_en_tramite_lo_que_pide_accion_va_primero_y_por_revisar_empieza_por_lo_que_mas_espera(): void
+    {
+        $area = Area::factory()->create();
+        $responsable = User::factory()->create();
+        $crear = fn (string $asunto, array $datos) => Expediente::factory()->create(['asunto' => $asunto, 'area_principal_id' => $area->id, 'responsable_id' => $responsable->id, ...$datos]);
+        // Creados en desorden a propósito: el orden lo pone la urgencia, no la llegada.
+        $crear('verde', ['estado' => EstadoExpediente::Derivado, 'fecha_ingreso' => now(), 'fecha_limite' => '2026-10-30']);
+        $crear('atendido', ['estado' => EstadoExpediente::Atendido, 'fecha_ingreso' => now()->subDays(20), 'atendido_at' => now()]);
+        $crear('amarillo', ['estado' => EstadoExpediente::Derivado, 'fecha_ingreso' => now()->subDays(10), 'fecha_limite' => '2026-10-07']);
+        $crear('rojo', ['estado' => EstadoExpediente::Derivado, 'fecha_ingreso' => now()->subDays(10), 'fecha_limite' => '2026-10-01']);
+        Expediente::factory()->create(['asunto' => 'por derivar', 'estado' => EstadoExpediente::Registrado, 'fecha_ingreso' => now()]);
+
+        $this->actingAs($this->administrativo)->get('/expedientes?vista=en_curso')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('expedientes.data.0.asunto', 'por derivar')
+            ->where('expedientes.data.1.semaforo', 'rojo')
+            ->where('expedientes.data.2.semaforo', 'amarillo')
+            ->where('expedientes.data.3.semaforo', 'verde')
+            ->where('expedientes.data.4.asunto', 'atendido'));
+        // Elegir la fecha de ingreso manda sobre la urgencia.
+        $this->get('/expedientes?vista=en_curso&dir=desc')->assertInertia(fn (AssertableInertia $p) => $p->where('expedientes.data.4.asunto', 'atendido')
+            ->where('expedientes.data.0.asunto', fn ($a) => in_array($a, ['verde', 'por derivar'], true)));
+
+        $antiguo = Expediente::factory()->create(['asunto' => 'espera desde hace días', 'fecha_ingreso' => now()->subDays(4)]);
+        $this->get('/expedientes?vista=por_revisar')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('expedientes.data.0.id', fn ($id) => $this->oficio->fecha_ingreso->lt($antiguo->fecha_ingreso) ? $id === $this->oficio->id : $id === $antiguo->id));
+    }
+
     public function test_el_coordinador_no_abre_expedientes_de_otra_area(): void
     {
         $coordinador = $this->coordinadorDe(Area::factory()->create());
