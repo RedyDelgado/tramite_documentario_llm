@@ -189,12 +189,14 @@ export type DetalleExpedienteProps = {
     historial: EventoHistorial[];
     opcionesEmisor?: Opcion<number>[];
     opcionesTipoDocumento?: Opcion<number>[];
+    opcionesTipoTramite?: Opcion<number>[];
+    tipoTramiteSugerido?: { tipo_tramite_id: number; regla: string } | null;
     derivacion?: OpcionesDerivacion;
     custodia?: { ubicaciones: Opcion<number>[]; usuarios: Opcion<number>[] };
     agrupacion?: OpcionesAgrupacion;
 };
 
-export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, derivacion, custodia, agrupacion, onCerrar }: DetalleExpedienteProps & { onCerrar: () => void }) {
+export default function ExpedienteShow({ expediente: e, historial, opcionesEmisor, opcionesTipoDocumento, opcionesTipoTramite, tipoTramiteSugerido, derivacion, custodia, agrupacion, onCerrar }: DetalleExpedienteProps & { onCerrar: () => void }) {
     const sinCorreos = e.origen === 'fisico' && e.correos.length === 0;
     return (
         <Dialog
@@ -215,7 +217,11 @@ export default function ExpedienteShow({ expediente: e, historial, opcionesEmiso
                         {e.permisos.sugerir && <SugerenciaIa expedienteId={e.id} />}
                         <AccionesRegistro
                             expediente={e}
-                            opciones={opcionesEmisor && opcionesTipoDocumento && { emisor: opcionesEmisor, tipoDocumento: opcionesTipoDocumento }}
+                            opciones={
+                                opcionesEmisor &&
+                                opcionesTipoDocumento &&
+                                opcionesTipoTramite && { emisor: opcionesEmisor, tipoDocumento: opcionesTipoDocumento, tipoTramite: opcionesTipoTramite, sugerido: tipoTramiteSugerido ?? null }
+                            }
                         />
                     </>
                 }

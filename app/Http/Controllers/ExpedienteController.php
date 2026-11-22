@@ -58,6 +58,9 @@ class ExpedienteController extends Controller
         'todos' => 'Todos',
     ];
 
+    /** Lo que muestra cada fila: el tipo de trámite la distingue de un correo cualquiera. */
+    private const RELACIONES_FILA = ['area:id,nombre', 'institucion:id,nombre', 'tipoTramite:id,nombre', 'tipoDocumento:id,nombre'];
+
     public function __construct(private readonly ExpedienteService $expedientes) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -68,13 +71,15 @@ class ExpedienteController extends Controller
             'q' => ['nullable', 'string', 'max:200'],
             'estado' => ['nullable', Rule::enum(EstadoExpediente::class)],
             'semaforo' => ['nullable', Rule::enum(Semaforo::class)],
+            'tipo' => ['nullable', 'integer'],
+            'area' => ['nullable', 'integer'],
             'dir' => ['nullable', 'in:asc,desc'],
             'vista' => ['nullable', Rule::in(array_keys(self::VISTAS))],
         ]);
         $user = $request->user();
         // Quien registra empieza por los correos que esperan revisión; buscar o filtrar por estado mira en todo.
         $vista = $filtros['vista'] ?? match (true) {
-            isset($filtros['q']) || isset($filtros['estado']) || isset($filtros['semaforo']) => 'todos',
+            isset($filtros['q']) || isset($filtros['estado']) || isset($filtros['semaforo']) || isset($filtros['tipo']) || isset($filtros['area']) => 'todos',
             $user->can('expedientes.registrar') => 'por_revisar',
             default => 'en_curso',
         };
@@ -88,7 +93,7 @@ class ExpedienteController extends Controller
         if ($texto) {
             // Meilisearch filtra por permisos (visible_para); el scope en la base es la segunda barrera.
             $busqueda = Expediente::search($texto)
-                ->query(fn ($q) => $q->visiblesPara($user)->with(['area:id,nombre', 'institucion:id,nombre'])->withCount(['documentos', 'atenciones'])->conRespuesta());
+                ->query(fn ($q) => $q->visiblesPara($user)->with(self::RELACIONES_FILA)->withCount(['documentos', 'atenciones'])->conRespuesta());
             if (($tokens = Expediente::tokensVisiblesPara($user)) !== null) {
                 $busqueda->whereIn('visible_para', $tokens);
             }
@@ -101,14 +106,22 @@ class ExpedienteController extends Controller
             if ($semaforo = $filtros['semaforo'] ?? null) {
                 $busqueda->where('semaforo', $semaforo);
             }
+            if ($tipo = $filtros['tipo'] ?? null) {
+                $busqueda->where('tipo_tramite_id', $tipo);
+            }
+            if ($area = $filtros['area'] ?? null) {
+                $busqueda->where('areas', $area);
+            }
             $pagina = $busqueda->paginate(10);
         } else {
             $pagina = Expediente::visiblesPara($user)
-                ->with(['area:id,nombre', 'institucion:id,nombre'])
+                ->with(self::RELACIONES_FILA)
                 ->withCount(['documentos', 'atenciones'])->conRespuesta()
                 ->when($filtros['estado'] ?? null, fn ($q, $estado) => $q->where('estado', $estado))
                 ->when($estadosVista, fn ($q, $estados) => $q->whereIn('estado', $estados))
                 ->when($filtros['semaforo'] ?? null, fn ($q, $semaforo) => $q->where('semaforo', $semaforo))
+                ->when($filtros['tipo'] ?? null, fn ($q, $tipo) => $q->where('tipo_tramite_id', $tipo))
+                ->when($filtros['area'] ?? null, fn ($q, $area) => $q->conArea((int) $area))
                 ->orderBy('fecha_ingreso', $filtros['dir'] ?? 'desc')
                 ->orderByDesc('id')
                 ->paginate(10);
@@ -121,6 +134,8 @@ class ExpedienteController extends Controller
             'vistas' => $this->vistas($user),
             'estados' => collect(EstadoExpediente::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->etiqueta()]),
             'semaforos' => collect(Semaforo::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->etiqueta()]),
+            'tipos' => TipoTramite::opciones(),
+            'areas' => Area::opciones(),
         ]);
     }
 
@@ -296,7 +311,12 @@ class ExpedienteController extends Controller
             ],
             'historial' => $this->historial($expediente),
             // Solo para el diálogo de registro (6.1).
-            ...($registrable ? ['opcionesEmisor' => Emisor::opciones(), 'opcionesTipoDocumento' => TipoDocumento::opciones()] : []),
+            ...($registrable ? [
+                'opcionesEmisor' => Emisor::opciones(),
+                'opcionesTipoDocumento' => TipoDocumento::opciones(),
+                'opcionesTipoTramite' => TipoTramite::opciones(),
+                'tipoTramiteSugerido' => $this->tipoSugerido($expediente),
+            ] : []),
             ...($derivable ? ['derivacion' => $this->opcionesDerivacion($expediente)] : []),
             ...($agrupable && ! $expediente->grupo_id ? ['agrupacion' => [
                 'parecidos' => $series->parecidos($expediente, $user)->map(fn (Expediente $x) => $this->resumen($x)),
@@ -313,7 +333,8 @@ class ExpedienteController extends Controller
             'emisor_id' => ['nullable', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->whereNull('fusionado_en_id')],
             'institucion_id' => ['nullable', 'integer', Rule::exists('emisores', 'id')->where('activo', true)->where('clase', 'institucion')->whereNull('fusionado_en_id')],
             'tipo_documento_id' => ['nullable', 'integer', Rule::exists('tipos_documento', 'id')->where('activo', true)],
-        ], attributes: ['emisor_id' => 'emisor', 'institucion_id' => 'institución', 'tipo_documento_id' => 'tipo de documento']);
+            'tipo_tramite_id' => ['nullable', 'integer', Rule::exists('tipos_tramite', 'id')->where('activo', true)],
+        ], attributes: ['emisor_id' => 'emisor', 'institucion_id' => 'institución', 'tipo_documento_id' => 'tipo de documento', 'tipo_tramite_id' => 'tipo de trámite']);
         $expediente = $this->expedientes->confirmar($expediente, $datos);
 
         Inertia::flash('toast', ['tipo' => 'ok', 'mensaje' => "Registrado como {$expediente->numero_registro} ({$expediente->codigo})."]);
@@ -357,6 +378,15 @@ class ExpedienteController extends Controller
     private function resumen(Expediente $e): array
     {
         return ['id' => $e->id, 'numero_registro' => $e->numero_registro, 'asunto' => $e->asunto, 'estado' => $e->estado->etiqueta()];
+    }
+
+    /** Tipo que propone la primera regla que lo reconoce: al registrar ya llega elegido, y se puede cambiar. */
+    private function tipoSugerido(Expediente $expediente): ?array
+    {
+        $regla = ReglaDerivacion::where('activa', true)->whereNotNull('tipo_tramite_id')->orderBy('prioridad')->orderBy('id')
+            ->get()->first(fn (ReglaDerivacion $r) => $r->aplica($expediente));
+
+        return $regla ? ['tipo_tramite_id' => $regla->tipo_tramite_id, 'regla' => $regla->nombre] : null;
     }
 
     /** Opciones del diálogo de derivación, con lo que sugiere la primera regla que aplica (5.1). */

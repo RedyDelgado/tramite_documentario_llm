@@ -40,7 +40,7 @@ class ExpedienteService
     /**
      * Confirma como trámite y asigna el número de registro del año en curso (6.2).
      *
-     * @param  array{emisor_id?: ?int, institucion_id?: ?int, tipo_documento_id?: ?int}  $datos  datos del documento (6.1) que se fijan al registrar
+     * @param  array{emisor_id?: ?int, institucion_id?: ?int, tipo_documento_id?: ?int, tipo_tramite_id?: ?int}  $datos  datos del documento (6.1) y, si ya se sabe, el tipo de trámite
      * @param  int|null  $numeroPapel  trámite en curso que conserva su N° del registro en papel, sin consumir el correlativo
      *
      * @throws ReglaDeNegocio si el estado no admite confirmación.
@@ -58,6 +58,11 @@ class ExpedienteService
             $estadoPrevio = $expediente->estado;
             $anio = now()->year;
             $documento = array_intersect_key($datos, array_flip(['emisor_id', 'institucion_id', 'tipo_documento_id']));
+            // Con el tipo desde el registro, la lista ya lo muestra; el plazo cuenta desde el ingreso y al derivar se ajusta al área.
+            if ($tipo = isset($datos['tipo_tramite_id']) ? TipoTramite::find($datos['tipo_tramite_id']) : null) {
+                $plazo = $this->plazos->calcular($tipo, $expediente->area_principal_id, $expediente->fecha_ingreso);
+                $documento += ['tipo_tramite_id' => $tipo->id, 'plazo_dias_aplicado' => $plazo['plazo_dias'], 'fecha_limite' => $plazo['fecha_limite']?->toDateString()];
+            }
             $expediente->forceFill([
                 ...$documento,
                 'anio' => $anio,

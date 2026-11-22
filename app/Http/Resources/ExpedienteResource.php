@@ -26,6 +26,9 @@ class ExpedienteResource extends JsonResource
             'semaforo' => $this->semaforo?->value,
             'fecha_limite' => $this->fecha_limite?->toDateString(),
             'fecha_ingreso' => $this->fecha_ingreso->toIso8601String(),
+            // Sin derivar aún no hay tipo de trámite: el tipo de documento evita una fila en blanco.
+            'tipo_tramite' => $this->whenLoaded('tipoTramite', fn () => $this->tipoTramite?->nombre),
+            'tipo_documento' => $this->whenLoaded('tipoDocumento', fn () => $this->tipoDocumento?->nombre),
             // La principal y cuántas más lo atienden: «Dirección +2».
             'area' => $this->whenLoaded('area', fn () => $this->area?->nombre.(($this->atenciones_count ?? 1) > 1 ? ' +'.($this->atenciones_count - 1) : '')),
             'documentos_count' => $this->whenCounted('documentos'),

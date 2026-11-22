@@ -19,7 +19,19 @@ import type { ExpedienteFila, Opcion, Paginado, SharedProps } from '@/types';
 import RegistroNuevo from '../registro/Nuevo';
 import ExpedienteShow, { type DetalleExpedienteProps } from './Show';
 
-type Filtros = { q?: string; estado?: string; semaforo?: string; dir?: 'asc' | 'desc'; vista?: string };
+type Filtros = { q?: string; estado?: string; semaforo?: string; tipo?: string; area?: string; dir?: 'asc' | 'desc'; vista?: string };
+
+function Tipo({ e }: { e: ExpedienteFila }) {
+    if (e.tipo_tramite) {
+        return e.tipo_tramite;
+    }
+    // Solo a un registrado le falta derivarse; lo demás sin tipo (por revisar, no trámite…) no espera ese paso.
+    if (e.estado.valor !== 'registrado') {
+        return <span className="text-fg-muted">—</span>;
+    }
+    // El tipo de documento, si lo hay, orienta mientras tanto.
+    return <span className="text-fg-muted">{e.tipo_documento ? `${e.tipo_documento} · por derivar` : 'Por derivar'}</span>;
+}
 
 function Remitente({ e }: { e: ExpedienteFila }) {
     return (
@@ -50,6 +62,7 @@ const columnas: Columna<ExpedienteFila>[] = [
             </div>
         ),
     },
+    { clave: 'tipo', titulo: 'Tipo de trámite', ancho: '13rem', celda: (e) => <Tipo e={e} /> },
     { clave: 'fecha', titulo: 'Ingreso', sinCorte: true, ordenable: true, ancho: '11rem', celda: (e) => formatearFechaHora(e.fecha_ingreso) },
     { clave: 'area', titulo: 'Área', ancho: '12rem', celda: (e) => e.area ?? <span className="text-fg-muted">Sin asignar</span> },
     {
@@ -104,12 +117,14 @@ type Props = {
     vistas: Pestana[];
     estados: Opcion<string>[];
     semaforos: Opcion<string>[];
+    tipos: Opcion<number>[];
+    areas: Opcion<number>[];
     registro?: Omit<ComponentProps<typeof RegistroNuevo>, 'onCerrar'>;
 } & Partial<DetalleExpedienteProps>;
 
-export default function ExpedientesIndex({ expedientes, filtros: iniciales, vista, vistas, estados, semaforos, registro, expediente, historial, ...detalle }: Props) {
+export default function ExpedientesIndex({ expedientes, filtros: iniciales, vista, vistas, estados, semaforos, tipos, areas, registro, expediente, historial, ...detalle }: Props) {
     const { filtros, cambiar, cargando } = useFiltros<Filtros>(iniciales);
-    const hayFiltros = Boolean(filtros.q || filtros.estado || filtros.semaforo);
+    const hayFiltros = Boolean(filtros.q || filtros.estado || filtros.semaforo || filtros.tipo || filtros.area);
     const puedeRegistrar = usePage<SharedProps>().props.auth.can.includes('expedientes.registrar');
 
     return (
@@ -146,6 +161,22 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, vist
                             value={filtros.semaforo ?? ''}
                             onChange={(e) => cambiar({ semaforo: e.target.value })}
                         />
+                        <Select
+                            aria-label="Tipo de trámite"
+                            className="w-56"
+                            vacia="Todos los tipos"
+                            opciones={tipos}
+                            value={filtros.tipo ?? ''}
+                            onChange={(e) => cambiar({ tipo: e.target.value })}
+                        />
+                        <Select
+                            aria-label="Área"
+                            className="w-48"
+                            vacia="Todas las áreas"
+                            opciones={areas}
+                            value={filtros.area ?? ''}
+                            onChange={(e) => cambiar({ area: e.target.value })}
+                        />
                         <Input
                             type="search"
                             aria-label="Filtrar la lista"
@@ -159,7 +190,8 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, vist
                 }
                 tabla={{
                     titulo: 'Expedientes',
-                    columnas,
+                    // En «Por revisar» nadie eligió aún el tipo: la columna saldría vacía en todas las filas.
+                    columnas: vista === 'por_revisar' ? columnas.filter((c) => c.clave !== 'tipo') : columnas,
                     filas: expedientes.data,
                     claveFila: (e) => e.id,
                     // Con búsqueda manda la relevancia; sin ella, la fecha de ingreso.
@@ -172,7 +204,7 @@ export default function ExpedientesIndex({ expedientes, filtros: iniciales, vist
                         <EmptyState
                             icono={<IcoExpedientes />}
                             titulo={hayFiltros ? 'Ningún expediente coincide' : vista === 'por_revisar' ? 'Nada por revisar' : 'Nada en esta pestaña'}
-                            descripcion={hayFiltros ? 'Prueba con otras palabras o quita el filtro de estado.' : vista === 'por_revisar' ? 'No hay correos esperando revisión: los nuevos del buzón central aparecen aquí.' : 'Prueba en otra pestaña.'}
+                            descripcion={hayFiltros ? 'Prueba con otras palabras o quita algún filtro.' : vista === 'por_revisar' ? 'No hay correos esperando revisión: los nuevos del buzón central aparecen aquí.' : 'Prueba en otra pestaña.'}
                         />
                     ),
                 }}

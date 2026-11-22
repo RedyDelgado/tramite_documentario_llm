@@ -2,6 +2,16 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-11-22 — Tipo de trámite en la lista de Expedientes (pedido del cliente)
+
+- **Problema**: los correos llegan uno tras otro y en la lista no se distingue un trámite de otro; el tipo solo se veía abriendo el expediente, y algunos trámites se perdían.
+- **El tipo de trámite identifica la fila**, no el tipo de documento: dice de qué se trata (y fija plazo y semáforo); «Oficio» no dice qué hay que hacer. Va en su propia columna, en texto simple como Área: como insignia bajo el asunto se confundía con las del estado y alargaba la fila a tres líneas.
+- **El tipo de trámite se puede elegir ya al registrar** (opcional), con la sugerencia de la primera regla de derivación que lo reconoce; al derivar llega elegido. El plazo se calcula desde el ingreso, como al derivar, y se ajusta al área al derivar. La sugerencia es de reglas, no de la IA: la IA acierta poco el tipo y corre después del registro.
+- **Registrado sin tipo** muestra en gris «Por derivar» (con el tipo de documento, si lo hay); lo demás sin tipo, «—».
+- **La columna se oculta en «Por revisar»**: ahí nadie eligió aún el tipo y saldría vacía en todas las filas.
+- **Filtros nuevos: tipo de trámite y área.** El área cuenta la principal y las derivadas, no las copias (`Expediente::scopeConArea`). Al buscar, Meilisearch filtra por `tipo_tramite_id` y `areas`; tras desplegar hay que correr `scout:sync-index-settings` y `scout:import`.
+- **No se creó un estado nuevo**: el estado es el paso del flujo y el tipo es otra dimensión.
+
 ## 2026-10-26 — Respuestas de las áreas a la vista (decisión del usuario)
 
 - **Columna «Respuesta»** en Expedientes: «Respondido» si un área contestó por correo, con «Nuevo» mientras nadie marque atendida un área después de que llegó (`Expediente::scopeConRespuesta`). Cuenta la hora de llegada al buzón, no la fecha que dice el correo.

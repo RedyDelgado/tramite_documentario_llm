@@ -60,6 +60,9 @@ export type ExpedienteFila = {
     semaforo: Semaforo | null;
     fecha_limite: string | null;
     fecha_ingreso: string;
+    // Lo que distingue un trámite de un correo cualquiera; sin derivar solo hay tipo de documento.
+    tipo_tramite?: string | null;
+    tipo_documento?: string | null;
     area?: string | null;
     documentos_count?: number;
     // Última respuesta de un área por correo; «nueva» mientras nadie marque atendida un área después de ella.

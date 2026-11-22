@@ -8,6 +8,9 @@ use App\Models\AreaResponsable;
 use App\Models\Auditoria;
 use App\Models\Documento;
 use App\Models\Expediente;
+use App\Models\ExpedienteArea;
+use App\Models\ReglaDerivacion;
+use App\Models\TipoTramite;
 use App\Models\User;
 use App\Services\IngestaCorreoService;
 use Database\Seeders\ReglasNoTramiteSeeder;
@@ -81,6 +84,34 @@ class ExpedienteHttpTest extends TestCase
             ->has('expedientes.data', 0));
     }
 
+    public function test_la_lista_muestra_el_tipo_de_tramite_y_filtra_por_tipo_y_area(): void
+    {
+        [$academica, $direccion] = Area::factory()->count(2)->create();
+        $nota = TipoTramite::create(['nombre' => 'Rectificación de nota', 'plazo_dias' => 5]);
+        $constancia = TipoTramite::create(['nombre' => 'Constancia de estudios', 'plazo_dias' => 3]);
+        $rectificacion = Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'asunto' => 'Rectificación de nota de Cálculo', 'tipo_tramite_id' => $nota->id, 'area_principal_id' => $academica->id]);
+        // Derivado a dos áreas: también cuenta para la segunda.
+        ExpedienteArea::create(['expediente_id' => $rectificacion->id, 'area_id' => $direccion->id]);
+        Expediente::factory()->create(['estado' => EstadoExpediente::Derivado, 'asunto' => 'Constancia para beca', 'tipo_tramite_id' => $constancia->id, 'area_principal_id' => $direccion->id]);
+
+        $this->actingAs($this->administrativo)->get("/expedientes?tipo={$nota->id}")->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('vista', 'todos')
+            ->has('expedientes.data', 1)
+            ->where('expedientes.data.0.tipo_tramite', 'Rectificación de nota')
+            ->has('tipos', 2)
+            ->has('areas', 2));
+        $this->get("/expedientes?area={$direccion->id}")->assertInertia(fn (AssertableInertia $p) => $p->has('expedientes.data', 2));
+        $this->get("/expedientes?area={$academica->id}")->assertInertia(fn (AssertableInertia $p) => $p->has('expedientes.data', 1));
+        // Sin derivar no hay tipo de trámite: la fila lo dice en vez de quedar en blanco.
+        $this->get('/expedientes')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('expedientes.data.0.id', $this->oficio->id)
+            ->where('expedientes.data.0.tipo_tramite', null));
+
+        config(['scout.driver' => 'collection']);
+        $this->get("/expedientes?q=constancia&tipo={$nota->id}")->assertInertia(fn (AssertableInertia $p) => $p->has('expedientes.data', 0));
+        $this->get("/expedientes?q=constancia&tipo={$constancia->id}")->assertInertia(fn (AssertableInertia $p) => $p->has('expedientes.data', 1));
+    }
+
     public function test_el_coordinador_no_abre_expedientes_de_otra_area(): void
     {
         $coordinador = $this->coordinadorDe(Area::factory()->create());
@@ -112,6 +143,33 @@ class ExpedienteHttpTest extends TestCase
             ->assertInertia(fn (AssertableInertia $p) => $p
                 ->where('expediente.numero_registro', 'N°00038')
                 ->hasFlash('toast.mensaje', 'Registrado como N°00038 (REG-2026-00038).'));
+    }
+
+    public function test_al_registrar_se_elige_el_tipo_de_tramite_con_la_sugerencia_de_la_regla(): void
+    {
+        $invitacion = TipoTramite::create(['nombre' => 'Invitación a evento', 'plazo_dias' => 3, 'tipo_dias' => 'habiles']);
+        ReglaDerivacion::create(['nombre' => 'Invitaciones', 'tipo_tramite_id' => $invitacion->id, 'area_destino_id' => Area::factory()->create()->id, 'condicion' => ['palabras_clave' => ['invitación']], 'prioridad' => 1, 'activa' => true]);
+
+        $this->actingAs($this->administrativo)->get("/expedientes/{$this->oficio->id}")->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('tipoTramiteSugerido', ['tipo_tramite_id' => $invitacion->id, 'regla' => 'Invitaciones'])
+            ->has('opcionesTipoTramite', 1));
+
+        $this->post("/expedientes/{$this->oficio->id}/confirmar", ['tipo_tramite_id' => $invitacion->id])->assertRedirect();
+
+        $this->oficio->refresh();
+        $this->assertSame($invitacion->id, $this->oficio->tipo_tramite_id);
+        $this->assertSame(3, $this->oficio->plazo_dias_aplicado);
+        $this->assertNotNull($this->oficio->fecha_limite);
+        $this->get('/expedientes?vista=en_curso')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('expedientes.data.0.tipo_tramite', 'Invitación a evento'));
+    }
+
+    public function test_registrar_sin_tipo_de_tramite_lo_deja_para_derivar(): void
+    {
+        $this->actingAs($this->administrativo)->post("/expedientes/{$this->oficio->id}/confirmar")->assertRedirect();
+
+        $this->assertNull($this->oficio->refresh()->tipo_tramite_id);
+        $this->assertNull($this->oficio->fecha_limite);
     }
 
     public function test_una_regla_de_negocio_vuelve_con_el_error_como_aviso(): void

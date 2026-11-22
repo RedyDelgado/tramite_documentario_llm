@@ -13,7 +13,13 @@ import { RemitenteCampos } from './RemitenteCampos';
 type Props = {
     expediente: Pick<ExpedienteFila, 'id' | 'estado' | 'numero_registro' | 'puede_registrar'>;
     // Desde el detalle se indican emisor y tipo de documento al registrar (6.1); desde la lista, después.
-    opciones?: { emisor: OpcionEmisor[]; tipoDocumento: Opcion<number>[] };
+    opciones?: {
+        emisor: OpcionEmisor[];
+        tipoDocumento: Opcion<number>[];
+        tipoTramite: Opcion<number>[];
+        // Lo que propone una regla de derivación; llega elegido y se puede cambiar.
+        sugerido: { tipo_tramite_id: number; regla: string } | null;
+    };
 };
 
 /** Acciones de registro (6.2) según el estado; la regla final la aplica ExpedienteService. */
@@ -22,7 +28,12 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
     const [anulando, setAnulando] = useState(false);
     const [procesando, setProcesando] = useState(false);
     const anulacion = useForm({ motivo: '' });
-    const registro = useForm({ emisor_id: null as number | null, institucion_id: null as number | null, tipo_documento_id: '' });
+    const registro = useForm({
+        emisor_id: null as number | null,
+        institucion_id: null as number | null,
+        tipo_documento_id: '',
+        tipo_tramite_id: String(opciones?.sugerido?.tipo_tramite_id ?? ''),
+    });
     const estado = expediente.estado.valor;
 
     if (!expediente.puede_registrar) return null;
@@ -86,7 +97,11 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
                             variante="primario"
                             cargando={registro.processing}
                             onClick={() => {
-                                registro.transform((d) => ({ ...d, tipo_documento_id: d.tipo_documento_id ? Number(d.tipo_documento_id) : null }));
+                                registro.transform((d) => ({
+                                    ...d,
+                                    tipo_documento_id: d.tipo_documento_id ? Number(d.tipo_documento_id) : null,
+                                    tipo_tramite_id: d.tipo_tramite_id ? Number(d.tipo_tramite_id) : null,
+                                }));
                                 registro.post(`/expedientes/${expediente.id}/confirmar`, {
                                     preserveScroll: true,
                                     onSuccess: () => {
@@ -119,6 +134,25 @@ export function AccionesRegistro({ expediente, opciones }: Props) {
                                     opciones={opciones.tipoDocumento}
                                     value={registro.data.tipo_documento_id}
                                     onChange={(e) => registro.setData('tipo_documento_id', e.target.value)}
+                                />
+                            )}
+                        </FormField>
+                        <FormField
+                            etiqueta="Tipo de trámite"
+                            ayuda={
+                                opciones.sugerido && registro.data.tipo_tramite_id === String(opciones.sugerido.tipo_tramite_id)
+                                    ? `Sugerido por la regla «${opciones.sugerido.regla}». Puedes cambiarlo o elegirlo al derivar.`
+                                    : 'Si ya lo sabes, la lista lo muestra desde ahora; si no, se elige al derivar.'
+                            }
+                            error={registro.errors.tipo_tramite_id}
+                        >
+                            {(c) => (
+                                <Select
+                                    {...c}
+                                    vacia="Elegir al derivar"
+                                    opciones={opciones.tipoTramite}
+                                    value={registro.data.tipo_tramite_id}
+                                    onChange={(e) => registro.setData('tipo_tramite_id', e.target.value)}
                                 />
                             )}
                         </FormField>

@@ -45,7 +45,11 @@ class Expediente extends Model
     /** @return array<string, mixed> */
     public function toSearchableArray(): array
     {
-        $this->loadMissing(['correos', 'documentos', 'areasCopia', 'atenciones', 'institucion']);
+        // Si el tipo cambió con la relación ya cargada, el índice guardaría el nombre anterior.
+        if ($this->relationLoaded('tipoTramite') && $this->tipoTramite?->id !== $this->tipo_tramite_id) {
+            $this->unsetRelation('tipoTramite');
+        }
+        $this->loadMissing(['correos', 'documentos', 'areasCopia', 'atenciones', 'institucion', 'tipoTramite']);
 
         return [
             'id' => $this->id,
@@ -57,6 +61,10 @@ class Expediente extends Model
             'institucion' => $this->institucion?->nombre,
             'estado' => $this->estado->value,
             'semaforo' => $this->semaforo?->value,
+            'tipo_tramite_id' => $this->tipo_tramite_id,
+            'tipo_tramite' => $this->tipoTramite?->nombre,
+            // Mismo criterio que scopeConArea, para filtrar por área también al buscar.
+            'areas' => $this->atenciones->pluck('area_id')->push($this->area_principal_id)->filter()->unique()->values()->all(),
             'fecha_ingreso' => $this->fecha_ingreso->getTimestamp(),
             'visible_para' => $this->tokensVisibilidad(),
             'texto' => $this->textoCompleto(self::MAX_TEXTO_INDICE),
@@ -173,6 +181,12 @@ class Expediente extends Model
     }
 
     /** Llegada de la última respuesta de un área (no la fecha que dice el correo) y última atención marcada: si la respuesta es posterior, nadie la revisó aún. */
+    /** Lo que atiende el área (principal o una de las derivadas); las copias solo miran y no cuentan. */
+    public function scopeConArea(Builder $query, int $area): void
+    {
+        $query->where(fn ($q) => $q->where('area_principal_id', $area)->orWhereHas('atenciones', fn ($a) => $a->where('area_id', $area)));
+    }
+
     public function scopeConRespuesta(Builder $query): void
     {
         $query->withMax(['correos as respondido_at' => fn ($q) => $q->where('respuesta_area', true)], 'created_at')
