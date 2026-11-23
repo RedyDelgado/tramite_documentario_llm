@@ -115,6 +115,11 @@ export function Combobox({ opciones, value, onChange, onCrear, creando, id, plac
                     onOpenAutoFocus={(e) => e.preventDefault()}
                     onCloseAutoFocus={(e) => e.preventDefault()}
                     onInteractOutside={(e) => ancla.current?.contains(e.target as Node) && e.preventDefault()}
+                    // La lista va en un portal fuera del modal, que bloquea la rueda y el toque en el documento: aquí no llegan.
+                    onWheel={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                    // Un clic en la barra de desplazamiento o entre opciones no quita el foco al campo: si lo quitara, la lista se cerraría.
+                    onMouseDown={(e) => e.preventDefault()}
                     className="z-50 max-h-64 w-(--radix-popper-anchor-width) overflow-y-auto rounded-card bg-surface p-1.5 shadow-flotante"
                 >
                     {filtradas.map((o, i) => (
@@ -123,7 +128,6 @@ export function Combobox({ opciones, value, onChange, onCrear, creando, id, plac
                             id={`${lista}-${i}`}
                             role="option"
                             aria-selected={o.value === value}
-                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => elegir(i)}
                             onMouseEnter={() => setActiva(i)}
                             className={cn('flex h-8 cursor-pointer items-center rounded-[6px] px-2.5 text-base', i === activa ? 'bg-primary-600 text-on-primary' : 'text-fg', o.value === value && 'font-semibold')}
@@ -136,7 +140,6 @@ export function Combobox({ opciones, value, onChange, onCrear, creando, id, plac
                             id={`${lista}-${filtradas.length}`}
                             role="option"
                             aria-selected={false}
-                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => elegir(filtradas.length)}
                             onMouseEnter={() => setActiva(filtradas.length)}
                             className={cn(

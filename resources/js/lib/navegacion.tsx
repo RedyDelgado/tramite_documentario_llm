@@ -1,4 +1,4 @@
-import { IcoArchivo, IcoAreas, IcoColas, IcoComponentes, IcoCorreo,
+import { IcoArchivo, IcoAreas, IcoColas, IcoComentario, IcoComponentes, IcoCorreo,
     IcoCorreoAviso, IcoCorreoBloqueado, IcoDocumento, IcoDocumentos, IcoEnviar, IcoExpedientes, IcoFeriado, IcoIa, IcoInicio, IcoInstitucion, IcoInstrucciones, IcoNumeral, IcoPlazo, IcoResponsables, IcoRuta, IcoUsuarios, IcoVelocimetro } from '@/components/ui/iconos';
 import type { ReactElement } from 'react';
 import type { SharedProps } from '@/types';
@@ -28,6 +28,7 @@ const NAVEGACION: GrupoNav[] = [
         items: [
             { etiqueta: 'Inicio', href: '/', icono: <IcoInicio /> },
             { etiqueta: 'Expedientes', href: '/expedientes', icono: <IcoExpedientes />, permisos: PERMISOS_EXPEDIENTES, tambien: ['/registro'] },
+            { etiqueta: 'Mensajes', href: '/mensajes', icono: <IcoComentario /> },
             { etiqueta: 'Documentos emitidos', href: '/salientes', icono: <IcoEnviar />, permisos: [...PERMISOS_EXPEDIENTES, 'expedientes.registrar'], soloSalientes: true },
         ],
     },

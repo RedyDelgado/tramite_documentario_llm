@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { expect, test } from 'vitest';
@@ -38,4 +38,30 @@ test('sin coincidencia exacta ofrece crear lo escrito', async () => {
     await userEvent.click(screen.getByRole('option', { name: 'Crear «Colegio San Martín»' }));
 
     expect(screen.getByRole('status')).toHaveTextContent('|Colegio San Martín');
+});
+
+test('la rueda sobre la lista no llega al documento, donde un modal abierto la bloquearía', async () => {
+    const bloqueos: Event[] = [];
+    const bloquear = (e: Event) => bloqueos.push(e);
+    document.addEventListener('wheel', bloquear);
+    document.addEventListener('touchmove', bloquear);
+    render(<Prueba />);
+
+    await userEvent.click(screen.getByRole('combobox'));
+    fireEvent.wheel(screen.getByRole('listbox'), { deltaY: 100 });
+    fireEvent.touchMove(screen.getByRole('listbox'));
+
+    document.removeEventListener('wheel', bloquear);
+    document.removeEventListener('touchmove', bloquear);
+    expect(bloqueos).toHaveLength(0);
+});
+
+test('un clic en la lista fuera de las opciones (la barra de desplazamiento) no la cierra', async () => {
+    render(<Prueba />);
+
+    await userEvent.click(screen.getByRole('combobox'));
+    await userEvent.pointer({ keys: '[MouseLeft]', target: screen.getByRole('listbox') });
+
+    expect(screen.getByRole('combobox')).toHaveFocus();
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
 });

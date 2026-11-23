@@ -9,6 +9,7 @@ use App\Http\Controllers\FeriadoController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\IaController;
 use App\Http\Controllers\InstruccionFrecuenteController;
+use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\NumeracionController;
 use App\Http\Controllers\OriginalController;
@@ -132,6 +133,12 @@ Route::middleware('auth')->group(function () {
     Route::post('salientes/{saliente}/firmado', [SalienteController::class, 'firmado'])->name('salientes.firmado');
     Route::get('salientes/{saliente}/descargar/{formato}', [SalienteController::class, 'descargar'])->name('salientes.descargar');
     Route::resource('salientes', SalienteController::class)->parameters(['salientes' => 'saliente'])->except(['destroy']);
+
+    // Chat entre usuarios: quién ve cada conversación lo decide ConversacionPolicy.
+    Route::get('mensajes', [MensajeController::class, 'index'])->name('mensajes.index');
+    Route::get('mensajes/sin-leer', [MensajeController::class, 'sinLeer'])->name('mensajes.sin-leer');
+    Route::post('mensajes', [MensajeController::class, 'store'])->middleware('throttle:20,1')->name('mensajes.store');
+    Route::post('mensajes/{conversacion}', [MensajeController::class, 'enviar'])->middleware('throttle:30,1')->name('mensajes.enviar');
 
     Route::post('asistente-ia', [ExpedienteController::class, 'consultarIa'])->middleware('throttle:10,1')->name('asistente-ia');
     Route::get('expedientes', [ExpedienteController::class, 'index'])->name('expedientes.index');

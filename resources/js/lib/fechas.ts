@@ -16,3 +16,13 @@ export function formatearPlazo(dias: number | null, tipo: 'habiles' | 'calendari
     if (dias === null) return 'Sin plazo';
     return `${dias} ${dias === 1 ? 'día' : 'días'} ${tipo === 'habiles' ? (dias === 1 ? 'hábil' : 'hábiles') : 'calendario'}`;
 }
+
+const hora = new Intl.DateTimeFormat('es-PE', { timeStyle: 'short', timeZone: 'America/Lima' });
+const diaCorto = new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', timeZone: 'America/Lima' });
+const diaLimaIso = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' });
+
+/** «10:42 a. m.» si fue hoy en Lima; si no, «23 nov.»: lo justo para una lista de mensajes. */
+export function formatearMomento(iso: string, ahora: Date = new Date()): string {
+    const d = new Date(iso);
+    return diaLimaIso.format(d) === diaLimaIso.format(ahora) ? hora.format(d) : diaCorto.format(d);
+}

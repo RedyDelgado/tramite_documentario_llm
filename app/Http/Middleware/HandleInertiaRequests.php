@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Expediente;
 use App\Services\BorradorIaService;
+use App\Services\MensajeriaService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -30,6 +31,8 @@ class HandleInertiaRequests extends Middleware
                 'roles' => fn () => $user?->getRoleNames()->all() ?? [],
                 'can' => fn () => $user?->getAllPermissions()->pluck('name')->all() ?? [],
             ],
+            // Mensajes del chat que aún no vio: punto de partida del contador del menú, que luego se consulta solo.
+            'mensajesSinLeer' => fn () => $user ? app(MensajeriaService::class)->sinLeer($user) : 0,
             // Quien deriva (administrativo y director) ve en la campana las respuestas de las áreas que aún no revisa.
             'respuestasNuevas' => fn () => $user?->can('expedientes.derivar')
                 ? Expediente::visiblesPara($user)->conRespuestaNueva()->latest('id')->limit(10)->get(['id', 'secuencia', 'asunto'])
