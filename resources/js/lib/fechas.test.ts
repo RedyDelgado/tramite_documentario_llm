@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diasHasta, textoEspera, textoVencimiento } from './fechas';
+import { diasHasta, formatearMomento, textoEspera, textoVencimiento } from './fechas';
 
 // 23:30 en Lima del 5 de octubre ya es 6 de octubre en UTC: los días deben contarse en Lima.
 const hoy = new Date('2026-10-06T04:30:00Z');
@@ -24,5 +24,10 @@ describe('fechas relativas en Lima', () => {
         expect(textoEspera('2026-10-05T14:00:00Z', hoy)).toBe('Hoy');
         expect(textoEspera('2026-10-04T14:00:00Z', hoy)).toBe('Ayer');
         expect(textoEspera('2026-10-01T14:00:00Z', hoy)).toBe('Hace 4 días');
+    });
+
+    it('en la lista de mensajes, lo de hoy en Lima muestra la hora y lo anterior el día', () => {
+        expect(formatearMomento('2026-10-05T15:05:00Z', hoy)).toMatch(/10:05/);
+        expect(formatearMomento('2026-10-04T15:05:00Z', hoy)).toMatch(/4.*oct/);
     });
 });

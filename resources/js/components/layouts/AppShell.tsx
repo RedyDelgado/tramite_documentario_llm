@@ -5,6 +5,7 @@ import { AsistenteIa } from '@/components/domain/AsistenteIa';
 import { IconButton } from '@/components/ui/IconButton';
 import { Menu } from '@/components/ui/Menu';
 import { Toaster } from '@/components/ui/Toaster';
+import { useMensajesSinLeer } from '@/hooks/useMensajesSinLeer';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { campoClases } from '@/components/ui/campo';
 import { cn } from '@/lib/cn';
@@ -40,7 +41,8 @@ function iniciales(nombre: string): string {
     return ((partes[0]?.[0] ?? '') + (partes.length > 1 ? (apellido?.[0] ?? '') : '')).toUpperCase();
 }
 
-function ItemNavegacion({ item, activa, colapsada }: { item: ItemNav; activa: boolean; colapsada: boolean }) {
+// `contador`: pendientes de la sección (mensajes sin leer); en cero no se muestra.
+function ItemNavegacion({ item, activa, colapsada, contador = 0 }: { item: ItemNav; activa: boolean; colapsada: boolean; contador?: number }) {
     // Selección con fondo celeste, texto en negrita y una barra de marca pegada al borde de la barra lateral.
     const clases = cn(
         'relative flex h-10 items-center gap-3 rounded-control text-base transition-colors',
@@ -53,6 +55,17 @@ function ItemNavegacion({ item, activa, colapsada }: { item: ItemNav; activa: bo
         <>
             <span className={cn('shrink-0', activa && 'text-primary-600')}>{item.icono}</span>
             <span className={colapsada ? 'sr-only' : 'truncate'}>{item.etiqueta}</span>
+            {contador > 0 && (
+                <span
+                    className={cn(
+                        'flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-600 px-1.5 text-sm leading-none font-bold text-on-primary',
+                        colapsada ? 'absolute -top-0.5 -right-0.5' : 'ml-auto',
+                    )}
+                >
+                    <span className="sr-only">, sin leer: </span>
+                    {contador > 99 ? '99+' : contador}
+                </span>
+            )}
         </>
     );
     const enlace = item.externo ? (
@@ -73,6 +86,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     const { props, url } = usePage();
     const [colapsada, setColapsada] = useState(leerColapsada);
     const grupos = navegacionVisible(props);
+    const sinLeer = useMensajesSinLeer(props.mensajesSinLeer);
     const usuario = props.auth.user;
     // El chat con la IA es para quien gestiona todo lo que entra; la Policy lo vuelve a comprobar.
     const asistente = props.app.ia && props.auth.can.includes('expedientes.derivar');
@@ -132,6 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                                             item={item}
                                             activa={[item.href, ...(item.tambien ?? [])].some((h) => esActiva(h, url))}
                                             colapsada={colapsada}
+                                            contador={item.href === '/mensajes' ? sinLeer : 0}
                                         />
                                     </li>
                                 ))}

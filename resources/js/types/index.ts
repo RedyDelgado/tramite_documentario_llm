@@ -20,7 +20,22 @@ export type SharedProps = {
     auth: { user: Usuario | null; roles: string[]; can: string[] };
     // Respuestas de áreas aún sin revisar; solo para quien deriva.
     respuestasNuevas: { id: number; numero_registro: string | null; asunto: string }[];
+    // Mensajes del chat sin leer al cargar la página.
+    mensajesSinLeer: number;
 };
+
+/** Una conversación en la lista de Mensajes. */
+export type ConversacionResumen = {
+    id: number;
+    titulo: string;
+    grupo: boolean;
+    participantes: string[];
+    ultimo_texto?: string | null;
+    ultimo_mensaje_at?: string | null;
+    sin_leer?: number;
+};
+
+export type MensajeChat = { id: number; texto: string; autor: string; propio: boolean; enviado_at: string };
 
 export type Opcion<V = string | number> = { value: V; label: string };
 

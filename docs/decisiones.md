@@ -2,6 +2,16 @@
 
 Registro breve de decisiones tomadas al implementar el plan. La más reciente arriba.
 
+## 2026-11-23 — Chat entre usuarios (decisión del usuario, fuera del plan original)
+
+- **Por qué**: mesa de partes tiene seis o más administrativos que hoy coordinan fuera del sistema. «Mensajes» en el menú, para todo usuario activo.
+- **De persona a persona o en grupo**: con una persona se reabre siempre la misma conversación (`conversaciones.clave`); con varias se crea un grupo, con nombre opcional.
+- **Solo quien participa lee y escribe** (`ConversacionPolicy`), ni siquiera el superadmin. Quien es desactivado pierde la sesión y ya no escribe.
+- **Sin WebSockets**: la conversación abierta se refresca cada 5 s y el contador del menú cada 30 s (`/mensajes/sin-leer`). Para el volumen esperado basta; Reverb queda para cuando haga falta, y exigiría un contenedor más y el `wss` en Caddy.
+- **Nada se borra ni se edita** (2): no hay botón para eso. La auditoría registra quién creó cada conversación y quién envió cada mensaje, **nunca el texto**, para no copiar datos personales (Ley 29733).
+- **Enviar no pide confirmación**, a diferencia del resto de botones que cambian algo: en un chat sería un paso de más en cada mensaje, como en el asistente IA. Enter envía; Mayús + Enter salta de línea.
+- Se cargan los últimos 200 mensajes de cada conversación; lo anterior queda guardado.
+
 ## 2026-11-22 — Lo urgente primero en la lista de Expedientes (decisión del usuario)
 
 - **«En trámite» se ordena por lo que pide acción**: primero lo registrado sin derivar (ningún área lo conoce), luego vencido, por vencer y en plazo por su fecha límite, y al final lo atendido que solo falta cerrar. Antes ordenaba por llegada y lo urgente podía quedar en otra página.

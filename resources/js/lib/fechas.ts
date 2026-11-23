@@ -44,3 +44,12 @@ export function textoEspera(iso: string, hoy?: Date): string {
     if (n <= 0) return 'Hoy';
     return n === 1 ? 'Ayer' : `Hace ${n} días`;
 }
+
+const hora = new Intl.DateTimeFormat('es-PE', { timeStyle: 'short', timeZone: 'America/Lima' });
+const diaCorto = new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', timeZone: 'America/Lima' });
+
+/** «10:42 a. m.» si fue hoy en Lima; si no, «23 nov.»: lo justo para una lista de mensajes. */
+export function formatearMomento(iso: string, ahora: Date = new Date()): string {
+    const d = new Date(iso);
+    return diaLima.format(d) === diaLima.format(ahora) ? hora.format(d) : diaCorto.format(d);
+}
