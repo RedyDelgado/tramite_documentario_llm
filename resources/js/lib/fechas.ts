@@ -19,6 +19,11 @@ export function formatearPlazo(dias: number | null, tipo: 'habiles' | 'calendari
 
 const diaLima = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' });
 
+/** Hoy en Lima como `AAAA-MM-DD`. */
+export function hoyEnLima(): string {
+    return diaLima.format(new Date());
+}
+
 /** Días de calendario entre hoy en Lima y `dia` (`AAAA-MM-DD`): negativo si ya pasó. */
 export function diasHasta(dia: string, hoy: Date = new Date()): number {
     return Math.round((Date.parse(`${dia}T12:00:00Z`) - Date.parse(`${diaLima.format(hoy)}T12:00:00Z`)) / 86_400_000);

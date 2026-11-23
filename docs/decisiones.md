@@ -19,6 +19,14 @@ Registro breve de decisiones tomadas al implementar el plan. La más reciente ar
 - **Filtros nuevos: tipo de trámite y área.** El área cuenta la principal y las derivadas, no las copias (`Expediente::scopeConArea`). Al buscar, Meilisearch filtra por `tipo_tramite_id` y `areas`; tras desplegar hay que correr `scout:sync-index-settings` y `scout:import`.
 - **No se creó un estado nuevo**: el estado es el paso del flujo y el tipo es otra dimensión.
 
+## 2026-11-11 — Un sistema más guiado para quien empieza (decisión del usuario)
+
+- **Siguiente paso en cada expediente** (`PasosExpediente`, sobre el primitivo `Pasos`): Recibido → Registrado → Derivado → Atendido → Cerrado con el actual resaltado, y una frase con lo que toca. Si quien mira puede hacerlo, la frase nombra el botón; si no, dice lo que falta. Una respuesta cuenta si vino de un área aún pendiente. No trámite, histórico y anulado no muestran pasos: explican qué significan.
+- **El semáforo dice los días** (`SemaforoPlazo`): «Vence en 2 días», «Venció hace 3 días», en días de calendario desde hoy en Lima (la fecha límite ya trae los hábiles). También en cada área pendiente del detalle. En la lista solo en derivado o en atención (`conPlazo`): antes de derivar la fila dice cuánto lleva esperando.
+- **El aviso de derivación pide responder ahí mismo sin cambiar el asunto**: un correo nuevo no se enlaza al trámite. Las copias no lo llevan.
+- **Términos explicados**: estados y pestañas de Expedientes explican su significado al pasar el mouse.
+- **No se tomaron** de `feature/ayuda-usabilidad` los textos nuevos de la IA, el cambio de «Umbrales» a «Semáforo e IA», «Reasignar» a «Cambiar áreas» ni el ajuste del CI.
+
 ## 2026-10-26 — Respuestas de las áreas a la vista (decisión del usuario)
 
 - **Columna «Respuesta»** en Expedientes: «Respondido» si un área contestó por correo, con «Nuevo» mientras nadie marque atendida un área después de que llegó (`Expediente::scopeConRespuesta`). Cuenta la hora de llegada al buzón, no la fecha que dice el correo.

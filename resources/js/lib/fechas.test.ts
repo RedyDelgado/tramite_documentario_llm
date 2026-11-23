@@ -16,6 +16,8 @@ describe('fechas relativas en Lima', () => {
         expect(textoVencimiento('2026-10-09', hoy)).toBe('Vence en 4 días');
         expect(textoVencimiento('2026-10-04', hoy)).toBe('Venció ayer');
         expect(textoVencimiento('2026-10-01', hoy)).toBe('Venció hace 4 días');
+        // Cruza de mes sin correrse un día.
+        expect(textoVencimiento('2026-11-01', hoy)).toBe('Vence en 27 días');
     });
 
     it('dice cuánto lleva esperando', () => {

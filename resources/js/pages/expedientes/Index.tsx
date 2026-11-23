@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import type { Columna } from '@/components/data/DataTable';
 import { type Pestana, Pestanas } from '@/components/data/Pestanas';
 import { EstadoBadge } from '@/components/domain/EstadoBadge';
-import { SemaforoBadge } from '@/components/domain/SemaforoBadge';
+import { SemaforoPlazo } from '@/components/domain/SemaforoPlazo';
 import { ListPage } from '@/components/layouts/ListPage';
 import { Badge } from '@/components/ui/Badge';
 import { botonClases } from '@/components/ui/Button';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useFiltros } from '@/hooks/useFiltros';
-import { formatearFechaHora, textoEspera, textoVencimiento } from '@/lib/fechas';
+import { formatearFechaHora, textoEspera } from '@/lib/fechas';
 import { cerrarModal, rutaModal } from '@/lib/modal';
 import type { ExpedienteFila, Opcion, Paginado, SharedProps } from '@/types';
 import RegistroNuevo from '../registro/Nuevo';
@@ -126,13 +126,8 @@ const columnas: Columna<ExpedienteFila>[] = [
         ancho: '10rem',
         celda: (e) =>
             e.semaforo ? (
-                <>
-                    <SemaforoBadge estado={e.semaforo} />
-                    {/* El color dice si urge; la fecha, cuánto. */}
-                    {e.fecha_limite && (e.estado.valor === 'derivado' || e.estado.valor === 'en_atencion') && (
-                        <p className="mt-1 text-sm text-fg-muted">{textoVencimiento(e.fecha_limite)}</p>
-                    )}
-                </>
+                // El color dice si urge; los días, cuánto: solo cuando ya está en un área.
+                <SemaforoPlazo semaforo={e.semaforo} fechaLimite={e.fecha_limite} conPlazo={e.estado.valor === 'derivado' || e.estado.valor === 'en_atencion'} />
             ) : (
                 <span className="text-fg-muted">—</span>
             ),

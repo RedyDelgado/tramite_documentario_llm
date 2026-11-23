@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/Badge';
-import { formatearFecha, formatearFechaHora } from '@/lib/fechas';
+import { formatearFecha, formatearFechaHora, textoVencimiento } from '@/lib/fechas';
 import type { AtencionArea } from '@/types';
 
 const TONO = { derivado: 'neutro', en_atencion: 'marca', atendido: 'ok' } as const;
@@ -19,6 +19,8 @@ export function AreasAtencion({ atenciones }: { atenciones: AtencionArea[] }) {
                     <span className="block text-sm text-fg-muted">
                         {a.responsable ?? 'Quien coordina el área'} ·{' '}
                         {a.fecha_limite ? `hasta el ${formatearFecha(a.fecha_limite)}${a.plazo_dias ? ` (plazo de ${a.plazo_dias} días)` : ''}` : 'sin plazo'}
+                        {/* Lo pendiente dice cuánto le falta; lo atendido ya no corre. */}
+                        {a.fecha_limite && a.estado.valor !== 'atendido' && <span className="font-medium text-fg"> · {textoVencimiento(a.fecha_limite)}</span>}
                     </span>
                     {a.atendido_at && (
                         <span className="block text-sm text-fg-muted">

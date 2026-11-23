@@ -5,6 +5,7 @@ import { Pagination } from '@/components/data/Pagination';
 import { CommandBar } from '@/components/data/CommandBar';
 import { ActivoBadge } from '@/components/domain/ActivoBadge';
 import { SemaforoBadge, type Semaforo } from '@/components/domain/SemaforoBadge';
+import { Pasos } from '@/components/ui/Pasos';
 import { FormField } from '@/components/forms/FormField';
 import { FormSection } from '@/components/forms/FormSection';
 import { AppShell } from '@/components/layouts/AppShell';
@@ -236,6 +237,15 @@ export default function Catalogo() {
                         <Badge tono="marca">Marca</Badge>
                         <ActivoBadge activo />
                         <ActivoBadge activo={false} />
+                    </Fila>
+                </Bloque>
+
+                <Bloque titulo="Pasos">
+                    <Fila etiqueta="En curso">
+                        <Pasos etiqueta="Recorrido de ejemplo" pasos={['Recibido', 'Registrado', 'Derivado', 'Atendido', 'Cerrado']} actual={2} />
+                    </Fila>
+                    <Fila etiqueta="Concluido">
+                        <Pasos etiqueta="Recorrido concluido" pasos={['Recibido', 'Registrado', 'Derivado', 'Atendido', 'Cerrado']} actual={5} />
                     </Fila>
                 </Bloque>
 
